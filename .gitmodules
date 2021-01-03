@@ -1,0 +1,3 @@
+[submodule "external/python-tidal"]
+	path = external/python-tidal
+	url = https://github.com/tamland/python-tidal
