@@ -3,6 +3,7 @@ import Sailfish.Silica 1.0
 import harbour.tidalplayer 1.0
 
 import "pages"
+import "pages/widgets"
 
 ApplicationWindow
 {

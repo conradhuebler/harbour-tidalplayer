@@ -24,11 +24,13 @@ PKGCONFIG += sailfishsecrets
 
 
 SOURCES +=  src/harbour-tidalplayer.cpp \
+            src/playlistmanager.cpp \
             src/python/pythonapi.cpp \
             src/settings/secrets.cpp \
             src/settings/settings.cpp
 
  HEADERS += src/settings/secrets.h \
+    src/playlistmanager.h \
             src/python/pythonapi.h \
             src/settings/settings.h
 

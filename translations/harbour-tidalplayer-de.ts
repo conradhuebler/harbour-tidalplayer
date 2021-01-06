@@ -21,6 +21,28 @@
     </message>
 </context>
 <context>
+    <name>AlbumPage</name>
+    <message>
+        <source>Album Info</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Play Album</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ArtistPage</name>
+    <message>
+        <source>Artist Info</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>CoverPage</name>
     <message>
         <source>Tidal Player</source>
@@ -37,6 +59,13 @@
         <source>Tidal Player</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Show Playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>MiniPlayer</name>
     <message>
         <source>Error: Problem with allocating resources</source>
         <translation type="unfinished"></translation>
@@ -59,6 +88,13 @@
     </message>
 </context>
 <context>
+    <name>PlaylistPage</name>
+    <message>
+        <source>Clear</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>SecondPage</name>
     <message>
         <source>Nested Page</source>
@@ -67,6 +103,13 @@
     <message>
         <source>Item</source>
         <translation>Element</translation>
+    </message>
+</context>
+<context>
+    <name>TrackPage</name>
+    <message>
+        <source>Track Info</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

@@ -4,21 +4,42 @@ import QtMultimedia 5.6
 import Sailfish.Media 1.0
 import harbour.tidalplayer 1.0
 
+
+import "widgets"
+
+
 Page {
-    id: page
+    id: searchPage
 
     // The effective value will be restricted by ApplicationWindow.allowedOrientations
     allowedOrientations: Orientation.All
 
     // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
-        anchors.fill: parent
+        anchors {
+            fill: parent
+            bottomMargin: minPlayerPanel.margin
+        }
 
         // PullDownMenu and PushUpMenu must be declared in SilicaFlickable, SilicaListView or SilicaGridView
         PullDownMenu {
             MenuItem {
                 text: qsTr("Settings")
                 onClicked: pageStack.push(Qt.resolvedUrl("Settings.qml"))
+            }
+
+            MenuItem {
+                text: qsTr("Show Playlist")
+                onClicked:
+                {
+                    onClicked: pageStack.push(Qt.resolvedUrl("PlaylistPage.qml"))
+                }
+            }
+
+            MenuItem {
+                text: minPlayerPanel.open ? "Hide controls" : "Show controls"
+                onClicked: minPlayerPanel.open = !minPlayerPanel.open
+                anchors.horizontalCenter: parent.horizontalCenter
             }
             /*
             MenuItem {
@@ -34,65 +55,16 @@ Page {
             }
         }
 
-        MediaPlayer {
-            id: mediaPlayer
-            source: url.trim()
-            autoLoad: true
-
-            function videoPlay() {
-                videoPlaying = true
-                if (mediaPlayer.bufferProgress == 1) {
-                    mediaPlayer.play()
-                } else if (isLocal) {
-                    mediaPlayer.play()
-                }
-            }
-
-            function videoPause() {
-                videoPlaying = false
-                mediaPlayer.pause()
-            }
-
-            property bool videoPlaying: false
-            property string errorMsg: ""
-
-            onPlaybackStateChanged: {
-                mprisPlayer.playbackState = mediaPlayer.playbackState === MediaPlayer.PlayingState ?
-                            Mpris.Playing : mediaPlayer.playbackState === MediaPlayer.PausedState ?
-                                Mpris.Paused : Mpris.Stopped
-            }
-
-            onError: {
-                if ( error === MediaPlayer.ResourceError ) errorMsg = qsTr("Error: Problem with allocating resources")
-                else if ( error === MediaPlayer.ServiceMissing ) errorMsg = qsTr("Error: Media service error")
-                else if ( error === MediaPlayer.FormatError ) errorMsg = qsTr("Error: Video or Audio format is not supported")
-                else if ( error === MediaPlayer.AccessDenied ) errorMsg = qsTr("Error: Access denied to the video")
-                else if ( error === MediaPlayer.NetworkError ) errorMsg = qsTr("Error: Network error")
-                stop()
-            }
-            /*
-                      onBufferProgressChanged: {
-                          if (!isLocal && videoPlaying && mediaPlayer.bufferProgress == 1) {
-                              mediaPlayer.play();
-                          }
-
-                          if (!isLocal && mediaPlayer.bufferProgress == 0) {
-                              mediaPlayer.pause();
-                          }
-                      }*/
-
-            onPositionChanged: progressSlider.value = mediaPlayer.position
-        }
         SilicaListView {
             anchors.fill: parent
             // Tell SilicaFlickable the height of its content.
-            contentHeight: column.height
+//            contentHeight: column.height
 
             // Place our content in a Column.  The PageHeader is always placed at the top
             // of the page, followed by our content.
             header : Column {
                 width: parent.width
-                height: header.height + mainColumn.height + Theme.paddingLarge
+                //height: header.height + mainColumn.height + Theme.paddingLarge
 
                 PageHeader {
                     id: header
@@ -101,7 +73,7 @@ Page {
                 Column {
                     id: column
 
-                    width: page.width
+                    width: searchPage.width
                     spacing: Theme.paddingLarge
 
                     //Label {
@@ -112,11 +84,11 @@ Page {
                     //}
 
                     TextField {
-                        id: artistField
+                        id: searchString
                         width: parent.width
-                        placeholderText: "tracks"
-                        text: "Ergo Bibamus"
-                        label: "tracks"
+                        placeholderText: "Type and Search"
+                        text: "Corvus Corax"
+                        label: "What are you looking for?"
                     }
 
                     Button {
@@ -125,7 +97,10 @@ Page {
                         anchors.horizontalCenter: parent.horizontalCenter
                         enabled: PythonApi.loginState
                         onClicked: {
-                            PythonApi.searchTracks(artistField.text, 10)
+                            listModel.clear()
+                            PythonApi.searchTracks(searchString.text, 10)
+                            PythonApi.searchArtists(searchString.text, 10)
+                            PythonApi.searchAlbums(searchString.text, 10)
                         }
                     }
                     Connections {
@@ -143,19 +118,40 @@ Page {
 
             delegate: ListItem {
                 id: listEntry
-                width: parent.width
+                //width: parent.width
 
-                Label {
-                    color: listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
-                    text: model.trackName
-                    x: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
+                Row {
+                    IconButton {
+                        id: playTrack
+                        icon.source: "image://theme/icon-m-play"
+                        onClicked: {
+                            PlaylistManager.playTrackId(listModel.get(model.index).id)
+                        }
+                        height: trackName.height
+                        visible: listModel.get(model.index).type == 1
+                    }
+
+                    IconButton {
+                        id: queueTrack
+                        icon.source: "image://theme/icon-m-add"
+                        onClicked: {
+                            PlaylistManager.addTrackId(listModel.get(model.index).id)
+                        }
+                        height: trackName.height
+                        visible: listModel.get(model.index).type == 1
+
+                    }
+
+                    Label {
+                        id: trackName
+                        color: listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
+                        text: model.name
+                        x: Theme.horizontalPageMargin
+                        truncationMode: elide
+                        font.pixelSize: Theme.fontSizeSmall
+                    }
                 }
 
-                onClicked: {
-                    //console.log(listModel.get(model.index).trackName)
-                    PythonApi.getTrackUrl(listModel.get(model.index).trackId)
-                }
                 menu: ContextMenu {
 
                     MenuItem {
@@ -167,32 +163,93 @@ Page {
                         }
                     }
                 }
+
+                onClicked:
+                {
+                    if(listModel.get(model.index).type == 1)
+                    {
+                        pageStack.push(Qt.resolvedUrl("TrackPage.qml"))
+                        PythonApi.getTrackInfo(listModel.get(model.index).id)
+                    }else if(listModel.get(model.index).type == 2)
+                    {
+                        pageStack.push(Qt.resolvedUrl("AlbumPage.qml"))
+                        PythonApi.getAlbumInfo(listModel.get(model.index).id)
+                    }else if(listModel.get(model.index).type == 3)
+                    {
+                        pageStack.push(Qt.resolvedUrl("ArtistPage.qml"))
+                        PythonApi.getArtistInfo(listModel.get(model.index).id)
+                    }
+                }
             }
 
             Connections {
                 target: PythonApi
 
-                onSearchFinished:
+                onTrackSearchFinished:
                 {
                     //console.log(PythonApi.trackResults)
                     var JsonResult = JSON.parse(PythonApi.trackResults)
 
                     for( var i=0, l=JsonResult.length; i<l; i++) {
-                        listModel.append({"trackName": JsonResult[i]["name"], "trackId" : JsonResult[i]["id"]})
+                        listModel.append(
+                                    {   "name": JsonResult[i]["name"],
+                                        "id" : JsonResult[i]["id"],
+                                        "type" : JsonResult[i]["type"]
+                                    })
+                    }
+
+                }
+
+                onArtistSearchFinished:
+                {
+                    console.log(PythonApi.artistsResults)
+                    var JsonResult = JSON.parse(PythonApi.artistsResults)
+
+                    for( var i=0, l=JsonResult.length; i<l; i++) {
+                        listModel.append(
+                                    {   "name": JsonResult[i]["name"],
+                                        "id" : JsonResult[i]["id"],
+                                        "type" : JsonResult[i]["type"]
+                                    })
+                    }
+
+                }
+
+                onAlbumSearchFinished:
+                {
+                    console.log(PythonApi.albumsResults)
+                    var JsonResult = JSON.parse(PythonApi.albumsResults)
+
+                    for( var i=0, l=JsonResult.length; i<l; i++) {
+                        listModel.append(
+                                    {   "name": JsonResult[i]["name"],
+                                        "id" : JsonResult[i]["id"],
+                                        "type" : JsonResult[i]["type"]
+                                    })
                     }
 
                 }
 
                 onRecentTrackUrlChanged:
                 {
-                    mediaPlayer.source = PythonApi.trackUrl
+                    minPlayerPanel.url = PythonApi.trackUrl
                     console.log(PythonApi.trackUrl)
-                    mediaPlayer.play();
+                    minPlayerPanel.play();
                 }
 
             }
             VerticalScrollDecorator {}
         }
+
+
+        MiniPlayer {
+            id: minPlayerPanel
+        }
+
+        TrackPage {
+            id: trackPage
+        }
+
     }
 
     /*

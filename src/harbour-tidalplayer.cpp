@@ -27,6 +27,8 @@
 
 #include "python/pythonapi.h"
 
+#include "playlistmanager.h"
+
 #include <sailfishapp.h>
 
 int main(int argc, char *argv[])
@@ -37,6 +39,7 @@ int main(int argc, char *argv[])
 
     qmlRegisterSingletonType<Settings>("harbour.tidalplayer", 1, 0, "Settings", &Settings::qmlInstance);
     qmlRegisterSingletonType<PythonApi>("harbour.tidalplayer", 1, 0, "PythonApi", &PythonApi::qmlInstance);
+    qmlRegisterSingletonType<PythonApi>("harbour.tidalplayer", 1, 0, "PlaylistManager", &PlaylistManager::qmlInstance);
 
 
     v->setSource(SailfishApp::pathTo("qml/harbour-tidalplayer.qml"));

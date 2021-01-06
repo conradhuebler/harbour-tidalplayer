@@ -1,11 +1,24 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
+import harbour.tidalplayer 1.0
 
 CoverBackground {
+
+    Image {
+        id: coverImage
+        width: 0.66 * parent.height
+        //anchors.centerIn: parent.top
+        fillMode: Image.PreserveAspectFit
+        anchors.margins: Theme.paddingSmall
+    }
+
     Label {
         id: label
-        anchors.centerIn: parent
+        //anchors.bottom: parent
         text: qsTr("Tidal Player")
+        color: Theme.highlightColor
+        anchors.margins: Theme.paddingSmall
+        anchors.top: coverImage.bottom
     }
 
     CoverActionList {
@@ -21,6 +34,17 @@ CoverBackground {
 
         CoverAction {
             iconSource: "image://theme/icon-cover-search"
+        }
+    }
+
+    Connections
+    {
+        target: PlaylistManager
+        onCurrenTrackIDChanged:
+        {
+            var trackInfo = JSON.parse(PythonApi.invokeTrackInfo(PlaylistManager.trackID))
+            label.text = trackInfo["track_num"] + " - " + trackInfo["name"] + " - "  +trackInfo["album"] + " - " + trackInfo["artist"]
+            coverImage.source = trackInfo["cover"]
         }
     }
 }

@@ -23,6 +23,10 @@
 #include <QtCore/QFile>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QJsonObject>
+#include <QtCore/QSettings>
+
+static const QString LOGIN_GROUP     {QStringLiteral("LoginGroup")};
+static const QString SESSION     {QStringLiteral("SESSION")};
 
 // https://stackoverflow.com/questions/23068700/embedding-python3-in-qt-5 - thanks a lot :-)
 #pragma push_macro("slots")
@@ -32,20 +36,38 @@
 
 #include "pythonapi.h"
 
+#define debugPrint() PyErr_Print();qDebug() << "";
+
+
 void PythonApi::setLogin(const QString &name, const QString &passwort)
 {
     m_login = name;
     m_passwort = passwort;
 
     Py_Initialize();
-
+    PyEval_InitThreads();
     PyRun_SimpleString("import sys; sys.path.append('/usr/share/harbour-tidalplayer/python/')");
+
+
+    QSettings settings;
+    settings.beginGroup(LOGIN_GROUP);
+    QString session = settings.value(SESSION).toString();
+    bool check_session = CheckSession(session);
+
+    if(check_session)
+    {
+        m_session_id = session;
+        setLoginState(true);
+        emit loginStateChanged();
+        return;
+    }
+
 
     PyObject* tidalstring = PyUnicode_FromString((char*)"tidalapi");
     PyObject* tidalmodule = PyImport_Import(tidalstring);
-    m_TidalInterface = PyObject_CallMethod(tidalmodule, "Session", NULL);
+    PyObject* TidalInterface = PyObject_CallMethod(tidalmodule, "Session", NULL);
 
-    PyObject* loginFunction = PyObject_GetAttrString(m_TidalInterface,(char*)"login");
+    PyObject* loginFunction = PyObject_GetAttrString(TidalInterface,(char*)"login");
     //    PyErr_Print();
     //    qDebug() << "";
 
@@ -58,8 +80,8 @@ void PythonApi::setLogin(const QString &name, const QString &passwort)
     Py_DECREF(tidalmodule);
 
     PyObject* loginResult = PyObject_CallObject(loginFunction, loginArgs);
-//    PyErr_Print();
-//    qDebug() << "";
+    //    PyErr_Print();
+    //    qDebug() << "";
 
     Py_DECREF(loginFunction);
     Py_DECREF(loginArgs);
@@ -77,6 +99,11 @@ void PythonApi::setLogin(const QString &name, const QString &passwort)
     if(truthy == 1)
     {
         setLoginState(true);
+        m_session_id = getAttribute(TidalInterface, "session_id");
+        QSettings settings;
+        settings.beginGroup(LOGIN_GROUP);
+        settings.setValue(SESSION, m_session_id);
+
     }else
     {
         setLoginState(false);
@@ -85,12 +112,193 @@ void PythonApi::setLogin(const QString &name, const QString &passwort)
     Py_DECREF(loginResult);
 }
 
+PyObject * PythonApi::Session() const
+{
+    PyObject* tidalstring = PyUnicode_FromString((char*)"tidalapi");
+    PyObject* tidalmodule = PyImport_Import(tidalstring);
+    PyObject* TidalInterface = PyObject_CallMethod(tidalmodule, "Session", NULL);
+    PyObject* loginFunction = PyObject_GetAttrString(TidalInterface,(char*)"load_session");
+    PyObject* loginArgs = PyTuple_Pack(1,PyUnicode_FromString((m_session_id.toLocal8Bit())));
+    PyObject* loginResult = PyObject_CallObject(loginFunction, loginArgs);
+
+    Py_DECREF(tidalstring);
+    Py_DECREF(tidalmodule);
+    Py_DECREF(loginFunction);
+    Py_DECREF(loginArgs);
+    Py_DECREF(loginResult);
+
+   return TidalInterface;
+}
+
+bool PythonApi::CheckSession(const QString &session)
+{
+    if(session.isEmpty() || session.isNull())
+        return false;
+
+    PyObject* tidalstring = PyUnicode_FromString((char*)"tidalapi");
+
+    PyObject* tidalmodule = PyImport_Import(tidalstring);
+
+    PyObject* TidalInterface = PyObject_CallMethod(tidalmodule, "Session", NULL);
+
+    PyObject* loginFunction = PyObject_GetAttrString(TidalInterface,(char*)"load_session");
+
+    PyObject* loginArgs = PyTuple_Pack(1,PyUnicode_FromString((session.toLocal8Bit())));
+
+    PyObject* loginResult = PyObject_CallObject(loginFunction, loginArgs);
+
+
+    PyObject* checkFunction = PyObject_GetAttrString(TidalInterface,(char*)"check_login");
+    bool result = false;
+    if(checkFunction == NULL)
+    {
+
+        Py_DECREF(tidalstring);
+        Py_DECREF(tidalmodule);
+        Py_DECREF(loginFunction);
+        Py_DECREF(loginArgs);
+        Py_DECREF(loginResult);
+        return false;
+    }
+
+    int truthy = PyObject_IsTrue(checkFunction);
+    if(truthy == 1)
+    {
+        result = true;
+    }
+
+    Py_DECREF(tidalstring);
+    Py_DECREF(tidalmodule);
+    Py_DECREF(loginFunction);
+    Py_DECREF(loginArgs);
+    Py_DECREF(loginResult);
+    Py_DECREF(checkFunction);
+
+    return result;
+}
+
+QString PythonApi::fetchTrackInfo(int trackid)
+{
+    PyObject * tidalInterface = Session();
+    PyObject* trackUrlFunction = PyObject_GetAttrString(tidalInterface,(char*)"get_track");
+    PyObject *id = PyLong_FromDouble(trackid);
+
+    PyObject* trackUrlArguments = PyTuple_Pack(1, id);
+
+    PyObject* trackResult = PyObject_CallObject(trackUrlFunction, trackUrlArguments);
+
+
+    QString trackInfo =  QString("{ \"album\":\"%1\" ,"
+                                 "\"albumid\":%2 ,"
+                                 "\"artist\":\"%3\" ,"
+                                 "\"artistid\":%4 ,"
+                                 "\"disc_num\": %5 ,"
+                                 "\"name\":\"%6\","
+                                 "\"cover\":\"%7\","
+                                 "\"track_num\":%8,"
+                                 "\"id\":%9 }"
+                                 )
+            .arg(getAttribute(trackResult, "album.name"))
+            .arg(getAttribute(trackResult, "album.id"))
+            .arg(getAttribute(trackResult, "artist.name"))
+            .arg(getAttribute(trackResult, "artist.id"))
+            .arg(getAttribute(trackResult, "disc_num"))
+            .arg(getAttribute(trackResult, "name"))
+            .arg(getAttribute(trackResult, "album.image"))
+            .arg(getAttribute(trackResult, "track_num"))
+            .arg(trackid);
+
+
+    Py_DECREF(trackUrlFunction);
+    Py_DECREF(id);
+    Py_DECREF(trackUrlArguments);
+    Py_DECREF(trackResult);
+    Py_DECREF(tidalInterface);
+
+    return trackInfo;
+}
+
+
+QString PythonApi::fetchAlbumInfo(int albumid)
+{
+    PyObject * tidalInterface = Session();
+    debugPrint();
+
+    PyObject* trackUrlFunction = PyObject_GetAttrString(tidalInterface,(char*)"get_album");
+    debugPrint();
+
+    PyObject* trackUrlArguments = PyTuple_Pack(1, PyLong_FromDouble(albumid));
+    debugPrint();
+
+    PyObject* trackResult = PyObject_CallObject(trackUrlFunction, trackUrlArguments);
+    debugPrint();
+
+    QString albumInfo =  QString("{ \"artist\":\"%1\" ,"
+                                 "\"duration\":\"%2\" ,"
+                                 "\"cover\": \"%3\" ,"
+                                 "\"name\": \"%4\" ,"
+                                 "\"num_tracks\":\"%5\","
+                                 "\"relase\":\"%6\","
+                                 "\"id\":%7 }")
+            .arg(getAttribute(trackResult, "artist.name"))
+            .arg(getAttribute(trackResult, "duration"))
+            .arg(getAttribute(trackResult, "image"))
+            .arg(getAttribute(trackResult, "name"))
+            .arg(getAttribute(trackResult, "num_tracks"))
+            .arg(getAttribute(trackResult, "release_date"))
+            .arg(albumid);
+
+    qDebug() << albumInfo;
+
+    Py_DECREF(trackUrlFunction);
+    Py_DECREF(trackUrlArguments);
+    Py_DECREF(trackResult);
+    Py_DECREF(tidalInterface);
+
+    return albumInfo;
+}
+
+
+QString PythonApi::fetchArtistInfo(int artistid)
+{
+    PyObject * tidalInterface = Session();
+    PyObject* trackUrlFunction = PyObject_GetAttrString(tidalInterface,(char*)"get_artist");
+
+    PyObject* trackUrlArguments = PyTuple_Pack(1, PyLong_FromDouble(artistid));
+
+    PyObject* trackResult = PyObject_CallObject(trackUrlFunction, trackUrlArguments);
+
+    QString artistInfo =  QString("{ \"artist\":\"%1\" ,"
+                                  "\"name\":\"%2\" ,"
+                                  "\"cover\": \"%3\" ,"
+                                  "\"disc_num\": %4 ,"
+                                  "\"num_tracks\":%5,"
+                                  "\"relase\":\"%6\","
+                                  "\"id\":%7 }")
+            .arg(getAttribute(trackResult, "name"))
+            .arg(getAttribute(trackResult, "image"))
+            .arg(getAttribute(trackResult, "image"))
+            .arg(getAttribute(trackResult, "disc_num"))
+            .arg(getAttribute(trackResult, "num_tracks"))
+            .arg(getAttribute(trackResult, "release_date"))
+            .arg(artistid);
+
+    Py_DECREF(trackUrlFunction);
+    Py_DECREF(trackUrlArguments);
+    Py_DECREF(trackResult);
+    Py_DECREF(tidalInterface);
+
+    return artistInfo;
+}
+
+
 void PythonApi::searchArtists(const QString &search, int limit)
 {
     PyObject* searchResult = searchGeneric(search, QString("artist"), limit);
     PyObject* artist = PyObject_GetAttrString(searchResult,(char*)"artists");
-    m_searchedArtistResults = (CompileArtistResults(artist));
-    emit searchFinished();
+    m_searchedArtistResults = CompileArtistResults(artist);
+
+    emit artistSearchFinished();
 
     Py_DECREF(searchResult);
     Py_DECREF(artist);
@@ -100,8 +308,8 @@ void PythonApi::searchAlbums(const QString &search, int limit)
 {
     PyObject* searchResult = searchGeneric(search, QString("album"), limit);
     PyObject* album = PyObject_GetAttrString(searchResult,(char*)"albums");
-    m_searchAlbumResults = (CompileAlbumResults(album));
-    emit searchFinished();
+    m_searchAlbumResults = CompileAlbumResults(album);
+    emit albumSearchFinished();
 
     Py_DECREF(searchResult);
     Py_DECREF(album);
@@ -111,8 +319,8 @@ void PythonApi::searchPlaylists(const QString &search, int limit)
 {
     PyObject* searchResult = searchGeneric(search, QString("playlist"), limit);
     PyObject* playlist = PyObject_GetAttrString(searchResult,(char*)"playlists");
-    m_searchedPlaylistResults = (CompilePlaylistResults(playlist));
-    emit searchFinished();
+    m_searchedPlaylistResults = CompilePlaylistResults(playlist);
+    emit playlistSearchFinished();
 
     Py_DECREF(searchResult);
     Py_DECREF(playlist);
@@ -123,71 +331,23 @@ void PythonApi::searchTracks(const QString &search, int limit)
 {
     PyObject* searchResult = searchGeneric(search, QString("track"), limit);
     PyObject* track = PyObject_GetAttrString(searchResult,(char*)"tracks");
-    m_searchedTrackResults = (CompileTrackResults(track));
-    emit searchFinished();
+    m_searchedTrackResults = CompileTrackResults(track);
+    emit trackSearchFinished();
 
     Py_DECREF(searchResult);
     Py_DECREF(track);
 }
 
-/*
-    qDebug() << search << limit;
-    if(!m_loginState)
-        qDebug() << "no login at all?";
-
-
-    PyObject* myFunction = PyObject_GetAttrString(m_TidalInterface,(char*)"search");
-
-    PyErr_Print();
-    qDebug() << "";
-
-    PyObject* args = PyTuple_Pack(3,PyUnicode_FromString(QString("artist").toLocal8Bit()), PyUnicode_FromString((search.toLocal8Bit())), PyLong_FromDouble(limit));
-    PyErr_Print();
-    qDebug() << "";
-
-    PyObject* SearchResult = PyObject_CallObject(myFunction, args);
-    PyErr_Print();
-    qDebug() << "";
-
-    PyObject* artist = PyObject_GetAttrString(SearchResult,(char*)"artists");
-    PyErr_Print();
-    qDebug() << "";
-
-    qDebug() << PyList_Size(artist);
-    for(Py_ssize_t i = 0; i < PyList_Size(artist); ++i)
-    {
-       PyObject *item = PyList_GetItem(artist, i);
-       PyObject* idx = PyObject_GetAttrString(item,(char*)"id");
-       PyErr_Print();
-
-       PyObject* name = PyObject_GetAttrString(item,(char*)"name");
-       PyErr_Print();
-
-       int index = PyLong_AsDouble(idx);
-       PyObject* str = PyUnicode_AsEncodedString(name, "utf-8", "~E~");
-       QString name_string = QString::fromUtf8(PyUnicode_AsUTF8(name));
-       qDebug() << name_string << index;
-       Py_DECREF(item);
-       Py_DECREF(idx);
-       Py_DECREF(name);
-       Py_DECREF(str);
-    }
-    */
-
-
-PyObject *  PythonApi::searchGeneric(const QString &search, const QString &section, int limit)
+PyObject * PythonApi::searchGeneric(const QString &search, const QString &section, int limit)
 {
-    PyObject* searchFunction = PyObject_GetAttrString(m_TidalInterface,(char*)"search");
+    PyObject * tidalInterface = Session();
+    PyObject* searchFunction = PyObject_GetAttrString(tidalInterface,(char*)"search");
     PyObject* searchArguments = PyTuple_Pack(3,PyUnicode_FromString(section.toLocal8Bit()), PyUnicode_FromString((search.toLocal8Bit())), PyLong_FromDouble(limit));
     PyObject* SearchResult = PyObject_CallObject(searchFunction, searchArguments);
 
-    /*
-    PyObject* artist = PyObject_GetAttrString(SearchResult,(char*)"artists");
-    PyObject* albums = PyObject_GetAttrString(SearchResult,(char*)"albums");
-    PyObject* playlist = PyObject_GetAttrString(SearchResult,(char*)"playlists");
-    PyObject* tracks = PyObject_GetAttrString(SearchResult,(char*)"tracks");
-    */
-
+    Py_DECREF(searchFunction);
+    Py_DECREF(searchArguments);
+    Py_DECREF(tidalInterface);
 
     return SearchResult;
 }
@@ -205,34 +365,159 @@ QString PythonApi::CompileGenericResults(PyObject *SearchResult, int type)
         QString name_string = QString::fromUtf8(PyUnicode_AsUTF8(name)).replace('"','*');
         QString element = QString("{ \"name\":\"%1\", \"id\":%2, \"type\":%3}").arg(name_string).arg(index).arg(type);
         result += QString("%1,").arg(element);
-        /*
-       QJsonObject element;
-       element["id"] = index;
-       element["name"] = name_string;
-       element["type"] = type;
-       */
-        //result[QString::number(i)] = element;
-        // qDebug() << index << name_string << type;
+
         Py_DECREF(item);
         Py_DECREF(idx);
         Py_DECREF(name);
     }
     result.chop(1);
     result += "]";
-    // qDebug() << result;
     return result;
 }
 
 void PythonApi::getTrackUrl(int trackid)
 {
-    PyObject* trackUrlFunction = PyObject_GetAttrString(m_TidalInterface,(char*)"get_track_url");
+    PyObject * tidalInterface = Session();
+    PyObject* trackUrlFunction = PyObject_GetAttrString(tidalInterface,(char*)"get_track_url");
+    if(trackUrlFunction == NULL)
+    {
+        m_last_error = QString("strange error");
+    }
     PyObject* trackUrlArguments = PyTuple_Pack(1, PyLong_FromDouble(trackid));
+
     PyObject* urlResults = PyObject_CallObject(trackUrlFunction, trackUrlArguments);
+    if(urlResults == NULL)
+    {
+        m_last_error = QString("Could not find track url!");
+        Py_DECREF(trackUrlFunction);
+        Py_DECREF(trackUrlArguments);
+        emit error();
+        return;
+    }
     m_recent_track_url = QString::fromUtf8(PyUnicode_AsUTF8(urlResults));
-    // qDebug() << m_recent_track_url;
+
     emit recentTrackUrlChanged();
 
     Py_DECREF(trackUrlFunction);
     Py_DECREF(trackUrlArguments);
     Py_DECREF(urlResults);
+}
+
+QString PythonApi::getAttribute(PyObject *object, const QString &attribute)
+{
+    if(attribute.contains("."))
+    {
+        QStringList split = attribute.split(".");
+        PyObject* attr = PyObject_GetAttrString(object,((split[0].toLocal8Bit().data())));
+        if(attr == NULL)
+        {
+            return QString();
+        }
+        QString result = getAttribute(attr, split[1]);
+        Py_DECREF(attr);
+        return result;
+    }
+    PyObject* attr = PyObject_GetAttrString(object,((attribute.toLocal8Bit().data())));
+    if(attr == NULL)
+    {
+        return QString();
+    }
+    QString result = QString::fromUtf8(PyUnicode_AsUTF8(attr)).replace('"','*');
+    if(result.isEmpty())
+        result = QString::number(PyLong_AsLong(attr));
+    Py_DECREF(attr);
+
+    return result;
+}
+
+QString PythonApi::invokeTrackInfo(int trackid)
+{
+    return fetchTrackInfo(trackid);
+}
+/*
+QString PythonApi::invokeTrackInfo(const QString &str)
+{
+    return fetchTrackInfo(str.toInt());
+}
+*/
+void PythonApi::getPlayingTrackInfo(int trackid)
+{
+    m_PlayingTrackInfo = fetchTrackInfo(trackid);
+    emit playingTrackInfoChanged();
+}
+
+void PythonApi::getTrackInfo(int trackid)
+{
+    QCoreApplication::processEvents();
+    m_TrackInfo = fetchTrackInfo(trackid);
+    emit trackInfoChanged();
+}
+
+void PythonApi::getPlayingAlbumInfo(int albumid)
+{
+    m_PlayingAlbumInfo = fetchAlbumInfo(albumid);
+    emit playingAlbumInfoChanged();
+}
+
+void PythonApi::getAlbumInfo(int albumid)
+{
+    qDebug() << albumid;
+    m_AlbumInfo = fetchAlbumInfo(albumid);
+    emit albumInfoChanged();
+}
+
+void PythonApi::getArtistInfo(int artistid)
+{
+    m_ArtistInfo = fetchArtistInfo(artistid);
+    emit artistInfoChanged();
+}
+
+void PythonApi::getPlayingArtistInfo(int artistid)
+{
+    m_PlayingArtistInfo = fetchArtistInfo(artistid);
+    emit playingArtistInfoChanged();
+}
+
+QString PythonApi::fetchTracksfromAlbum(int albumId)
+{
+    PyObject * tidalInterface = Session();
+    PyObject* trackUrlFunction = PyObject_GetAttrString(tidalInterface,(char*)"get_album_tracks");
+    if(trackUrlFunction == NULL)
+    {
+        m_last_error = QString("strange error");
+    }
+    PyObject* trackUrlArguments = PyTuple_Pack(1, PyLong_FromDouble(albumId));
+
+    PyObject* SearchResult = PyObject_CallObject(trackUrlFunction, trackUrlArguments);
+
+    QString result = "[";
+    for(Py_ssize_t i = 0; i < PyList_Size(SearchResult); ++i)
+    {
+        PyObject *item = PyList_GetItem(SearchResult, i);
+
+
+        PyObject* idx = PyObject_GetAttrString(item,(char*)"id");
+
+        PyObject* name = PyObject_GetAttrString(item,(char*)"name");
+
+        int index = PyLong_AsDouble(idx);
+
+        QString name_string = QString::fromUtf8(PyUnicode_AsUTF8(name)).replace('"','*');
+        QString element = QString("{ \"name\":\"%1\", \"id\":%2, \"type\":%3}").arg(name_string).arg(index).arg(1);
+        result += QString("%1,").arg(element);
+
+        Py_DECREF(item);
+        Py_DECREF(idx);
+        Py_DECREF(name);
+    }
+    result.chop(1);
+    result += "]";
+
+
+    Py_DECREF(tidalInterface);
+    Py_DECREF(trackUrlFunction);
+    Py_DECREF(trackUrlArguments);
+    Py_DECREF(SearchResult);
+
+    return result;
 }
