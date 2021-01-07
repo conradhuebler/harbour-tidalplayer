@@ -34,56 +34,55 @@ void PlaylistManager::addTrackId(int trackId)
 
 void PlaylistManager::insertTrackId(int trackId)
 {
-    int index = m_current_track_ids.indexOf(m_current_track_id);
-    m_current_track_ids.insert(index + 1, trackId);
-    updatePlaylist();
+  int index = m_current_track_ids.indexOf(m_current_track_index);
+  m_current_track_ids.insert(index, trackId);
+  updatePlaylist();
 }
 
 void PlaylistManager::play()
 {
-    if(m_current_track_id < m_current_track_ids.size())
-    {
-        m_trackID = m_current_track_ids[m_current_track_id];
-        emit currenTrackIDChanged();
-    }else
-        emit playlistFinished();
+  if (m_current_track_index < m_current_track_ids.size()) {
+    m_trackID = m_current_track_ids[m_current_track_index];
+    emit currenTrackIDChanged();
+  } else
+    emit playlistFinished();
 }
 
 void PlaylistManager::playTrackId(int trackId)
 {
-    int index = m_current_track_ids.indexOf(m_current_track_id);
-    m_current_track_ids.insert(index + 1, trackId);
-    nextTrack();
-    updatePlaylist();
+  int index = m_current_track_ids.indexOf(m_current_track_index);
+  m_current_track_ids.insert(index + 1, trackId);
+  playTrack(index + 1);
+  updatePlaylist();
 }
 
 void PlaylistManager::playTrack(int trackIndexFromPlaylist)
 {
-    m_current_track_id = trackIndexFromPlaylist - 1;
-    nextTrack();
+  m_keep_current_track = true;
+  m_current_track_index = trackIndexFromPlaylist;
+  nextTrack();
 }
 
 void PlaylistManager::nextTrack()
 {
-    qDebug() << m_current_track_id<<m_current_track_ids.size() <<m_current_track_id<<m_current_track_ids;
-    if(m_current_track_id < m_current_track_ids.size())
-    {
-        m_trackID = m_current_track_ids[m_current_track_id];
-        emit currenTrackIDChanged();
-    }else
-        emit playlistFinished();
-    m_current_track_id++;
+  if (m_current_track_index < m_current_track_ids.size()) {
+    m_trackID = m_current_track_ids[m_current_track_index];
+    m_current_track_index++;
+    emit currenTrackIDChanged();
+  } else
+    emit playlistFinished();
+  m_keep_current_track = false;
 }
 
 void PlaylistManager::prevTrack()
 {
-    m_current_track_id--;
-    if(m_current_track_id > 0)
-    {
-        m_trackID = m_current_track_ids[m_current_track_id];
-        emit currenTrackIDChanged();
-    }else
-        emit playlistFinished();
+  if (m_current_track_index >= 0) {
+    m_trackID = m_current_track_ids[m_current_track_index];
+    m_current_track_index--;
+
+    emit currenTrackIDChanged();
+  } else
+    emit playlistFinished();
 }
 
 void PlaylistManager::updatePlaylist()
@@ -94,4 +93,9 @@ void PlaylistManager::updatePlaylist()
         m_track_ids += QString("{\"id\":%1},").arg(i);
     m_track_ids.chop(1);
     m_track_ids += "]";
+}
+
+void PlaylistManager::clear() {
+  m_track_ids.clear();
+  m_current_track_ids.clear();
 }

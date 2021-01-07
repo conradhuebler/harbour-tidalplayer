@@ -9,7 +9,9 @@ SilicaListView {
     property string track_list
     property  string track_id_list
     property bool allow_add : true
+    property bool start_on_top : false
     property int highlight_index : 0
+
     id: trackList
     model: ListModel
     {
@@ -24,7 +26,8 @@ SilicaListView {
             var currentTrack = JSON.parse(PythonApi.invokeTrackInfo(tracks[i]["id"]))
             listModel.append({   "name": currentTrack["name"],
                                  "id" : currentTrack["id"],
-                                 "type" : currentTrack["type"]
+                                 "type" : currentTrack["type"],
+                                 "index" : i
                              })
 
         }
@@ -68,6 +71,7 @@ SilicaListView {
                     PlaylistManager.playTrackId(listModel.get(model.index).id)
                 }
                 height: trackName.height
+                visible: allow_add == true
             }
 
             IconButton {
@@ -77,6 +81,7 @@ SilicaListView {
                     PlaylistManager.addTrackId(listModel.get(model.index).id)
                 }
                 height: trackName.height
+                visible: allow_add == true
             }
 
             Label {
@@ -87,6 +92,14 @@ SilicaListView {
                 truncationMode: elide
                 font.pixelSize: Theme.fontSizeSmall
             }
+
+        }
+
+
+        onClicked:
+        {
+            if(start_on_top)
+                PlaylistManager.playTrack(listModel.get(model.index).index)
         }
     }
     VerticalScrollDecorator {}

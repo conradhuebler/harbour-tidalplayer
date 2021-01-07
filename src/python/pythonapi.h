@@ -27,6 +27,8 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QJsonObject>
 
+#include "src/cachemanager.h"
+
 // https://stackoverflow.com/questions/23068700/embedding-python3-in-qt-5 - thanks a lot :-)
 #pragma push_macro("slots")
 #undef slots
@@ -37,7 +39,9 @@ class PythonApi : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(PythonApi)
-    PythonApi() { }
+    PythonApi() {
+      //  m_cache = new CacheManager;
+    }
 
     Q_PROPERTY(bool loginState MEMBER m_loginState NOTIFY loginStateChanged)
     Q_PROPERTY(QString trackResults MEMBER m_searchedTrackResults NOTIFY trackSearchFinished)
@@ -123,6 +127,10 @@ private:
     inline QString CompilePlaylistResults(PyObject *searchResult) { return CompileGenericResults(searchResult, JsonElements::Playlist); }
     inline QString CompileTrackResults(PyObject *searchResult) { return CompileGenericResults(searchResult, JsonElements::Track); }
 
+    QString CompileArtist(PyObject *artist);
+    QString CompileAlbum(PyObject *album);
+    QString CompileTrack(PyObject *track);
+
     QString getAttribute(PyObject *object, const QString &attribute);
 
     QString fetchTrackInfo(int trackid);
@@ -132,7 +140,9 @@ private:
     /* returns a NEW object, should be delete after usage */
     PyObject * Session() const;
 
-public slots:
+    QHash<int, QString> m_cached_tracks, m_cached_albums, m_cached_artists;
+    // CacheManager *m_cache;
+  public slots:
     void setLogin(const QString &name, const QString &passwort);
     inline void setLoginState(bool login){ m_loginState = login; }
 

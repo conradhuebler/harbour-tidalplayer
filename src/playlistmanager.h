@@ -34,8 +34,8 @@ class PlaylistManager : public QObject
     Q_PROPERTY(QString trackNames MEMBER m_track_names)
     Q_PROPERTY(QString trackIds MEMBER m_track_ids)
 
-    Q_PROPERTY(int currentTrackID MEMBER m_current_track_id)
-
+    Q_PROPERTY(bool keepTrack MEMBER m_keep_current_track)
+    Q_PROPERTY(int currentTrackIndex MEMBER m_current_track_index)
     Q_DISABLE_COPY(PlaylistManager)
     PlaylistManager() { }
 
@@ -48,7 +48,13 @@ public:
         return playlist;
     }
 
-public slots:
+    Q_INVOKABLE bool canNext() const {
+      return m_current_track_index < m_current_track_ids.size() - 1;
+    }
+
+    Q_INVOKABLE bool canPrev() const { return m_current_track_index > 0; }
+
+  public slots:
     /* add track to the end of the playlist */
     void addTrackId(int trackId);
 
@@ -69,7 +75,9 @@ public slots:
 
     Q_INVOKABLE void play();
 
-signals:
+    Q_INVOKABLE void clear();
+
+  signals:
     void currenTrackIDChanged();
     void currentTrackInfoChanged();
     void currentVideoIDChanged();
@@ -82,6 +90,7 @@ private:
 
     QString  m_track_ids = QString(), m_track_names = QString();
     QVector<int> m_current_track_ids;
-    int m_current_track_id = 0, m_trackID = 0, m_videoID = 0;
+    int m_current_track_index = 0, m_trackID = 0, m_videoID = 0;
+    bool m_keep_current_track = false;
 };
 

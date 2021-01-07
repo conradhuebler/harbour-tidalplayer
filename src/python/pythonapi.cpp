@@ -25,6 +25,8 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QSettings>
 
+#include "src/cachemanager.h"
+
 static const QString LOGIN_GROUP     {QStringLiteral("LoginGroup")};
 static const QString SESSION     {QStringLiteral("SESSION")};
 
@@ -177,118 +179,210 @@ bool PythonApi::CheckSession(const QString &session)
     return result;
 }
 
+QString PythonApi::PythonApi::CompileArtist(PyObject *item) {
+  QString artistInfo = QString("{ \"artist\":\"%1\" ,"
+                               "\"name\":\"%2\" ,"
+                               "\"cover\": \"%3\" ,"
+                               "\"disc_num\": %4 ,"
+                               "\"num_tracks\":%5,"
+                               "\"relase\":\"%6\","
+                               "\"id\":%7 }")
+                           .arg(getAttribute(item, "name"))
+                           .arg(getAttribute(item, "image"))
+                           .arg(getAttribute(item, "image"))
+                           .arg(getAttribute(item, "disc_num"))
+                           .arg(getAttribute(item, "num_tracks"))
+                           .arg(getAttribute(item, "release_date"))
+                           .arg(getAttribute(item, "id"));
+
+  int artistid = getAttribute(item, "id").toInt();
+  if (!m_cached_artists.contains(artistid))
+    m_cached_artists.insert(artistid, artistInfo);
+
+  return artistInfo;
+}
+
+QString PythonApi::CompileAlbum(PyObject *item) {
+  QString albumInfo = QString("{ \"artist\":\"%1\" ,"
+                              "\"duration\":\"%2\" ,"
+                              "\"cover\": \"%3\" ,"
+                              "\"name\": \"%4\" ,"
+                              "\"num_tracks\":\"%5\","
+                              "\"relase\":\"%6\","
+                              "\"id\":%7 }")
+                          .arg(getAttribute(item, "artist.name"))
+                          .arg(getAttribute(item, "duration"))
+                          .arg(getAttribute(item, "image"))
+                          .arg(getAttribute(item, "name"))
+                          .arg(getAttribute(item, "num_tracks"))
+                          .arg(getAttribute(item, "release_date"))
+                          .arg(getAttribute(item, "id"));
+
+  int albumid = getAttribute(item, "id").toInt();
+  if (!m_cached_albums.contains(albumid))
+    m_cached_albums.insert(albumid, albumInfo);
+
+  return albumInfo;
+}
+
+QString PythonApi::CompileTrack(PyObject *item) {
+  QString trackInfo = QString("{ \"album\":\"%1\" ,"
+                              "\"albumid\":%2 ,"
+                              "\"artist\":\"%3\" ,"
+                              "\"artistid\":%4 ,"
+                              "\"disc_num\": %5 ,"
+                              "\"name\":\"%6\","
+                              "\"cover\":\"%7\","
+                              "\"track_num\":%8,"
+                              "\"id\":%9 }")
+                          .arg(getAttribute(item, "album.name"))
+                          .arg(getAttribute(item, "album.id"))
+                          .arg(getAttribute(item, "artist.name"))
+                          .arg(getAttribute(item, "artist.id"))
+                          .arg(getAttribute(item, "disc_num"))
+                          .arg(getAttribute(item, "name"))
+                          .arg(getAttribute(item, "album.image"))
+                          .arg(getAttribute(item, "track_num"))
+                          .arg(getAttribute(item, "id"));
+
+  int trackid = getAttribute(item, "id").toInt();
+  if (!m_cached_tracks.contains(trackid))
+    m_cached_tracks.insert(trackid, trackInfo);
+
+  return trackInfo;
+}
+
 QString PythonApi::fetchTrackInfo(int trackid)
 {
-    PyObject * tidalInterface = Session();
-    PyObject* trackUrlFunction = PyObject_GetAttrString(tidalInterface,(char*)"get_track");
-    PyObject *id = PyLong_FromDouble(trackid);
+  if (m_cached_tracks.contains(trackid))
+    return m_cached_tracks[trackid];
 
-    PyObject* trackUrlArguments = PyTuple_Pack(1, id);
+  PyObject *tidalInterface = Session();
+  PyObject *trackUrlFunction =
+      PyObject_GetAttrString(tidalInterface, (char *)"get_track");
+  PyObject *id = PyLong_FromDouble(trackid);
 
-    PyObject* trackResult = PyObject_CallObject(trackUrlFunction, trackUrlArguments);
+  PyObject *trackUrlArguments = PyTuple_Pack(1, id);
 
+  PyObject *trackResult =
+      PyObject_CallObject(trackUrlFunction, trackUrlArguments);
 
-    QString trackInfo =  QString("{ \"album\":\"%1\" ,"
-                                 "\"albumid\":%2 ,"
-                                 "\"artist\":\"%3\" ,"
-                                 "\"artistid\":%4 ,"
-                                 "\"disc_num\": %5 ,"
-                                 "\"name\":\"%6\","
-                                 "\"cover\":\"%7\","
-                                 "\"track_num\":%8,"
-                                 "\"id\":%9 }"
-                                 )
-            .arg(getAttribute(trackResult, "album.name"))
-            .arg(getAttribute(trackResult, "album.id"))
-            .arg(getAttribute(trackResult, "artist.name"))
-            .arg(getAttribute(trackResult, "artist.id"))
-            .arg(getAttribute(trackResult, "disc_num"))
-            .arg(getAttribute(trackResult, "name"))
-            .arg(getAttribute(trackResult, "album.image"))
-            .arg(getAttribute(trackResult, "track_num"))
-            .arg(trackid);
+  QString trackInfo = CompileTrack(trackResult);
+  /*QString("{ \"album\":\"%1\" ,"
+                               "\"albumid\":%2 ,"
+                               "\"artist\":\"%3\" ,"
+                               "\"artistid\":%4 ,"
+                               "\"disc_num\": %5 ,"
+                               "\"name\":\"%6\","
+                               "\"cover\":\"%7\","
+                               "\"track_num\":%8,"
+                               "\"id\":%9 }"
+                               )
+          .arg(getAttribute(trackResult, "album.name"))
+          .arg(getAttribute(trackResult, "album.id"))
+          .arg(getAttribute(trackResult, "artist.name"))
+          .arg(getAttribute(trackResult, "artist.id"))
+          .arg(getAttribute(trackResult, "disc_num"))
+          .arg(getAttribute(trackResult, "name"))
+          .arg(getAttribute(trackResult, "album.image"))
+          .arg(getAttribute(trackResult, "track_num"))
+          .arg(trackid);
+  */
 
-
-    Py_DECREF(trackUrlFunction);
-    Py_DECREF(id);
-    Py_DECREF(trackUrlArguments);
-    Py_DECREF(trackResult);
-    Py_DECREF(tidalInterface);
-
-    return trackInfo;
+  Py_DECREF(trackUrlFunction);
+  Py_DECREF(id);
+  Py_DECREF(trackUrlArguments);
+  Py_DECREF(trackResult);
+  Py_DECREF(tidalInterface);
+  // m_cached_tracks.insert(trackid, trackInfo);
+  return trackInfo;
 }
 
 
 QString PythonApi::fetchAlbumInfo(int albumid)
 {
-    PyObject * tidalInterface = Session();
-    debugPrint();
+  if (m_cached_albums.contains(albumid))
+    return m_cached_albums[albumid];
 
-    PyObject* trackUrlFunction = PyObject_GetAttrString(tidalInterface,(char*)"get_album");
-    debugPrint();
+  PyObject *tidalInterface = Session();
+  debugPrint();
 
-    PyObject* trackUrlArguments = PyTuple_Pack(1, PyLong_FromDouble(albumid));
-    debugPrint();
+  PyObject *trackUrlFunction =
+      PyObject_GetAttrString(tidalInterface, (char *)"get_album");
+  debugPrint();
 
-    PyObject* trackResult = PyObject_CallObject(trackUrlFunction, trackUrlArguments);
-    debugPrint();
+  PyObject *trackUrlArguments = PyTuple_Pack(1, PyLong_FromDouble(albumid));
+  debugPrint();
 
-    QString albumInfo =  QString("{ \"artist\":\"%1\" ,"
-                                 "\"duration\":\"%2\" ,"
-                                 "\"cover\": \"%3\" ,"
-                                 "\"name\": \"%4\" ,"
-                                 "\"num_tracks\":\"%5\","
-                                 "\"relase\":\"%6\","
-                                 "\"id\":%7 }")
-            .arg(getAttribute(trackResult, "artist.name"))
-            .arg(getAttribute(trackResult, "duration"))
-            .arg(getAttribute(trackResult, "image"))
-            .arg(getAttribute(trackResult, "name"))
-            .arg(getAttribute(trackResult, "num_tracks"))
-            .arg(getAttribute(trackResult, "release_date"))
-            .arg(albumid);
+  PyObject *albumResult =
+      PyObject_CallObject(trackUrlFunction, trackUrlArguments);
+  debugPrint();
 
-    qDebug() << albumInfo;
+  QString albumInfo = CompileAlbum(albumResult);
+  /*
+  QString albumInfo =  QString("{ \"artist\":\"%1\" ,"
+                               "\"duration\":\"%2\" ,"
+                               "\"cover\": \"%3\" ,"
+                               "\"name\": \"%4\" ,"
+                               "\"num_tracks\":\"%5\","
+                               "\"relase\":\"%6\","
+                               "\"id\":%7 }")
+          .arg(getAttribute(trackResult, "artist.name"))
+          .arg(getAttribute(trackResult, "duration"))
+          .arg(getAttribute(trackResult, "image"))
+          .arg(getAttribute(trackResult, "name"))
+          .arg(getAttribute(trackResult, "num_tracks"))
+          .arg(getAttribute(trackResult, "release_date"))
+          .arg(albumid);
 
-    Py_DECREF(trackUrlFunction);
-    Py_DECREF(trackUrlArguments);
-    Py_DECREF(trackResult);
-    Py_DECREF(tidalInterface);
+  qDebug() << albumInfo;
+  */
+  Py_DECREF(trackUrlFunction);
+  Py_DECREF(trackUrlArguments);
+  Py_DECREF(albumResult);
+  Py_DECREF(tidalInterface);
+  // m_cached_albums.insert(albumid, albumInfo);
 
-    return albumInfo;
+  return albumInfo;
 }
 
 
 QString PythonApi::fetchArtistInfo(int artistid)
 {
-    PyObject * tidalInterface = Session();
-    PyObject* trackUrlFunction = PyObject_GetAttrString(tidalInterface,(char*)"get_artist");
+  if (m_cached_artists.contains(artistid))
+    return m_cached_artists[artistid];
 
-    PyObject* trackUrlArguments = PyTuple_Pack(1, PyLong_FromDouble(artistid));
+  PyObject *tidalInterface = Session();
+  PyObject *trackUrlFunction =
+      PyObject_GetAttrString(tidalInterface, (char *)"get_artist");
 
-    PyObject* trackResult = PyObject_CallObject(trackUrlFunction, trackUrlArguments);
+  PyObject *trackUrlArguments = PyTuple_Pack(1, PyLong_FromDouble(artistid));
 
-    QString artistInfo =  QString("{ \"artist\":\"%1\" ,"
-                                  "\"name\":\"%2\" ,"
-                                  "\"cover\": \"%3\" ,"
-                                  "\"disc_num\": %4 ,"
-                                  "\"num_tracks\":%5,"
-                                  "\"relase\":\"%6\","
-                                  "\"id\":%7 }")
-            .arg(getAttribute(trackResult, "name"))
-            .arg(getAttribute(trackResult, "image"))
-            .arg(getAttribute(trackResult, "image"))
-            .arg(getAttribute(trackResult, "disc_num"))
-            .arg(getAttribute(trackResult, "num_tracks"))
-            .arg(getAttribute(trackResult, "release_date"))
-            .arg(artistid);
+  PyObject *result = PyObject_CallObject(trackUrlFunction, trackUrlArguments);
 
-    Py_DECREF(trackUrlFunction);
-    Py_DECREF(trackUrlArguments);
-    Py_DECREF(trackResult);
-    Py_DECREF(tidalInterface);
+  QString artistInfo = CompileArtist(result);
+  /*QString("{ \"artist\":\"%1\" ,"
+                                "\"name\":\"%2\" ,"
+                                "\"cover\": \"%3\" ,"
+                                "\"disc_num\": %4 ,"
+                                "\"num_tracks\":%5,"
+                                "\"relase\":\"%6\","
+                                "\"id\":%7 }")
+          .arg(getAttribute(trackResult, "name"))
+          .arg(getAttribute(trackResult, "image"))
+          .arg(getAttribute(trackResult, "image"))
+          .arg(getAttribute(trackResult, "disc_num"))
+          .arg(getAttribute(trackResult, "num_tracks"))
+          .arg(getAttribute(trackResult, "release_date"))
+          .arg(artistid);
+*/
+  Py_DECREF(trackUrlFunction);
+  Py_DECREF(trackUrlArguments);
+  Py_DECREF(result);
+  Py_DECREF(tidalInterface);
+  // m_cached_artists.insert(artistid, artistInfo);
 
-    return artistInfo;
+  return artistInfo;
 }
 
 
@@ -494,21 +588,11 @@ QString PythonApi::fetchTracksfromAlbum(int albumId)
     for(Py_ssize_t i = 0; i < PyList_Size(SearchResult); ++i)
     {
         PyObject *item = PyList_GetItem(SearchResult, i);
-
-
-        PyObject* idx = PyObject_GetAttrString(item,(char*)"id");
-
-        PyObject* name = PyObject_GetAttrString(item,(char*)"name");
-
-        int index = PyLong_AsDouble(idx);
-
-        QString name_string = QString::fromUtf8(PyUnicode_AsUTF8(name)).replace('"','*');
-        QString element = QString("{ \"name\":\"%1\", \"id\":%2, \"type\":%3}").arg(name_string).arg(index).arg(1);
-        result += QString("%1,").arg(element);
+        result += QString("%1,").arg(CompileTrack(item));
 
         Py_DECREF(item);
-        Py_DECREF(idx);
-        Py_DECREF(name);
+        // Py_DECREF(idx);
+        // Py_DECREF(name);
     }
     result.chop(1);
     result += "]";

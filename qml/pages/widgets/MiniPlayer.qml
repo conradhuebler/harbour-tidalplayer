@@ -18,7 +18,7 @@ DockedPanel {
     property string url: ""
     property int track_id
     function prev() {
-       PlaylistManager.prevTrack()
+        PlaylistManager.prevTrack()
     }
 
     function next() {
@@ -27,9 +27,10 @@ DockedPanel {
 
     function play()
     {
-        //mediaPlayer.Buffering = true
         mediaPlayer.source = url;
         mediaPlayer.play();
+        progressSlider.visible = true
+        show();
         progressSlider.minimumValue = 0
         progressSlider.maximumValue = mediaPlayer.duration
     }
@@ -41,31 +42,19 @@ DockedPanel {
         PythonApi.getTrackInfo(minPlayerPanel.track_id)
     }
 
-    MediaPlayer {
+    Audio {
         id: mediaPlayer
         autoLoad: true
 
-        function videoPlay() {
-            videoPlaying = true
-            if (mediaPlayer.bufferProgress == 1) {
-                mediaPlayer.play()
-            } else if (isLocal) {
-                mediaPlayer.play()
-            }
-        }
-
-        function videoPause() {
-            videoPlaying = false
-            mediaPlayer.pause()
-        }
 
         property bool videoPlaying: false
         property string errorMsg: ""
 
         onPlaybackStateChanged: {
-        //    mprisPlayer.playbackState = mediaPlayer.playbackState === MediaPlayer.PlayingState ?
-        //                Mpris.Playing : mediaPlayer.playbackState === MediaPlayer.PausedState ?
-        //                    Mpris.Paused : Mpris.Stopped
+            //    mprisPlayer.playbackState = mediaPlayer.playbackState === MediaPlayer.PlayingState ?
+            //                Mpris.Playing : mediaPlayer.playbackState === MediaPlayer.PausedState ?
+            //                    Mpris.Paused : Mpris.Stopped
+
         }
 
         onError: {
@@ -79,27 +68,19 @@ DockedPanel {
 
         onStopped:
         {
-            //PlaylistManager.nextTrack()
+            if(PlaylistManager.keepTrack === false)
+            {
+                if(PlaylistManager.canNext())
+                    PlaylistManager.nextTrack()
+                else
+                    progressSlider.visible = false
+            }
         }
-
-        /*
-                  onBufferProgressChanged: {
-                      if (!isLocal && videoPlaying && mediaPlayer.bufferProgress == 1) {
-                          mediaPlayer.play();
-                      }
-
-                      if (!isLocal && mediaPlayer.bufferProgress == 0) {
-                          mediaPlayer.pause();
-                      }
-                  }*/
 
         onPositionChanged:
         {
-            progressSlider.minimumValue = 0
             progressSlider.maximumValue = mediaPlayer.duration
             progressSlider.value = mediaPlayer.position
-            if((mediaPlayer.duration - mediaPlayer.position) < 300 && (mediaPlayer.duration - mediaPlayer.position) > 0)
-                    PlaylistManager.nextTrack();
         }
     }
 
@@ -107,10 +88,10 @@ DockedPanel {
         anchors.fill: parent
         color: Theme.overlayBackgroundColor
         opacity: 0.8
-        //SwipeArea {
-        //    anchors.fill: parent
-        //    onSwipeDown: minPlayerPanel.hide()
-        //}
+        SwipeArea {
+            anchors.fill: parent
+            onSwipeDown: minPlayerPanel.hide()
+        }
     }
     Image {
         id: bgImage
@@ -155,6 +136,7 @@ DockedPanel {
         width: parent.width
         minimumValue: 0
         maximumValue: 1
+        visible: false
     }
 
     Row {
@@ -162,6 +144,7 @@ DockedPanel {
         anchors.top: progressSlider.bottom
         anchors.topMargin: Theme.paddingSmall / 4
         IconButton {
+            id : prevButton
             icon.source: "image://theme/icon-m-previous"
             //visible: mediaPlayer.isPlaylist && modelPlaylist.isPrev();
             onClicked: {
@@ -185,6 +168,7 @@ DockedPanel {
             }
         }
         IconButton {
+            id: nextButton
             icon.source: "image://theme/icon-m-next"
             //visible: mediaPlayer.isPlaylist && modelPlaylist.isNext();
             onClicked: {
@@ -192,19 +176,22 @@ DockedPanel {
             }
         }
     }
-    /*
-    Connections:{
+
+    Connections
+    {
         target: progressSlider
         onValueChanged: {
-
+            mediaPlayer.seek(progressSlider.value)
         }
-    }*/
+    }
 
     Connections
     {
         target: PythonApi
         onRecentTrackUrlChanged :
         {
+            console.log(PythonApi.trackUrl)
+
             url = PythonApi.trackUrl
             minPlayerPanel.play();
             //PythonApi.getPlayingTrackInfo(track_id)
@@ -228,6 +215,15 @@ DockedPanel {
             mediaTitle.text = trackInfo["track_num"] + " - " + trackInfo["name"] + " - "  +trackInfo["album"] + " - " + trackInfo["artist"]
             bgImage.source = trackInfo["cover"]
             PythonApi.getTrackUrl(PlaylistManager.trackID);
+            prevButton.enabled = PlaylistManager.canPrev();
+            nextButton.enabled = PlaylistManager.canNext();
+        }
+
+        onPlaylistFinished:
+        {
+            mediaTitle.text = ""
+            bgImage.source = ""
+            minPlayerPanel.hide(100);
         }
     }
 

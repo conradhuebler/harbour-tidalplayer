@@ -37,7 +37,7 @@ Page {
             }
 
             MenuItem {
-                text: minPlayerPanel.open ? "Hide controls" : "Show controls"
+                text: minPlayerPanel.open ? "Hide player" : "Show player"
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
                 anchors.horizontalCenter: parent.horizontalCenter
             }
@@ -229,13 +229,14 @@ Page {
                     }
 
                 }
-
+/*
                 onRecentTrackUrlChanged:
                 {
                     minPlayerPanel.url = PythonApi.trackUrl
                     console.log(PythonApi.trackUrl)
                     minPlayerPanel.play();
                 }
+                */
 
             }
             VerticalScrollDecorator {}

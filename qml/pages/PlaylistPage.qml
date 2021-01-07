@@ -23,11 +23,11 @@ Page {
                 onClicked:
                 {
                     trackList.clear();
+                    PlaylistManager.clear();
                 }
             }
         }
         Column {
-            width: parent.width
             id: infoCoulumn
             anchors.fill: parent
 
@@ -39,6 +39,8 @@ Page {
 
             TrackList {
                 id: trackList
+                allow_add: false
+                start_on_top : true
                 anchors {
                     top : section.bottom
                     fill: infoCoulumn
@@ -56,7 +58,8 @@ Page {
         target: PlaylistManager
         onCurrentTrackChanged:
         {
-            trackList.highlight_index = PlaylistManager.currentTrackID
+            trackList.highlight_index = PlaylistManager.currentTrackIndex
+            console.log(PlaylistManager.currentTrackIndex)
         }
     }
 }

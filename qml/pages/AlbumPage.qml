@@ -56,7 +56,6 @@ Page {
         }
 
         Column {
-            width: parent.width
             id: infoCoulumn
             anchors {
                 fill: parent

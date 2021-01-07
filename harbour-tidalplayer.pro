@@ -18,18 +18,20 @@ LIBS += -L /usr/local/lib/python3.8 -lpython3.8
 INCLUDEPATH += /usr/include/python3.8
 DEPENDPATH += /usr/include/python3.8
 
-QT += multimedia
+QT += multimedia sql
 
 PKGCONFIG += sailfishsecrets
 
 
 SOURCES +=  src/harbour-tidalplayer.cpp \
+            src/cachemanager.cpp \
             src/playlistmanager.cpp \
             src/python/pythonapi.cpp \
             src/settings/secrets.cpp \
             src/settings/settings.cpp
 
  HEADERS += src/settings/secrets.h \
+    src/cachemanager.h \
     src/playlistmanager.h \
             src/python/pythonapi.h \
             src/settings/settings.h

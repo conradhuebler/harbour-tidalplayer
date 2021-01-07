@@ -33,16 +33,32 @@
 
 int main(int argc, char *argv[])
 {
-    QScopedPointer<QGuiApplication> app(SailfishApp::application(argc, argv));
+  // Some more speed & memory improvements
+  setenv("QT_NO_FAST_MOVE", "0", 0);
+  setenv("QT_NO_FT_CACHE", "0", 0);
+  setenv("QT_NO_FAST_SCROLL", "0", 0);
+  setenv("QT_NO_ANTIALIASING", "1", 1);
+  setenv("QT_NO_FREE", "0", 0);
+  setenv("QT_PREDICT_FUTURE", "1", 1);
+  setenv("QT_NO_BUG", "1", 1);
+  setenv("QT_NO_QT", "1", 1);
+  // Taken from sailfish-browser
+  setenv("USE_ASYNC", "1", 1);
+  QQuickWindow::setDefaultAlphaBuffer(true);
 
-    QScopedPointer<QQuickView> v(SailfishApp::createView());
+  QScopedPointer<QGuiApplication> app(SailfishApp::application(argc, argv));
 
-    qmlRegisterSingletonType<Settings>("harbour.tidalplayer", 1, 0, "Settings", &Settings::qmlInstance);
-    qmlRegisterSingletonType<PythonApi>("harbour.tidalplayer", 1, 0, "PythonApi", &PythonApi::qmlInstance);
-    qmlRegisterSingletonType<PythonApi>("harbour.tidalplayer", 1, 0, "PlaylistManager", &PlaylistManager::qmlInstance);
+  QScopedPointer<QQuickView> v(SailfishApp::createView());
 
+  qmlRegisterSingletonType<Settings>("harbour.tidalplayer", 1, 0, "Settings",
+                                     &Settings::qmlInstance);
+  qmlRegisterSingletonType<PythonApi>("harbour.tidalplayer", 1, 0, "PythonApi",
+                                      &PythonApi::qmlInstance);
+  qmlRegisterSingletonType<PythonApi>("harbour.tidalplayer", 1, 0,
+                                      "PlaylistManager",
+                                      &PlaylistManager::qmlInstance);
 
-    v->setSource(SailfishApp::pathTo("qml/harbour-tidalplayer.qml"));
-    v->show();
-    return app->exec();
+  v->setSource(SailfishApp::pathTo("qml/harbour-tidalplayer.qml"));
+  v->show();
+  return app->exec();
 }

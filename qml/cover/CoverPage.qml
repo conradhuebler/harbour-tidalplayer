@@ -25,6 +25,7 @@ CoverBackground {
         id: coverAction
 
         CoverAction {
+            id: prevButton
             iconSource: "image://theme/icon-cover-next"
         }
 
@@ -45,6 +46,13 @@ CoverBackground {
             var trackInfo = JSON.parse(PythonApi.invokeTrackInfo(PlaylistManager.trackID))
             label.text = trackInfo["track_num"] + " - " + trackInfo["name"] + " - "  +trackInfo["album"] + " - " + trackInfo["artist"]
             coverImage.source = trackInfo["cover"]
+        }
+        onPlaylistFinished:
+        {
+            label.text = ""
+            coverImage.source = ""
+            prevButton.enabled = PlaylistManager.canPrev();
+            nextButton.enabled = PlaylistManager.canNext();
         }
     }
 }
