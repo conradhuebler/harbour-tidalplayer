@@ -150,6 +150,7 @@ Page {
                         truncationMode: elide
                         font.pixelSize: Theme.fontSizeSmall
                     }
+
                 }
 
                 menu: ContextMenu {

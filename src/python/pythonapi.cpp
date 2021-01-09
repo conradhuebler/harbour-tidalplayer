@@ -180,19 +180,11 @@ bool PythonApi::CheckSession(const QString &session)
 }
 
 QString PythonApi::PythonApi::CompileArtist(PyObject *item) {
-  QString artistInfo = QString("{ \"artist\":\"%1\" ,"
-                               "\"name\":\"%2\" ,"
-                               "\"cover\": \"%3\" ,"
-                               "\"disc_num\": %4 ,"
-                               "\"num_tracks\":%5,"
-                               "\"relase\":\"%6\","
+  QString artistInfo = QString("{\"name\":\"%2\" ,"
+                               "\"image\": \"%3\" ,"
                                "\"id\":%7 }")
                            .arg(getAttribute(item, "name"))
                            .arg(getAttribute(item, "image"))
-                           .arg(getAttribute(item, "image"))
-                           .arg(getAttribute(item, "disc_num"))
-                           .arg(getAttribute(item, "num_tracks"))
-                           .arg(getAttribute(item, "release_date"))
                            .arg(getAttribute(item, "id"));
 
   int artistid = getAttribute(item, "id").toInt();
@@ -205,7 +197,7 @@ QString PythonApi::PythonApi::CompileArtist(PyObject *item) {
 QString PythonApi::CompileAlbum(PyObject *item) {
   QString albumInfo = QString("{ \"artist\":\"%1\" ,"
                               "\"duration\":\"%2\" ,"
-                              "\"cover\": \"%3\" ,"
+                              "\"image\": \"%3\" ,"
                               "\"name\": \"%4\" ,"
                               "\"num_tracks\":\"%5\","
                               "\"relase\":\"%6\","
@@ -232,7 +224,7 @@ QString PythonApi::CompileTrack(PyObject *item) {
                               "\"artistid\":%4 ,"
                               "\"disc_num\": %5 ,"
                               "\"name\":\"%6\","
-                              "\"cover\":\"%7\","
+                              "\"image\":\"%7\","
                               "\"track_num\":%8,"
                               "\"id\":%9 }")
                           .arg(getAttribute(item, "album.name"))

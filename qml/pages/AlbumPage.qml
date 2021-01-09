@@ -103,7 +103,7 @@ Page {
                 console.log(PythonApi.albumInfo)
                 artistName.text =trackInfo["artist"]
                 header.title = trackInfo["name"]
-                coverImage.source = trackInfo["cover"]
+                coverImage.source = trackInfo["image"]
 
                 var tracks = PythonApi.fetchTracksfromAlbum(trackInfo["id"])
                 trackList.track_list = tracks

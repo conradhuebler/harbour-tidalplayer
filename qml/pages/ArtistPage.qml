@@ -47,24 +47,12 @@ Page {
 
             Label
             {
-                id: trackName
-                truncationMode: TruncationMode.Fade
-                color: Theme.highlightColor
-            }
-
-            Label
-            {
                 id: artistName
                 truncationMode: TruncationMode.Fade
                 color: Theme.highlightColor
             }
 
-            Label
-            {
-                id: albumName
-                truncationMode: TruncationMode.Fade
-                color: Theme.highlightColor
-            }
+
 
         }
     }
@@ -73,11 +61,10 @@ Page {
 
         onArtistInfoChanged:
         {
+            console.log(PythonApi.artistInfo)
             var trackInfo = JSON.parse(PythonApi.artistInfo)
-            trackName.text = trackInfo["name"]
-            artistName.text =trackInfo["artist"]
-            albumName.text = trackInfo["album"]
-            coverImage.source = trackInfo["cover"]
+            artistName.text = trackInfo["name"]
+            coverImage.source = trackInfo["image"]
         }
 
     }

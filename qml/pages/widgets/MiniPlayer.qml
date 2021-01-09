@@ -31,8 +31,6 @@ DockedPanel {
         mediaPlayer.play();
         progressSlider.visible = true
         show();
-        progressSlider.minimumValue = 0
-        progressSlider.maximumValue = mediaPlayer.duration
     }
 
     function playPlaylist()
@@ -42,7 +40,11 @@ DockedPanel {
         PythonApi.getTrackInfo(minPlayerPanel.track_id)
     }
 
-    Audio {
+    MprisPlayer{
+        id: mprisPlayer
+    }
+
+    MediaPlayer {
         id: mediaPlayer
         autoLoad: true
 
@@ -51,10 +53,11 @@ DockedPanel {
         property string errorMsg: ""
 
         onPlaybackStateChanged: {
-            //    mprisPlayer.playbackState = mediaPlayer.playbackState === MediaPlayer.PlayingState ?
-            //                Mpris.Playing : mediaPlayer.playbackState === MediaPlayer.PausedState ?
-            //                    Mpris.Paused : Mpris.Stopped
-
+            /*
+                mprisPlayer.playbackState = mediaPlayer.playbackState === MediaPlayer.PlayingState ?
+                            Mpris.Playing : mediaPlayer.playbackState === MediaPlayer.PausedState ?
+                                Mpris.Paused : Mpris.Stopped
+*/
         }
 
         onError: {
@@ -79,8 +82,7 @@ DockedPanel {
 
         onPositionChanged:
         {
-            progressSlider.maximumValue = mediaPlayer.duration
-            progressSlider.value = mediaPlayer.position
+            progressSlider.value = mediaPlayer.position/mediaPlayer.duration*100
         }
     }
 
@@ -135,7 +137,7 @@ DockedPanel {
         anchors.topMargin: Theme.paddingSmall / 6
         width: parent.width
         minimumValue: 0
-        maximumValue: 1
+        maximumValue: 100
         visible: false
     }
 
@@ -162,7 +164,7 @@ DockedPanel {
                 }
                 else {
                     //console.debug("Play")
-                    //mediaPlayer.play()
+                    //play()
                     PlaylistManager.play()
                 }
             }
@@ -180,8 +182,8 @@ DockedPanel {
     Connections
     {
         target: progressSlider
-        onValueChanged: {
-            mediaPlayer.seek(progressSlider.value)
+        onReleased: {
+            mediaPlayer.seek(progressSlider.value/100*mediaPlayer.duration)
         }
     }
 
@@ -202,7 +204,7 @@ DockedPanel {
             console.log(PythonApi.playingTrackInfo)
             var trackInfo = JSON.parse(PythonApi.playingTrackInfo)
             mediaTitle.text = trackInfo["track_num"] + " - " + trackInfo["name"] + " - "  +trackInfo["album"] + " - " + trackInfo["artist"]
-            bgImage.source = trackInfo["cover"]
+            bgImage.source = trackInfo["image"]
         }
     }
     Connections
@@ -213,7 +215,7 @@ DockedPanel {
             console.log(PlaylistManager.trackID)
             var trackInfo = JSON.parse(PythonApi.invokeTrackInfo(PlaylistManager.trackID))
             mediaTitle.text = trackInfo["track_num"] + " - " + trackInfo["name"] + " - "  +trackInfo["album"] + " - " + trackInfo["artist"]
-            bgImage.source = trackInfo["cover"]
+            bgImage.source = trackInfo["image"]
             PythonApi.getTrackUrl(PlaylistManager.trackID);
             prevButton.enabled = PlaylistManager.canPrev();
             nextButton.enabled = PlaylistManager.canNext();

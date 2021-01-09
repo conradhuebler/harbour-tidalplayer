@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-X-Nemo-Application-Type=silica-qt5
+X-Nemo-Application-Type=silica-media
 Icon=harbour-tidalplayer
 Exec=harbour-tidalplayer
 Name=Tidal Player

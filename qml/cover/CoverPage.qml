@@ -45,7 +45,7 @@ CoverBackground {
         {
             var trackInfo = JSON.parse(PythonApi.invokeTrackInfo(PlaylistManager.trackID))
             label.text = trackInfo["track_num"] + " - " + trackInfo["name"] + " - "  +trackInfo["album"] + " - " + trackInfo["artist"]
-            coverImage.source = trackInfo["cover"]
+            coverImage.source = trackInfo["image"]
         }
         onPlaylistFinished:
         {

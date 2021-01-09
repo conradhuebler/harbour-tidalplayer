@@ -52,8 +52,10 @@ int main(int argc, char *argv[])
 
   qmlRegisterSingletonType<Settings>("harbour.tidalplayer", 1, 0, "Settings",
                                      &Settings::qmlInstance);
+
   qmlRegisterSingletonType<PythonApi>("harbour.tidalplayer", 1, 0, "PythonApi",
                                       &PythonApi::qmlInstance);
+
   qmlRegisterSingletonType<PythonApi>("harbour.tidalplayer", 1, 0,
                                       "PlaylistManager",
                                       &PlaylistManager::qmlInstance);
