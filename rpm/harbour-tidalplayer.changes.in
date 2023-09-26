@@ -1,0 +1,16 @@
+# Rename this file as pythonsample.changes to include changelog
+# entries in your RPM file.
+#
+# Add new changelog entries following the format below.
+# Add newest entries to the top of the list.
+# Separate entries from eachother with a blank line.
+
+# * date Author's Name <author's email> version-release
+# - Summary of changes
+
+* Tue Sep 05 2023 Conrad Hübler <Conrad.Huebler@gmx.net> 0.0.2-1
+- notice not working tidalapi on SFOS
+- drop C++ and old api
+
+* Sun Jan 03 2021 Conrad Hübler <Conrad.Huebler@gmx.net> 0.0.1-1
+- Initial version with login to tidal and track search and play
