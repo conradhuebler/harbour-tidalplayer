@@ -54,6 +54,7 @@ Page {
         }
 
         SilicaListView {
+
             anchors.fill: parent
             // Tell SilicaFlickable the height of its content.
 //            contentHeight: column.height
@@ -72,7 +73,7 @@ Page {
                     id: column
 
                     width: searchPage.width
-                    spacing: Theme.paddingLarge
+                    spacing: Theme.paddingSmall
 
                     TextField {
                         id: searchString
@@ -80,35 +81,86 @@ Page {
                         placeholderText: "Type and Search"
                         text: ""
                         label: "What are you looking for?"
+                        EnterKey.enabled: text.length > 0
+                        EnterKey.iconSource: "image://theme/icon-m-search"
+
                         EnterKey.onClicked: {
                             listModel.clear()
                             pythonApi.genericSearch(searchString.text)
                         }
                     }
-
-                    Button {
-                        id: simpleSearch
-                        text: "Login in progress ..."
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        enabled: loginTrue
-                        onClicked: {
-                            listModel.clear()
-                            pythonApi.genericSearch(searchString.text)
-                        }
-
-
+                    SectionHeader
+                    {
+                        id: searchHeader
+                        anchors.bottom: searchString
+                        text:  qsTr("Want to find?")
                     }
+
+                    Row {
+                        width: parent.width
+                        anchors {
+                            leftMargin: Theme.horizontalPageMargin
+                            rightMargin: Theme.horizontalPageMargin
+                            bottom: searchHeader
+                        }
+                        Switch {
+                            id: searchAlbum
+                            anchors {
+                                leftMargin: Theme.horizontalPageMargin
+                                rightMargin: Theme.horizontalPageMargin
+                            }
+                            icon.source: "image://theme/icon-m-media-albums"
+                            checked: true
+                            onCheckedChanged: pythonApi.albums = checked
+                        }
+                        Switch {
+                            id: searchArtists
+                            anchors {
+                                leftMargin: Theme.horizontalPageMargin
+                                rightMargin: Theme.horizontalPageMargin
+                            }
+                            icon.source: "image://theme/icon-m-media-artists"
+                            checked: true
+                            onCheckedChanged: pythonApi.artists = checked
+
+                        }
+                        Switch {
+                            id: searchTracks
+
+                            anchors {
+                                leftMargin: Theme.horizontalPageMargin
+                                rightMargin: Theme.horizontalPageMargin
+                            }
+                            icon.source: "image://theme/icon-m-media-songs"
+                            checked: true
+                            onCheckedChanged: pythonApi.tracks = checked
+
+                        }
+                        Switch {
+                            id: searchPlaylists
+
+                            anchors {
+                                leftMargin: Theme.horizontalPageMargin
+                                rightMargin: Theme.horizontalPageMargin
+                            }
+                            icon.source: "image://theme/icon-m-media-playlists"
+                            checked: true
+                            onCheckedChanged: pythonApi.playlists = checked
+
+                        }
+                    }
+
                     Connections {
                         target: pythonApi
                         onLoginSuccess:
                         {
-                            simpleSearch.text = "Find"
-                            simpleSearch.enabled = loginTrue
+                            searchString.label = "Find"
+                            searchString.enabled = loginTrue
                         }
                         onLoginFailed:
                         {
-                            simpleSearch.text = "Please go to the settings and login via OAuth"
-                            simpleSearch.enabled = loginTrue
+                            searchString.label = "Please go to the settings and login via OAuth"
+                            searchString.enabled = loginTrue
                         }
                     }
                 }
@@ -117,11 +169,19 @@ Page {
             model: ListModel { id: listModel }
 
             delegate: ListItem {
+
                 id: listEntry
                 //width: parent.width
 
                 Row {
 
+                    anchors {
+                        left: parent.left
+                        leftMargin: Theme.horizontalPageMargin
+                        right: parent.right
+                        rightMargin: Theme.horizontalPageMargin
+                        verticalCenter: parent.verticalCenter
+                    }
                     IconButton {
                         id: mediaType
                         icon.source: {

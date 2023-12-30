@@ -80,6 +80,9 @@ Page {
             }
             SectionHeader
             {
+                anchors {
+                    top : artistName.bottom
+                }
                 id: section
                 text: "Track List"
             }

@@ -287,6 +287,11 @@ ApplicationWindow
         property string albumsResults
         property string tracksResults
 
+        property bool albums: true
+        property bool artists: true
+        property bool tracks: true
+        property bool playlists : true
+
         id: pythonApi
 
         Component.onCompleted: {
@@ -360,6 +365,7 @@ ApplicationWindow
 
                 refresh_token.value = rtoken
                 expiry_time.value = date
+                loginTrue = true
                 pythonApi.loginSuccess()
                 pythonApi.loginIn()
 
@@ -432,8 +438,9 @@ ApplicationWindow
         }
 
         function genericSearch(text) {
-            call("tidal.Tidaler.genericSearch", [text], {});
+            call("tidal.Tidaler.genericSearch", [text, albums, artists, tracks, playlists], {});
         }
+
 
         function playTrackId(id)
         {
