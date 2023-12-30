@@ -4,13 +4,26 @@ import QtMultimedia 5.6
 import Sailfish.Media 1.0
 
 
-SilicaListView {
+
+Column
+{
+    id: listView
+
     property string track_list
-    property  string track_id_list
+    property string track_id_list
     property bool allow_add : true
     property bool start_on_top : false
-    property int highlight_index : 0
-
+    property int highlight_index : -1
+    property int type : 0
+    property string title : "Track List"
+    SectionHeader
+    {
+        anchors {
+            top : parent.top
+        }
+        id: sectionHeader
+        text: title
+    }
 
     function addTrack(title, artist, album, id, duration)
     {
@@ -24,6 +37,28 @@ SilicaListView {
                         })
     }
 
+    Button
+    {
+        text: "Play"
+        onClicked:
+        {
+            playlistManager.clearPlayList()
+            playlistManager.insertTrack(listModel.get(0).id)
+            for(var i = 1; i < listModel.count; ++i)
+                playlistManager.appendTrack(listModel.get(i).id)
+        }
+    }
+
+SilicaListView {
+    anchors {
+         top: sectionHeader.bottom// Anker oben an den unteren Rand der Column
+         topMargin: 120 // Abstand zwischen der Column und dem ListView
+         left: parent.left // Anker links am linken Rand des Eltern-Elements (Page)
+         right: parent.right // Anker rechts am rechten Rand des Eltern-Elements (Page)
+         leftMargin: Theme.horizontalPageMargin
+         rightMargin: Theme.horizontalPageMargin
+         bottom: parent.bottom// Anker unten am unteren Rand des Eltern-Elements (Page)
+     }
     model: ListModel
     {
         id: listModel
@@ -33,27 +68,6 @@ SilicaListView {
     delegate: ListItem {
         id: listEntry
         Row {
-            IconButton {
-                id: playTrack
-                icon.source: "image://theme/icon-m-play"
-                onClicked: {
-                    mediaPlayer.blockAutoNext = true
-                    playlistManager.playTrack(listModel.get(model.index).id)
-                }
-                height: trackName.height
-                visible: allow_add == true
-            }
-
-            IconButton {
-                id: queueTrack
-                icon.source: "image://theme/icon-m-add"
-                onClicked: {
-                    playlistManager.appendTrack(listModel.get(model.index).id)
-                }
-                height: trackName.height
-                visible: allow_add == true
-            }
-
             Column {
                 Label {
                     property string dur: {
@@ -72,7 +86,17 @@ SilicaListView {
 
                     id: artistName
                     color: (listEntry.highlighted || model.index === highlight_index) ? Theme.highlightColor : Theme.primaryColor
-                    text: model.artist + " ( "+model.album +" )"
+                    text:
+                    {
+                        if(type == 2 )
+                        {
+                            model.artist
+                        }
+                        else if(type == 1 )
+                        {
+                            model.artist + " ( "+model.album +" )"
+                        }
+                    }
                     visible: listModel.get(model.index).type === 1
                     x: Theme.horizontalPageMargin
                     truncationMode: elide
@@ -90,9 +114,33 @@ SilicaListView {
                 playlistManager.playPosition(model.index)
             }
         }
+        menu: ContextMenu {
 
+            MenuItem {
+                text: "Play"
+                onClicked: {
+                    console.log(listModel.get(model.index).type)
+                    if(listModel.get(model.index).type === 1)
+                       playlistManager.playTrack(listModel.get(model.index).id)
+                    else if(listModel.get(model.index).type === 2)
+                       playlistManager.playAlbum(listModel.get(model.index).id)
+                    highlight_index = model.index
+                }
+                visible: allow_add == true
+            }
+
+
+            MenuItem {
+                text: "Queue"
+                onClicked: {
+                    playlistManager.appendTrack(listModel.get(model.index).id)
+                }
+                visible: allow_add == true
+            }
+
+        }
     }
-    VerticalScrollDecorator {}
+    VerticalScrollDecorator { flickable: listView }
 
     Connections{
         target: playlistManager
@@ -106,4 +154,6 @@ SilicaListView {
     Component.onCompleted: {
         playlistManager.generateList()
     }
+}
+
 }

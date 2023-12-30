@@ -56,23 +56,20 @@ class Tidal:
         pyotherside.send("artistInfo", i.id, i.name, i.image(320))
         self.getTopTracks(id, 20)
 
-    def genericSearch(self, text, find_albums, find_artists, find_tracks, find_playlists):
+    def genericSearch(self, text):
         result = self.session.search(text)
 
-        if find_tracks == True:
-            self.tracks = result["tracks"]
-            for i in self.tracks:
-                pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
+        self.tracks = result["tracks"]
+        for i in self.tracks:
+            pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
 
-        if find_artists == True:
-            self.artists = result["artists"]
-            for i in self.artists:
-                pyotherside.send("addArtist", i.id, i.name)
+        self.artists = result["artists"]
+        for i in self.artists:
+            pyotherside.send("addArtist", i.id, i.name)
 
-        if find_albums == True:
-            self.albums = result["albums"]
-            for i in self.albums:
-                pyotherside.send("addAlbum", i.id, i.name, i.artist.name, i.image(320))
+        self.albums = result["albums"]
+        for i in self.albums:
+            pyotherside.send("addAlbum", i.id, i.name, i.artist.name, i.image(320))
 
     def searchTracks(self, text, number):
         pyotherside.send("trackSearchFinished")

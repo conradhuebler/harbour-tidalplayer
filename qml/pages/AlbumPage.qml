@@ -8,10 +8,7 @@ import "widgets"
 
 Page {
     property int track_id
-    PageHeader {
-        id: header
-        title:  qsTr("Album Info")
-    }
+
     id: albumPage
 
     // The effective value will be restricted by ApplicationWindow.allowedOrientations
@@ -20,7 +17,10 @@ Page {
     // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
         width: parent.width
-        anchors.fill: parent
+        anchors {
+            fill: parent
+            bottomMargin: minPlayerPanel.margin
+        }
         PullDownMenu {
             MenuItem {
                 text: qsTr("Show Playlist")
@@ -30,85 +30,76 @@ Page {
                 }
             }
             MenuItem {
-                text: qsTr("Play Album")
-                onClicked:
-                {
-                    trackList.appendtoPlaylist();
-                }
+                text: minPlayerPanel.open ? "Hide player" : "Show player"
+                onClicked: minPlayerPanel.open = !minPlayerPanel.open
+                anchors.horizontalCenter: parent.horizontalCenter
             }
         }
-        Image {
-            id: coverImage
-            anchors {
-                top: header.bottom
-                horizontalCenter: albumPage.isPortrait ? parent.horizontalCenter : undefined
-            }
 
-            sourceSize.width: {
-                var maxImageWidth = 3*Screen.width/4
-                var leftMargin = Theme.horizontalPageMargin
-                var rightMargin = albumPage.isPortrait ? Theme.horizontalPageMargin : 0
-                return maxImageWidth - leftMargin - rightMargin
-            }
-
-            fillMode: Image.PreserveAspectFit
-        }
 
         Column {
             id: infoCoulumn
-            anchors {
-                fill: parent
-
-                // in landscape, anchor the top to the bottom of the header instead of the image
-                top: albumPage.isPortrait ? coverImage.bottom : header.bottom
-                topMargin: albumPage.isPortrait ? Theme.paddingLarge : 0
-
-                // in landscape, anchor the column's left side to the right of the image with a
-                // margin of Theme.paddingLarge between them
-                left: albumPage.isPortrait ? parent.left : coverImage.right
-                leftMargin: albumPage.isPortrait ? Theme.horizontalPageMargin : Theme.paddingLarge
-
-                right: parent.right
-                rightMargin: Theme.horizontalPageMargin
+            PageHeader {
+                id: header
+                title:  qsTr("Album Info")
             }
+            spacing: 10 // Abstand zwischen den Elementen in der Column
+            width: parent.width // Die Column nimmt die volle Breite des Eltern-Elements (Item) ein
 
+            Image {
+                id: coverImage
+                anchors {
+                    top: header.bottom
+                    horizontalCenter: albumPage.isPortrait ? parent.horizontalCenter : undefined
+                }
+
+                sourceSize.width: {
+                    var maxImageWidth = Screen.width
+                    var leftMargin = Theme.horizontalPageMargin
+                    var rightMargin = albumPage.isPortrait ? Theme.horizontalPageMargin : 0
+                    return (maxImageWidth - leftMargin - rightMargin)*3/2
+                }
+
+                fillMode: Image.PreserveAspectFit
+            }
             Label
             {
                 id: artistName
+                anchors {
+                    top : coverImage.bottom
+                }
                 truncationMode: TruncationMode.Fade
                 color: Theme.highlightColor
             }
-            SectionHeader
-            {
-                anchors {
-                    top : artistName.bottom
-                }
-                id: section
-                text: "Track List"
-            }
-
+       }
             TrackList {
                 id: aLtrackList
+                type: 2
                 anchors {
-                    top : section.bottom
-                    fill: infoCoulumn
-                }
-
+                     top: infoCoulumn.bottom// Anker oben an den unteren Rand der Column
+                     topMargin: 600 // Abstand zwischen der Column und dem ListView
+                     left: parent.left // Anker links am linken Rand des Eltern-Elements (Page)
+                     right: parent.right // Anker rechts am rechten Rand des Eltern-Elements (Page)
+                     leftMargin: Theme.horizontalPageMargin
+                     rightMargin: Theme.horizontalPageMargin
+                     bottom: parent.bottom// Anker unten am unteren Rand des Eltern-Elements (Page)
+                 }
             }
-        }
+
 
         Connections {
             target: pythonApi
 
             onAlbumChanged:
             {
-                artistName.text =artist
-                header.title = title
+               // artistName.text =artist
+                header.title = title + " - " + artist
                 coverImage.source = image
             }
 
             onTrackAdded:
             {
+                aLtrackList.type = 2
                 aLtrackList.addTrack(title, artist, album, id, duration)
             }
         }

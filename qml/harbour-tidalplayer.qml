@@ -438,7 +438,7 @@ ApplicationWindow
         }
 
         function genericSearch(text) {
-            call("tidal.Tidaler.genericSearch", [text, albums, artists, tracks, playlists], {});
+            call("tidal.Tidaler.genericSearch", [text], {});
         }
 
 

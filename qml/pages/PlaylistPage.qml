@@ -28,15 +28,7 @@ Page {
 
             TrackList {
                 id: pLtrackList
-                header : Column {
-                    width: parent.width
-                    //height: header.height + mainColumn.height + Theme.paddingLarge
-
-                    PageHeader {
-                        id: header
-                        title:  qsTr("Playlist tracks")
-                    }
-                }
+                title :  "Current Playlist"
                 allow_add: false
                 start_on_top : true
                 anchors {

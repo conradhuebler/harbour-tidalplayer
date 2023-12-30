@@ -53,128 +53,132 @@ Page {
             }
         }
 
-        SilicaListView {
 
-            anchors.fill: parent
+        Column
+        {
+
+           // width: parent.width
+            //height: header.height + mainColumn.height + Theme.paddingLarge
+
+            PageHeader {
+                title:  qsTr("Look for anything in Tidal")
+            }
+                id: header
+                width: searchPage.width
+                spacing: Theme.paddingSmall
+                TextField {
+                    id: searchString
+                    width: parent.width
+                    placeholderText: "Type and Search"
+                    text: ""
+                    label: "Please wait for login ..."
+                    EnterKey.enabled: text.length > 0
+                    EnterKey.iconSource: "image://theme/icon-m-search"
+
+                    EnterKey.onClicked: {
+                        listModel.clear()
+                        pythonApi.genericSearch(searchString.text)
+                        focus = false
+                    }
+
+                }
+
+                Row {
+                    //width: parent.width
+                    anchors {
+                        leftMargin: Theme.horizontalPageMargin
+                        rightMargin: Theme.horizontalPageMargin
+                        bottom: searchString
+                    }
+                    Switch {
+                        id: searchAlbum
+                        anchors {
+                            leftMargin: Theme.horizontalPageMargin
+                            rightMargin: Theme.horizontalPageMargin
+                        }
+                        icon.source: "image://theme/icon-m-media-albums"
+                        checked: true
+                        onCheckedChanged: pythonApi.albums = checked
+                    }
+                    Switch {
+                        id: searchArtists
+                        anchors {
+                            leftMargin: Theme.horizontalPageMargin
+                            rightMargin: Theme.horizontalPageMargin
+                        }
+                        icon.source: "image://theme/icon-m-media-artists"
+                        checked: true
+                        onCheckedChanged: pythonApi.artists = checked
+
+                    }
+                    Switch {
+                        id: searchTracks
+
+                        anchors {
+                            leftMargin: Theme.horizontalPageMargin
+                            rightMargin: Theme.horizontalPageMargin
+                        }
+                        icon.source: "image://theme/icon-m-media-songs"
+                        checked: true
+                        onCheckedChanged: pythonApi.tracks = checked
+
+                    }
+                    Switch {
+                        id: searchPlaylists
+
+                        anchors {
+                            leftMargin: Theme.horizontalPageMargin
+                            rightMargin: Theme.horizontalPageMargin
+                        }
+                        icon.source: "image://theme/icon-m-media-playlists"
+                        checked: false
+                        enabled: false
+                        //onCheckedChanged: pythonApi.playlists = checked
+
+                    }
+                }
+
+                Connections {
+                    target: pythonApi
+                    onLoginSuccess:
+                    {
+                        searchString.label = "Find"
+                        searchString.enabled = loginTrue
+                    }
+                    onLoginFailed:
+                    {
+                        searchString.label = "Please go to the settings and login via OAuth"
+                        searchString.enabled = loginTrue
+                    }
+                }
+
+        }
+
+        SilicaListView {
+            anchors {
+                 top: header.bottom// Anker oben an den unteren Rand der Column
+                 topMargin: 120 // Abstand zwischen der Column und dem ListView
+                 left: parent.left // Anker links am linken Rand des Eltern-Elements (Page)
+                 right: parent.right // Anker rechts am rechten Rand des Eltern-Elements (Page)
+                 leftMargin: Theme.horizontalPageMargin
+                 rightMargin: Theme.horizontalPageMargin
+                 bottom: parent.bottom// Anker unten am unteren Rand des Eltern-Elements (Page)
+             }
             // Tell SilicaFlickable the height of its content.
 //            contentHeight: column.height
 
             // Place our content in a Column.  The PageHeader is always placed at the top
             // of the page, followed by our content.
-            header : Column {
-                width: parent.width
-                //height: header.height + mainColumn.height + Theme.paddingLarge
-
-                PageHeader {
-                    id: header
-                    title:  qsTr("Look for anything in Tidal")
-                }
-                Column {
-                    id: column
-
-                    width: searchPage.width
-                    spacing: Theme.paddingSmall
-
-                    TextField {
-                        id: searchString
-                        width: parent.width
-                        placeholderText: "Type and Search"
-                        text: ""
-                        label: "What are you looking for?"
-                        EnterKey.enabled: text.length > 0
-                        EnterKey.iconSource: "image://theme/icon-m-search"
-
-                        EnterKey.onClicked: {
-                            listModel.clear()
-                            pythonApi.genericSearch(searchString.text)
-                        }
-                    }
-                    SectionHeader
-                    {
-                        id: searchHeader
-                        anchors.bottom: searchString
-                        text:  qsTr("Want to find?")
-                    }
-
-                    Row {
-                        width: parent.width
-                        anchors {
-                            leftMargin: Theme.horizontalPageMargin
-                            rightMargin: Theme.horizontalPageMargin
-                            bottom: searchHeader
-                        }
-                        Switch {
-                            id: searchAlbum
-                            anchors {
-                                leftMargin: Theme.horizontalPageMargin
-                                rightMargin: Theme.horizontalPageMargin
-                            }
-                            icon.source: "image://theme/icon-m-media-albums"
-                            checked: true
-                            onCheckedChanged: pythonApi.albums = checked
-                        }
-                        Switch {
-                            id: searchArtists
-                            anchors {
-                                leftMargin: Theme.horizontalPageMargin
-                                rightMargin: Theme.horizontalPageMargin
-                            }
-                            icon.source: "image://theme/icon-m-media-artists"
-                            checked: true
-                            onCheckedChanged: pythonApi.artists = checked
-
-                        }
-                        Switch {
-                            id: searchTracks
-
-                            anchors {
-                                leftMargin: Theme.horizontalPageMargin
-                                rightMargin: Theme.horizontalPageMargin
-                            }
-                            icon.source: "image://theme/icon-m-media-songs"
-                            checked: true
-                            onCheckedChanged: pythonApi.tracks = checked
-
-                        }
-                        Switch {
-                            id: searchPlaylists
-
-                            anchors {
-                                leftMargin: Theme.horizontalPageMargin
-                                rightMargin: Theme.horizontalPageMargin
-                            }
-                            icon.source: "image://theme/icon-m-media-playlists"
-                            checked: true
-                            onCheckedChanged: pythonApi.playlists = checked
-
-                        }
-                    }
-
-                    Connections {
-                        target: pythonApi
-                        onLoginSuccess:
-                        {
-                            searchString.label = "Find"
-                            searchString.enabled = loginTrue
-                        }
-                        onLoginFailed:
-                        {
-                            searchString.label = "Please go to the settings and login via OAuth"
-                            searchString.enabled = loginTrue
-                        }
-                    }
-                }
-            }
+            //header : Column {
+            //}
 
             model: ListModel { id: listModel }
 
             delegate: ListItem {
 
                 id: listEntry
-                //width: parent.width
 
                 Row {
-
                     anchors {
                         left: parent.left
                         leftMargin: Theme.horizontalPageMargin
@@ -204,7 +208,16 @@ Page {
                         }
                         id: trackName
                         color: listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
-                        text: model.name + " (" + dur +")"
+                        text:
+                        {
+                            if(listModel.get(model.index).type === 1)
+                                model.name + " (" + dur +")"
+                            else if(listModel.get(model.index).type === 3)
+                                model.name
+                            else if (listModel.get(model.index).type === 2)
+                                model.name + " (" + dur +")"
+
+                        }
                         x: Theme.horizontalPageMargin
                         truncationMode: elide
                         font.pixelSize: Theme.fontSizeSmall
@@ -221,9 +234,7 @@ Page {
                     }
                     }
 
-
                 }
-
                 menu: ContextMenu {
 
                     MenuItem {
