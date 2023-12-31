@@ -50,3 +50,29 @@ jobs:
         with:
           name: rpm-build-result
           path: RPMS
+          
+      - name: Create release
+        if: contains(github.ref, 'v')
+        run: |
+          set -x
+          assets=()
+          for asset in RPMS/*.rpm; do
+            assets+=("-a" "$asset")
+          done
+          tag_name="${GITHUB_REF##*/}"
+          gh release create "$tag_name" "${assets[@]}" 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                
+      - name: Create prerelease
+        if: contains(github.ref, 'master')
+        run: |
+          set -x
+          assets=()
+          for asset in RPMS/*.rpm; do
+            assets+=("-a" "$asset")
+          done
+          tag_name="${GITHUB_REF##*/}"
+          gh release create "$tag_name" -p -n "This is a pre-release for testing purposes only. It may or may not be unstable." "${assets[@]}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

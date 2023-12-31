@@ -37,9 +37,9 @@ Column
                         })
     }
 
-    Button
+    IconButton
     {
-        text: "Play"
+        icon.source: "image://theme/icon-m-play"
         onClicked:
         {
             playlistManager.clearPlayList()

@@ -44,16 +44,26 @@ class Tidal:
 
     def getTrackInfo(self, id):
         i = self.session.track(int(id))
-        pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
+        try:
+            pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
+        except AttributeError:
+            pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, "", i.duration)
 
     def getAlbumInfo(self, id):
         i = self.session.album(int(id))
-        pyotherside.send("albumInfo", i.id, i.name, i.artist.name, i.image(320))
+        try:
+            pyotherside.send("albumInfo", i.id, i.name, i.artist.name, i.image(320))
+        except AttributeError:
+            pyotherside.send("albumInfo", i.id, i.name, i.artist.name, "")
         self.getAlbumTracks(int(id))
 
     def getArtistInfo(self, id):
         i = self.session.artist(int(id))
-        pyotherside.send("artistInfo", i.id, i.name, i.image(320))
+        try:
+            pyotherside.send("artistInfo", i.id, i.name, i.image(320))
+        except AttributeError:
+            pyotherside.send("artistInfo", i.id, i.name, "")
+
         self.getTopTracks(id, 20)
 
     def genericSearch(self, text):
@@ -61,16 +71,20 @@ class Tidal:
 
         self.tracks = result["tracks"]
         for i in self.tracks:
-            pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
-
+            try:
+                pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
+            except AttributeError:
+                pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, "", i.duration)
         self.artists = result["artists"]
         for i in self.artists:
             pyotherside.send("addArtist", i.id, i.name)
 
         self.albums = result["albums"]
         for i in self.albums:
-            pyotherside.send("addAlbum", i.id, i.name, i.artist.name, i.image(320))
-
+            try:
+                pyotherside.send("addAlbum", i.id, i.name, i.artist.name, i.image(320))
+            except AttributeError:
+                pyotherside.send("addAlbum", i.id, i.name, i.artist.name, "")
     def searchTracks(self, text, number):
         pyotherside.send("trackSearchFinished")
 
@@ -84,13 +98,18 @@ class Tidal:
         t = self.session.track(int(id))
         url = t.get_url()
         pyotherside.send("playUrl", url)
-        pyotherside.send("currentTrackInfo", t.name, t.track_num, t.album.name, t.artist.name, t.duration, t.album.image(320), t.artist.image(320))
+        try:
+            pyotherside.send("currentTrackInfo", t.name, t.track_num, t.album.name, t.artist.name, t.duration, t.album.image(320), t.artist.image(320))
+        except AttributeError:
+            pyotherside.send("currentTrackInfo", t.name, t.track_num, t.album.name, t.artist.name, t.duration, "", "")
 
     def getAlbumTracks(self, id):
         album = self.session.album(int(id))
         for i in album.tracks():
-            pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
-
+            try:
+                pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
+            except AttributeError:
+                pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, "", i.duration)
     def playAlbumTracks(self, id):
         album = self.session.album(int(id))
         for i in album.tracks():
@@ -110,13 +129,23 @@ class Tidal:
     def getPersonalPlaylists(self):
         playlists = self.session.user.playlists()
         for i in playlists:
-            pyotherside.send("addPersonalPlaylist", i.id, i.name, i.image(320), i.num_tracks, i.description, i.duration)
+            try:
+                pyotherside.send("addPersonalPlaylist", i.id, i.name, i.image(320), i.num_tracks, i.description, i.duration)
+            except AttributeError:
+                pyotherside.send("addPersonalPlaylist", i.id, i.name, "", i.num_tracks, i.description, i.duration)
 
     def getPersonalPlaylist(self, id):
         playlist = self.session.playlist(int(id))
-        pyotherside.send("setPlaylist", i.id, i.name, i.image(320), i.num_tracks, i.description, i.duration)
+        try:
+            pyotherside.send("setPlaylist", i.id, i.name, i.image(320), i.num_tracks, i.description, i.duration)
+        except AttributeError:
+            pyotherside.send("setPlaylist", i.id, i.name, "", i.num_tracks, i.description, i.duration)
+
         for i in playlist.tracks():
-            pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
+            try:
+                pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
+            except AttributeError:
+                pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, "", i.duration)
 
     def playPlaylist(self, id):
         playlist = self.session.playlist(id)
