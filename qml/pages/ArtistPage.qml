@@ -73,7 +73,6 @@ Page {
             TrackList {
                 id: topTracks
                 title :  "Popular Tracks"
-
                 anchors {
                      top: infoCoulumn.bottom// Anker oben an den unteren Rand der Column
                      topMargin: 650 // Abstand zwischen der Column und dem ListView
@@ -84,7 +83,6 @@ Page {
                      //bottom: parent.bottom// Anker unten am unteren Rand des Eltern-Elements (Page)
                  }
                 height: 600
-                start_on_top : true
             }
 
         }

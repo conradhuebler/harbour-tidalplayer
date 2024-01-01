@@ -102,6 +102,15 @@ Page {
                 aLtrackList.type = 2
                 aLtrackList.addTrack(title, artist, album, id, duration)
             }
+
+            onTrackChanged:
+            {
+                for(var i = 1; i < aLtrackList.listModel.count; ++i)
+                    if(aLtrackList.listModel.get(i).name === title)
+                    {
+                        aLtrackList.scrollTo(i);
+                    }
+            }
         }
    }
 }

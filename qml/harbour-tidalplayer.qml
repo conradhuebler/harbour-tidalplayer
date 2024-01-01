@@ -271,8 +271,9 @@ ApplicationWindow
         signal searchFinished()
 
         signal trackAdded(int id, string title, string album, string artist, string image, int duration)
-        signal albumAdded(int id, string title, string artist, string image)
-        signal artistAdded(int id, string name)
+        signal albumAdded(int id, string title, string artist, string image, int duration)
+        signal artistAdded(int id, string name, string image)
+        signal playlistSearchAdded(int id, string name, string image, int duration, string uid)
 
         signal trackChanged(int id, string title, string album, string artist, string image, int duration)
         signal albumChanged(int id, string title, string artist, string image)
@@ -321,13 +322,18 @@ ApplicationWindow
             }
             );
 
-            setHandler('addArtist', function(id, name){
-                pythonApi.artistAdded(id, name)
+            setHandler('addArtist', function(id, name, image){
+                pythonApi.artistAdded(id, name,image)
             }
             );
 
-            setHandler('addAlbum', function(id, title, album, artist, image){
-                pythonApi.albumAdded(id, title, album, artist, image)
+            setHandler('addAlbum', function(id, title, album, artist, image, duration){
+                pythonApi.albumAdded(id, title, album, artist, image, duration)
+            }
+            );
+
+            setHandler('addPlaylist', function(id, name, image, duration, uid){
+                pythonApi.playlistSearchAdded(id, name, image, duration, uid)
             }
             );
 

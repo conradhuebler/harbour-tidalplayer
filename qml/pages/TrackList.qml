@@ -12,9 +12,10 @@ Column
     property string track_list
     property string track_id_list
     property bool allow_add : true
-    property bool start_on_top : false
+    property bool start_on_tap : false
     property int highlight_index : -1
     property int type : 0
+    property bool allow_play : true
     property string title : "Track List"
     SectionHeader
     {
@@ -37,9 +38,15 @@ Column
                         })
     }
 
+    function scrollTo(index)
+    {
+        tracks.positionViewAtIndex(index)
+    }
+
     IconButton
     {
-        icon.source: "image://theme/icon-m-play"
+        icon.source: "image://theme/icon-m-simple-play"
+        visible: allow_play
         onClicked:
         {
             playlistManager.clearPlayList()
@@ -50,6 +57,7 @@ Column
     }
 
 SilicaListView {
+    id:tracks
     anchors {
          top: sectionHeader.bottom// Anker oben an den unteren Rand der Column
          topMargin: 120 // Abstand zwischen der Column und dem ListView
@@ -69,38 +77,51 @@ SilicaListView {
         id: listEntry
         Row {
             Column {
+               Row {
+                Label {
+                    id: trackName
+                    color: (listEntry.highlighted || model.index === highlight_index) ? Theme.highlightColor : Theme.primaryColor
+                    text: model.name
+                    x: Theme.horizontalPageMargin
+                    truncationMode: Fade
+                    font.pixelSize: Theme.fontSizeSmall
+                }
                 Label {
                     property string dur: {
                         if ((model.duration) > 3599) Format.formatDuration(model.duration , Formatter.DurationLong)
                         else return Format.formatDuration(model.duration , Formatter.DurationShort)
                     }
-                    id: trackName
+                    id: time
                     color: (listEntry.highlighted || model.index === highlight_index) ? Theme.highlightColor : Theme.primaryColor
-                    text: model.name + " (" + dur +")"
+                    text: " (" + dur + ")"
                     x: Theme.horizontalPageMargin
-                    truncationMode: elide
+                    truncationMode: Fade
+                    font.pixelSize: Theme.fontSizeSmall
+                }
+                                }
+                Row{
+                Label {
+
+                    id: artistName
+                    color: (listEntry.highlighted || model.index === highlight_index) ? Theme.highlightColor : Theme.primaryColor
+                    text: model.artist
+                    visible: listModel.get(model.index).type === 1
+                    x: Theme.horizontalPageMargin
+                    truncationMode: Fade
                     font.pixelSize: Theme.fontSizeSmall
                 }
 
                 Label {
 
-                    id: artistName
+                    id: albumName
                     color: (listEntry.highlighted || model.index === highlight_index) ? Theme.highlightColor : Theme.primaryColor
-                    text:
-                    {
-                        if(type == 2 )
-                        {
-                            model.artist
-                        }
-                        else if(type == 1 )
-                        {
-                            model.artist + " ( "+model.album +" )"
-                        }
-                    }
+                    text: " - " + model.album
+
                     visible: listModel.get(model.index).type === 1
                     x: Theme.horizontalPageMargin
-                    truncationMode: elide
+                    truncationMode: Fade
                     font.pixelSize: Theme.fontSizeSmall
+                }
                 }
             }
         }
@@ -108,7 +129,7 @@ SilicaListView {
 
         onClicked:
         {
-            if(start_on_top)
+            if(start_on_tap)
             {
                 mediaPlayer.blockAutoNext = true
                 playlistManager.playPosition(model.index)

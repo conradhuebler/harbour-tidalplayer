@@ -17,6 +17,12 @@ Page {
         anchors.fill: parent
         PullDownMenu {
             MenuItem {
+                text: minPlayerPanel.open ? "Hide player" : "Show player"
+                onClicked: minPlayerPanel.open = !minPlayerPanel.open
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            MenuItem {
                 text: qsTr("Clear")
                 onClicked:
                 {
@@ -30,7 +36,8 @@ Page {
                 id: pLtrackList
                 title :  "Current Playlist"
                 allow_add: false
-                start_on_top : true
+                start_on_tap : true
+                allow_play: false
                 anchors {
                     top : parent.bottom
                     fill: parent

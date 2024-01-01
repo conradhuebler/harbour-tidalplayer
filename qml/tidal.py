@@ -72,19 +72,33 @@ class Tidal:
         self.tracks = result["tracks"]
         for i in self.tracks:
             try:
-                pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
-            except AttributeError:
+                pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, i.album.image(80), i.duration)
+                print(i.name)
+            except Exception as e:
                 pyotherside.send("addTrack", i.id, i.name, i.album.name, i.artist.name, "", i.duration)
+                logging.error(traceback.format_exc())
+
         self.artists = result["artists"]
         for i in self.artists:
-            pyotherside.send("addArtist", i.id, i.name)
+            try:
+                pyotherside.send("addArtist", i.id, i.name, i.image(80))
+            except AttributeError:
+                pyotherside.send("addArtist", i.id, i.name, "")
+            except ValueError:
+                pyotherside.send("addArtist", i.id, i.name, "")
 
         self.albums = result["albums"]
         for i in self.albums:
             try:
-                pyotherside.send("addAlbum", i.id, i.name, i.artist.name, i.image(320))
+                pyotherside.send("addAlbum", i.id, i.name, i.artist.name, i.image(80), i.duration)
             except AttributeError:
-                pyotherside.send("addAlbum", i.id, i.name, i.artist.name, "")
+                pyotherside.send("addAlbum", i.id, i.name, i.artist.name, "", i.duration)
+
+        self.playlists = result["playlists"]
+        for i in self.playlists:
+            pyotherside.send("addPlaylist", i.id, i.name, "", i.duration, i.id)
+
+
     def searchTracks(self, text, number):
         pyotherside.send("trackSearchFinished")
 

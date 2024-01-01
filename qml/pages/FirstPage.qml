@@ -70,7 +70,7 @@ Page {
                     id: searchString
                     width: parent.width
                     placeholderText: "Type and Search"
-                    text: ""
+                    text: "Cover"
                     label: "Please wait for login ..."
                     EnterKey.enabled: text.length > 0
                     EnterKey.iconSource: "image://theme/icon-m-search"
@@ -186,18 +186,29 @@ Page {
                         rightMargin: Theme.horizontalPageMargin
                         verticalCenter: parent.verticalCenter
                     }
-                    IconButton {
+
+                    Image {
                         id: mediaType
-                        icon.source: {
+                        source: {
+                            if(model.image === "")
+                            {
                             if(listModel.get(model.index).type === 1)
                                 "image://theme/icon-m-media-songs"
                             else if(listModel.get(model.index).type === 3)
                                 "image://theme/icon-m-media-artists"
                             else if (listModel.get(model.index).type === 2)
                                 "image://theme/icon-m-media-albums"
+                            else if (listModel.get(model.index).type === 4)
+                                "image://theme/icon-m-media-playlists"
+                            else if (listModel.get(model.index).type === 5)
+                                "image://theme/icon-m-video"
+                            }
+                            else
+                                model.image
                         }
+                        fillMode: Image.PreserveAspectFit
 
-                        height: trackName.height
+                        //width: 32
                     }
 
                     Column {
@@ -216,6 +227,8 @@ Page {
                                 model.name
                             else if (listModel.get(model.index).type === 2)
                                 model.name + " (" + dur +")"
+                            else if (listModel.get(model.index).type === 4)
+                                model.name + " (" + dur +")"
 
                         }
                         x: Theme.horizontalPageMargin
@@ -226,7 +239,7 @@ Page {
                     Label {
                         id: artistName
                         color: listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
-                        text: model.artist + " ( "+model.album +" )"
+                        text: model.artist + " ( " + model.album + " )"
                         visible: listModel.get(model.index).type === 1
                         x: Theme.horizontalPageMargin
                         truncationMode: elide
@@ -245,6 +258,8 @@ Page {
                                playlistManager.playTrack(listModel.get(model.index).id)
                             else if(listModel.get(model.index).type === 2)
                                playlistManager.playAlbum(listModel.get(model.index).id)
+                            else if(listModel.get(model.index).type === 4)
+                               pythonApi.playPlaylist(listModel.get(model.index).uid)
 
                         }
 
@@ -282,7 +297,7 @@ Page {
                 {
                     if(listModel.get(model.index).type === 1)
                     {
-                        pageStack.push(Qt.resolvedUrl("TrackPage.qml"))
+                        pageStack.push(Qt.resolvedUrl("AlbumPage.qml"))
                         pythonApi.getTrackInfo(listModel.get(model.index).id)
                     }else if(listModel.get(model.index).type === 2)
                     {
@@ -317,7 +332,8 @@ Page {
                     listModel.append(
                                 {   "name": name,
                                     "id" : id,
-                                    "type" : 3
+                                    "type" : 3,
+                                    "image" : image
                                 })
                 }
 
@@ -327,7 +343,22 @@ Page {
                     listModel.append(
                                 {   "name": title,
                                     "id" : id,
-                                    "type" : 2
+                                    "type" : 2,
+                                    "image" : image,
+                                    "duration" : duration
+                                })
+                }
+
+                onPlaylistSearchAdded:
+                {
+                    console.log(id)
+                    listModel.append(
+                                {   "name": name,
+                                    "id" : id,
+                                    "type" : 4,
+                                    "image" : image,
+                                    "duration" : duration,
+                                    "uid" : uid
                                 })
                 }
 
