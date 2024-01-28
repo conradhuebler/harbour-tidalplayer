@@ -5,3 +5,6 @@ This might be one day a Tidal Player for Sailfish OS using the tidalapi v0.7.1 (
 ### TIDAL API useage
 As v0.7.1 is not fully compatible with TIDAL anymore, the line 114 of tidalapi/user.py is removed during the packaging process.
 
+
+### Pawel Spoon's comments
+
