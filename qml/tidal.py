@@ -25,13 +25,9 @@ class Tidal:
             self.session.load_oauth_session(token_type, access_token)
             if self.session.check_login() == True:
                 pyotherside.send("oauth_login_success")
-            else:
+            if access_token == refresh_token:
                 self.session.load_oauth_session(token_type, refresh_token)
-                if self.session.check_login() == True:
-                    pyotherside.send("oauth_login_success")
-                    pyotherside.send("oauth_updated", self.session.token_type, self.session.access_token, self.session.refresh_token,  self.session.expiry_time)
-                else:
-                    pyotherside.send("oauth_login_failed")
+                pyotherside.send("oauth_updated", self.session.token_type, self.session.access_token, self.session.refresh_token,  self.session.expiry_time)
 
     def request_oauth(self):
         self.login, self.future = self.session.login_oauth()
@@ -48,6 +44,7 @@ class Tidal:
             pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
         except AttributeError:
             pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, "", i.duration)
+
 
     def getAlbumInfo(self, id):
         i = self.session.album(int(id))
@@ -116,6 +113,7 @@ class Tidal:
             pyotherside.send("currentTrackInfo", t.name, t.track_num, t.album.name, t.artist.name, t.duration, t.album.image(320), t.artist.image(320))
         except AttributeError:
             pyotherside.send("currentTrackInfo", t.name, t.track_num, t.album.name, t.artist.name, t.duration, "", "")
+        return t.name, t.track_num
 
     def getAlbumTracks(self, id):
         album = self.session.album(int(id))
@@ -163,8 +161,12 @@ class Tidal:
 
     def playPlaylist(self, id):
         playlist = self.session.playlist(id)
-        for i in playlist.tracks():
-            pyotherside.send("addTracktoPL", i.id)
+        pyotherside.send("insertTrack", playlist.tracks()[0].id)
+        for i, item in enumerate(playlist.tracks()):
+          #  if i == 0:
+          #      pyotherside.send("insertTrack", item.id)
+          #  else:
+                pyotherside.send("addTracktoPL", item.id)
         pyotherside.send("fillFinished")
 
 Tidaler = Tidal()
