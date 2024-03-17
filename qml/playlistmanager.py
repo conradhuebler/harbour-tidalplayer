@@ -6,13 +6,13 @@
 
 import pyotherside
 
-testlist = [161699365, 5190513]
 
 class PlaylistManager:
     def __init__(self):
         print("init")
         self.currentTrackIndex = -1
         self.playlist = []
+        pyotherside.send("playListChanged")
 
     def AppendTrack(self, id):
         self.playlist.append(id)
@@ -22,6 +22,8 @@ class PlaylistManager:
         else:
             pyotherside.send("playlistUnFinished")
 
+        pyotherside.send("playlistChanged")
+
     def InsertTrack(self, id):
         self.playlist.insert(self.currentTrackIndex + 1, id)
         pyotherside.send("playlistSize", len(self.playlist))
@@ -30,6 +32,8 @@ class PlaylistManager:
         else:
             pyotherside.send("playlistUnFinished")
         pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex], self.currentTrackIndex)
+
+        pyotherside.send("playListChanged")
 
     def PreviousTrack(self):
         self.currentTrackIndex =  self.currentTrackIndex - 1
@@ -54,6 +58,8 @@ class PlaylistManager:
         else:
             pyotherside.send("playlistUnFinished")
 
+        pyotherside.send("playListChanged")
+
     def PlayPosition(self, position):
         self.currentTrackIndex = position
         pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex], self.currentTrackIndex)
@@ -75,6 +81,12 @@ class PlaylistManager:
         pyotherside.send("clearList")
         for i in self.playlist:
             pyotherside.send("containsTrack", i)
+
+    def size(self):
+        return len(self.playlist)
+
+    def TidalId(self, index):
+        return self.playlist[int(index)]
 
     def clear(self):
         self.currentTrackIndex = -1

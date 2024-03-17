@@ -1,37 +1,16 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 
-Page {
+Item {
     id: personalPage
 
     // The effective value will be restricted by ApplicationWindow.allowedOrientations
-    allowedOrientations: Orientation.All
-    anchors{
-        fill: parent
-        bottomMargin: minPlayerPanel.margin
-    }
+    //allowedOrientations: Orientation.All
+//    anchors{
+//        fill: parent
+//        bottomMargin: minPlayerPanel.margin
+//    }
     SilicaListView {
-        PullDownMenu {
-            MenuItem {
-                text: qsTr("Settings")
-                onClicked: pageStack.push(Qt.resolvedUrl("Settings.qml"))
-            }
-
-            MenuItem {
-                text: qsTr("Show Playlist")
-                onClicked:
-                {
-                    onClicked: pageStack.push(Qt.resolvedUrl("PlaylistPage.qml"))
-                }
-            }
-
-            MenuItem {
-                text: minPlayerPanel.open ? "Hide player" : "Show player"
-                onClicked: minPlayerPanel.open = !minPlayerPanel.open
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-
-        }
         id: listView
         width: 480; height: 800
         model: ListModel {id: listModel }

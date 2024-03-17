@@ -7,11 +7,11 @@ import org.nemomobile.mpris 1.0
 
 DockedPanel {
     id: miniPlayerPanel
-    parent: pageStack.currentPage
+    //parent: pageStack.currentPage
 
     width: parent.width
     height: 2*Theme.itemSizeExtraLarge + Theme.paddingLarge
-
+    open: true
     dock: Dock.Bottom
 
     property string url: ""

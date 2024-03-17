@@ -6,31 +6,13 @@ import Sailfish.Media 1.0
 import "widgets"
 
 
-Page {
+Item {
     id: playlistPage
-    // The effective value will be restricted by ApplicationWindow.allowedOrientations
-    allowedOrientations: Orientation.All
 
     // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
         width: parent.width
         anchors.fill: parent
-        PullDownMenu {
-            MenuItem {
-                text: minPlayerPanel.open ? "Hide player" : "Show player"
-                onClicked: minPlayerPanel.open = !minPlayerPanel.open
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-
-            MenuItem {
-                text: qsTr("Clear")
-                onClicked:
-                {
-                    playlistManager.clearPlayList()
-                    pLtrackList.clear();
-                }
-            }
-        }
 
             TrackList {
                 id: pLtrackList
@@ -53,6 +35,17 @@ Page {
         onCurrentTrack:
         {
             pLtrackList.highlight_index = position
+        }
+        onPlayListChanged:
+        {
+            //pLtrackList.clear();
+            console.log("Playlist changed with playlist.qml")
+            console.log(playlistManager.tracks)
+            for(var i = 1; i < playlistManager.tracks; ++i)
+            {
+                console.log(i)
+                playlistManager.requestPlaylistItem(i)
+            }
         }
 
         onClearList:

@@ -140,10 +140,12 @@ ApplicationWindow
         signal clearList()
         signal currentTrack(int position)
         signal playListFinished()
+        signal playListChanged()
 
         property bool canNext : true
         property bool canPrev : true
-
+        property int tracks : 0
+        property int current_track : 0
         id: playlistManager
 
         Component.onCompleted: {
@@ -173,6 +175,20 @@ ApplicationWindow
                 canNext = true
             });
 
+            setHandler('playlistChanged', function() {
+                console.log("Playlist changed from mail.qml")
+                call("playlistmanager.PL.size", [], function(name){
+                    console.log(name)
+                    if(typeof name === 'undefined')
+                        console.log(typeof name)
+                     else
+                        console.log(typeof name)
+                     tracks = name
+                    playlistManager.playListChanged();
+                    });
+
+            });
+
             importModule('playlistmanager', function () {});
         }
 
@@ -180,6 +196,27 @@ ApplicationWindow
             console.log("appended", id)
             call('playlistmanager.PL.AppendTrack', [id], {});
             canNext = true
+        }
+
+        function getSize()
+        {
+            call("playlistmanager.PL.size", [], function(name){
+                //print(name[0], name[1])
+                console.log(name)
+                if(typeof name === 'undefined')
+                    console.log(typeof name)
+                 else
+                    console.log(typeof name)
+                 tracks = name[0]
+                });
+        }
+
+        function requestPlaylistItem(index)
+        {
+            call("playlistmanager.PL.TidalId", [index], function(id){
+                console.log(id)
+                pythonApi.getTrackInfo(id)
+                });
         }
 
         function playAlbum(id)
