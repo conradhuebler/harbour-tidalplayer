@@ -12,6 +12,8 @@ import "pages/widgets"
 ApplicationWindow
 {
     property bool loginTrue : false
+    property var locale: Qt.locale()
+    property date currentDate: new Date()
     property MiniPlayer minPlayerPanel : miniPlayerPanel
 
     ConfigurationValue {
@@ -175,7 +177,7 @@ ApplicationWindow
         }
 
         function appendTrack(id) {
-            console.log(id)
+            console.log("appended", id)
             call('playlistmanager.PL.AppendTrack', [id], {});
             canNext = true
         }
@@ -207,7 +209,7 @@ ApplicationWindow
         }
 
         function insertTrack(id) {
-            console.log(id)
+            console.log("inserted", id)
 
             call('playlistmanager.PL.InsertTrack', [id], {});
         }
@@ -371,6 +373,7 @@ ApplicationWindow
 
                 refresh_token.value = rtoken
                 expiry_time.value = date
+                console.log(expiry_time)
                 loginTrue = true
                 pythonApi.loginSuccess()
                 pythonApi.loginIn()
@@ -397,12 +400,16 @@ ApplicationWindow
                 mediaPlayer.play()
             });
 
+            setHandler('insertTrack', function(id)
+            {
+                console.log("inserted to PL", id)
+                playlistManager.insertTrack(id)
+            });
+
             setHandler('addTracktoPL', function(id)
             {
-                console.log(id)
-                //pythonApi.playAlbumTracks(id)
+                console.log("appended to PL", id)
                 playlistManager.appendTrack(id)
-                //playlistManager.playPosition(0)
             });
 
             setHandler('fillFinished', function()
@@ -440,7 +447,24 @@ ApplicationWindow
 
         function loginIn() {
             console.log("Want login now")
-            call('tidal.Tidaler.login', [token_type.value, access_token.value, refresh_token.value, expiry_time.value], {});
+            //console.log(expiry_time.value)
+            //console.log(currentDate.toLocaleString(locale, "yyyy-MM-ddThh:mm:ss"))
+            //print(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss"));
+            //console.log(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss") < currentDate)
+            if(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss") > currentDate)
+            {
+                console.log("Valid login time");
+                //console.log(token_type.value, access_token.value, refresh_token.value, expiry_time.value);
+                call('tidal.Tidaler.login', [token_type.value, access_token.value, refresh_token.value, expiry_time.value], {});
+            }
+            else
+            {
+                console.log("inValid login time");
+                //console.log(token_type.value, refresh_token.value, refresh_token.value, expiry_time.value);
+                call('tidal.Tidaler.login', [token_type.value, refresh_token.value, refresh_token.value, expiry_time.value], {});
+                console.log("Need to renew login")
+            }
+
         }
 
         function genericSearch(text) {
@@ -450,7 +474,15 @@ ApplicationWindow
 
         function playTrackId(id)
         {
-            call("tidal.Tidaler.getTrackUrl", [id], {});
+            call("tidal.Tidaler.getTrackUrl", [id], function(name)
+            {
+                print(name[0], name[1])
+                console.log(name)
+                if(typeof name === 'undefined')
+                    console.log(typeof name)
+                else
+                    console.log(typeof name)
+            });
         }
 
 

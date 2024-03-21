@@ -27,6 +27,7 @@ Requires:   python3-requests
 Requires:   python3-future
 Requires:   python3-dateutil
 Requires:   python3-six
+Requires:   mpris-qt5-qml-plugin
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
