@@ -48,7 +48,6 @@ Page {
                 source: model.image
             }
             Column{
-                Row{
             Label
             {
                 id: trackName
@@ -68,7 +67,7 @@ Page {
                 color: Theme.highlightColor
                 text: model.num_tracks + " Tracks (" + dur + ")"
             }
-                }
+
                 Label
                 {
                     id: descriptionLabel
@@ -88,7 +87,11 @@ Page {
 
                 }
             }
-
+            onClicked:
+            {
+                //tracklistpage = pageStack.push(Qt.resolvedUrl("TrackList.qml"))
+                //tracklistpage.
+            }
         }
         anchors.fill: parent
 

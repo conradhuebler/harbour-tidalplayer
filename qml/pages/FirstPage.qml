@@ -70,7 +70,7 @@ Page {
                     id: searchString
                     width: parent.width
                     placeholderText: "Type and Search"
-                    text: "Cover"
+                    text: ""
                     label: "Please wait for login ..."
                     EnterKey.enabled: text.length > 0
                     EnterKey.iconSource: "image://theme/icon-m-search"
