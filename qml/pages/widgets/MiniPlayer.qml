@@ -7,7 +7,6 @@ import org.nemomobile.mpris 1.0
 
 DockedPanel {
     id: miniPlayerPanel
-    //parent: pageStack.currentPage
 
     width: parent.width
     height: Theme.itemSizeExtraLarge + Theme.paddingLarge
@@ -24,16 +23,6 @@ DockedPanel {
         progressSlider.visible = true
         show();
     }
-
-    Rectangle {
-        anchors.fill: parent
-        color: Theme.overlayBackgroundColor
-        opacity: 0.8
-        SwipeArea {
-            anchors.fill: parent
-            onSwipeDown: minPlayerPanel.hide()
-        }
-    }
     Image {
         id: bgImage
         height: 0.75 * parent.height
@@ -42,77 +31,96 @@ DockedPanel {
         anchors.bottom: parent.bottom
     }
 
-    Label {
-        id: mediaTitle
+
+    Column
+    {
         anchors.top: parent.top
-        anchors.topMargin: Theme.paddingSmall
-        anchors.horizontalCenter: parent.horizontalCenter
-        truncationMode: TruncationMode.Fade
         width: parent.width - 2 * Theme.paddingLarge
-        //horizontalAlignment: (contentWidth > width) ? Text.AlignLeft : Text.AlignHCenter
-    }
 
-    Label {
-        id: playTime
-        anchors.top: mediaTitle.bottom
-        anchors.topMargin: Theme.paddingSmall / 6
-        property string pos: {
-            if ((mediaPlayer.position / 1000) > 3599) Format.formatDuration(minPlayer.position / 1000, Formatter.DurationLong)
-            else return Format.formatDuration(mediaPlayer.position / 1000, Formatter.DurationShort)
+        Label
+        {
+            id: mediaTitle
+            //anchors.top: parent.top
+            //anchors.topMargin: Theme.paddingSmall
+            //anchors.horizontalCenter: parent.horizontalCenter
+            truncationMode: TruncationMode.Fade
+            width: parent.width - 2 * Theme.paddingLarge
+            //horizontalAlignment: (contentWidth > width) ? Text.AlignLeft : Text.AlignHCenter
         }
-        property string dur: {
-            if ((mediaPlayer.duration / 1000) > 3599) Format.formatDuration(minPlayer.duration / 1000, Formatter.DurationLong)
-            else return Format.formatDuration(mediaPlayer.duration / 1000, Formatter.DurationShort)
-        }
-        text: pos + " / " + dur;
-        width: parent.width
-        horizontalAlignment: Text.AlignHCenter
-        font.pixelSize: Theme.fontSizeExtraSmall
-    }
-
-    Slider {
-        id: progressSlider
-        anchors.top: playTime.bottom
-        anchors.topMargin: Theme.paddingSmall / 6
-        width: parent.width
-        minimumValue: 0
-        maximumValue: 100
-        visible: false
-    }
-
-    Row {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: progressSlider.bottom
-        anchors.topMargin: Theme.paddingSmall / 4
-        IconButton {
-            id : prevButton
-            icon.source: "image://theme/icon-m-previous"
-            visible:  playlistManager.canPrev;
-            onClicked: {
-                playlistManager.previousTrackClicked()
-            }
-        }
-        IconButton {
-            id:playButton
-            icon.source: mediaPlayer.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
-            onClicked: {
-                if (mediaPlayer.playbackState == 1)
-                {
-                    mediaPlayer.pause()
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: mediaTitle.bottom
+            //anchors.topMargin: Theme.paddingSmall / 4
+            width:  miniPlayerPanel.width -2 * Theme.paddingLarge
+            id: buttonsRow
+            IconButton {
+                anchors.horizontalCenter: playButton.left
+                id : prevButton
+                icon.source: "image://theme/icon-m-previous"
+                visible:  playlistManager.canPrev;
+                onClicked: {
+                    playlistManager.previousTrackClicked()
                 }
-                else if(mediaPlayer.playbackState == 2){
-                    mediaPlayer.play()
+            }
+            IconButton {
+                anchors.horizontalCenter: parent.horizontalCenter
+                id:playButton
+                icon.source: mediaPlayer.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
+                onClicked: {
+                    if (mediaPlayer.playbackState == 1)
+                    {
+                        mediaPlayer.pause()
+                    }
+                    else if(mediaPlayer.playbackState == 2){
+                        mediaPlayer.play()
+                    }
+                }
+            }
+            IconButton {
+                anchors.horizontalCenter: playButton.right
+                id: nextButton
+                icon.source: "image://theme/icon-m-next"
+                visible: playlistManager.canNext;
+                onClicked: {
+                    console.log("play next")
+                    mediaPlayer.blockAutoNext = true
+                    playlistManager.nextTrackClicked()
                 }
             }
         }
-        IconButton {
-            id: nextButton
-            icon.source: "image://theme/icon-m-next"
-            visible: playlistManager.canNext;
-            onClicked: {
-                console.log("play next")
-                mediaPlayer.blockAutoNext = true
-                playlistManager.nextTrackClicked()
+        Row{
+            //anchors.centerIn: parent
+            anchors.top: parent.buttonsRow
+            width:  miniPlayerPanel.width
+
+            id: progressSliderRow
+            Label
+            {
+                id: playedTime
+                property string pos: {
+                    if ((mediaPlayer.position / 1000) > 3599) Format.formatDuration(minPlayer.position / 1000, Formatter.DurationLong)
+                    else return Format.formatDuration(mediaPlayer.position / 1000, Formatter.DurationShort)
+                }
+                text: pos;
+                horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: Theme.fontSizeExtraSmall
+            }
+            Slider {
+                id: progressSlider
+                minimumValue: 0
+                maximumValue: 100
+                visible: false
+                width:  miniPlayerPanel.width - Theme.paddingLarge
+            }
+            Label {
+            id: playTime
+            property string dur: {
+                if ((mediaPlayer.duration / 1000) > 3599) Format.formatDuration(minPlayer.duration / 1000, Formatter.DurationLong)
+                else return Format.formatDuration(mediaPlayer.duration / 1000, Formatter.DurationShort)
+            }
+            text: dur;
+            horizontalAlignment: Text.AlignHCenter
+            font.pixelSize: Theme.fontSizeExtraSmall
             }
         }
     }
@@ -146,7 +154,6 @@ DockedPanel {
         target: pythonApi
         onCurrentTrackInfo:
         {
-
             mediaTitle.text = track_num + " - " + title + " - "  +album + " - " + artist
             bgImage.source = album_image
             prevButton.enabled = playlistManager.canPrev;

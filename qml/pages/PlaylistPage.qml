@@ -41,13 +41,12 @@ Item {
         onPlayListChanged:
         {
             pLtrackList.clear();
-            console.log("Playlist changed with playlist.qml", playlistManager.size)
             for(var i = 0; i < playlistManager.size; ++i)
             {
-                console.log(i)
                 playlistManager.requestPlaylistItem(i)
                 pLtrackList.addTrack(playlistManager.playlist_track, playlistManager.playlist_artist, playlistManager.playlist_album, playlistManager.playlist_track_id, playlistManager.playlist_duration)
             }
+            pLtrackList.highlight_index = playlistManager.current_track
         }
 
         onClearList:
@@ -58,19 +57,7 @@ Item {
         onTrackInformation:
         {
             pLtrackList.setTrack(index, id, title, artist, album, image, duration)
-            console.log(image)
         }
 
     }
-    Connections {
-        target: pythonApi
-        onTrackChanged:
-        {
-            console.log("PlaylistPage::onTrackChanged in pythonApi", title)
-            pLtrackList.addTrack(title, artist, album, id, duration)
-        }
-
-
-    }
-
 }

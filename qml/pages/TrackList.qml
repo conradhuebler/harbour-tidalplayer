@@ -176,6 +176,7 @@ SilicaListView {
             {
                 mediaPlayer.blockAutoNext = true
                 playlistManager.playPosition(model.index)
+                highlight_index = model.index
             }
         }
         menu: ContextMenu {
