@@ -18,6 +18,8 @@ Page {
             fill: parent
             bottomMargin: minPlayerPanel.margin
         }
+        clip: miniPlayerPanel.expanded
+        contentHeight: parent.height - Theme.itemSizeExtraLarge - Theme.paddingLarge
 
         // PullDownMenu and PushUpMenu must be declared in SilicaFlickable, SilicaListView or SilicaGridView
         PullDownMenu {
@@ -60,7 +62,6 @@ Page {
                   anchors.left: parent.left
                   anchors.right: parent.right
                   anchors.bottom: miniPlayerPanel.top
-
                   property var carouselPages: ["Personal.qml", "Search.qml", "PlaylistPage.qml"]
                   property int initialPage: 0
                   model: carouselPages.length
@@ -73,6 +74,5 @@ Page {
                       asynchronous: true
                   }
               }
-
     }
 }

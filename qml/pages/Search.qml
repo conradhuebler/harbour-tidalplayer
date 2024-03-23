@@ -18,15 +18,8 @@ Item {
             fill: parent
             bottomMargin: minPlayerPanel.margin
         }
-
-        // PullDownMenu and PushUpMenu must be declared in SilicaFlickable, SilicaListView or SilicaGridView
-
-        PushUpMenu {
-            MenuItem {
-                text: "Clear"
-                onClicked: listModel.clear()
-            }
-        }
+        clip: miniPlayerPanel.expanded
+        contentHeight: parent.height - Theme.itemSizeExtraLarge - Theme.paddingLarge
 
         Column
         {
@@ -34,9 +27,6 @@ Item {
            // width: parent.width
             //height: header.height + mainColumn.height + Theme.paddingLarge
 
-            //PageHeader {
-            //    title:  qsTr("Look for anything in Tidal")
-            //}
                 id: header
                 width: searchPage.width
                 spacing: Theme.paddingSmall

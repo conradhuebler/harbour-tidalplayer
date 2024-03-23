@@ -41,9 +41,11 @@ class Tidal:
     def getTrackInfo(self, id):
         i = self.session.track(int(id))
         try:
-            pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
+            #//pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
+            return i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration
         except AttributeError:
-            pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, "", i.duration)
+            #//pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, "", i.duration)
+            return i.id, i.name, i.album.name, i.artist.name, "", i.duration
 
 
     def getAlbumInfo(self, id):
@@ -162,11 +164,13 @@ class Tidal:
     def playPlaylist(self, id):
         playlist = self.session.playlist(id)
         pyotherside.send("insertTrack", playlist.tracks()[0].id)
+        pyotherside.send("printConsole", " insert Track: " + str(playlist.tracks()[0].id))
+
         for i, item in enumerate(playlist.tracks()):
-          #  if i == 0:
-          #      pyotherside.send("insertTrack", item.id)
-          #  else:
+            if( i > 0):
                 pyotherside.send("addTracktoPL", item.id)
+                pyotherside.send("printConsole", " append Track: " + str(item.id))
+
         pyotherside.send("fillFinished")
 
 Tidaler = Tidal()

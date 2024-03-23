@@ -10,7 +10,7 @@ DockedPanel {
     //parent: pageStack.currentPage
 
     width: parent.width
-    height: 2*Theme.itemSizeExtraLarge + Theme.paddingLarge
+    height: Theme.itemSizeExtraLarge + Theme.paddingLarge
     open: true
     dock: Dock.Bottom
 

@@ -38,9 +38,28 @@ Column
                         })
     }
 
+    function setTrack(index, id, title, artist, album, image, duration)
+    {
+        listModel.set(index, {"name": title,
+                          "artist" : artist,
+                          "album" : album,
+                          "id" : id,
+                          "type" : 1,
+                          "duration" : duration,
+                          "image" : image
+                             })
+        console.log(image)
+    }
+
     function scrollTo(index)
     {
         tracks.positionViewAtIndex(index)
+    }
+
+
+    function clear()
+    {
+        listModel.clear();
     }
 
     IconButton
@@ -76,6 +95,30 @@ SilicaListView {
     delegate: ListItem {
         id: listEntry
         Row {
+            Image {
+                id: coverImage
+                height: 100
+                //anchors.centerIn: parent.top
+                fillMode: Image.PreserveAspectFit
+                anchors.margins: Theme.paddingSmall
+                source: {
+                    if(model.image === "")
+                    {
+                    if(listModel.get(model.index).type === 1)
+                        "image://theme/icon-m-media-songs"
+                    else if(listModel.get(model.index).type === 3)
+                        "image://theme/icon-m-media-artists"
+                    else if (listModel.get(model.index).type === 2)
+                        "image://theme/icon-m-media-albums"
+                    else if (listModel.get(model.index).type === 4)
+                        "image://theme/icon-m-media-playlists"
+                    else if (listModel.get(model.index).type === 5)
+                        "image://theme/icon-m-video"
+                    }
+                    else
+                        model.image
+            }
+            }
             Column {
                Row {
                 Label {
@@ -83,7 +126,7 @@ SilicaListView {
                     color: (listEntry.highlighted || model.index === highlight_index) ? Theme.highlightColor : Theme.primaryColor
                     text: model.name
                     x: Theme.horizontalPageMargin
-                    truncationMode: Fade
+                    //truncationMode: Fade
                     font.pixelSize: Theme.fontSizeSmall
                 }
                 Label {
@@ -95,7 +138,7 @@ SilicaListView {
                     color: (listEntry.highlighted || model.index === highlight_index) ? Theme.highlightColor : Theme.primaryColor
                     text: " (" + dur + ")"
                     x: Theme.horizontalPageMargin
-                    truncationMode: Fade
+                    //truncationMode: Fade
                     font.pixelSize: Theme.fontSizeSmall
                 }
                                 }

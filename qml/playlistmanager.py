@@ -12,7 +12,7 @@ class PlaylistManager:
         print("init")
         self.currentTrackIndex = -1
         self.playlist = []
-        pyotherside.send("playListChanged")
+      #  pyotherside.send("playListChanged")
 
     def AppendTrack(self, id):
         self.playlist.append(id)
@@ -22,18 +22,18 @@ class PlaylistManager:
         else:
             pyotherside.send("playlistUnFinished")
 
-        pyotherside.send("playlistChanged")
+       # pyotherside.send("playlistChanged")
 
     def InsertTrack(self, id):
         self.playlist.insert(self.currentTrackIndex + 1, id)
         pyotherside.send("playlistSize", len(self.playlist))
-        if self.currentTrackIndex  == len(self.playlist) - 1:
+        if self.currentTrackIndex  == 0:
             pyotherside.send("playlistFinished")
         else:
             pyotherside.send("playlistUnFinished")
         pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex], self.currentTrackIndex)
 
-        pyotherside.send("playListChanged")
+       # pyotherside.send("playListChanged")
 
     def PreviousTrack(self):
         self.currentTrackIndex =  self.currentTrackIndex - 1
@@ -58,7 +58,7 @@ class PlaylistManager:
         else:
             pyotherside.send("playlistUnFinished")
 
-        pyotherside.send("playListChanged")
+        #pyotherside.send("playListChanged")
 
     def PlayPosition(self, position):
         self.currentTrackIndex = position
@@ -70,11 +70,15 @@ class PlaylistManager:
             pyotherside.send("playlistUnFinished")
 
     def NextTrack(self):
+        pyotherside.send("printConsole", "Tracks in PL: " + str(len(self.playlist)))
+        pyotherside.send("printConsole", "currentTrack: " + str(self.currentTrackIndex))
+        pyotherside.send("printConsole", "lastTrack: " + str(self.currentTrackIndex == len(self.playlist)  - 1))
+
         if self.currentTrackIndex == len(self.playlist)  - 1:
             pyotherside.send("playlistFinished")
         else:
             self.currentTrackIndex =  self.currentTrackIndex + 1
-            pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex], self.currentTrackIndex)
+            pyotherside.send("currentTrack: ", self.playlist[self.currentTrackIndex], self.currentTrackIndex)
             pyotherside.send("playlistUnFinished")
 
     def GenerateList(self):
@@ -86,7 +90,12 @@ class PlaylistManager:
         return len(self.playlist)
 
     def TidalId(self, index):
+        pyotherside.send("printConsole", "Getting tidal index : " + str(index))
+
         return self.playlist[int(index)]
+
+    def PlaylistIndex(self):
+        return self.currentTrackIndex
 
     def clear(self):
         self.currentTrackIndex = -1

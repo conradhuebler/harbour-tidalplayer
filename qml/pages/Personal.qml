@@ -74,9 +74,6 @@ Item {
         }
         anchors.fill: parent
 
-        header: PageHeader {
-            title: qsTr("Personal Page")
-        }
         VerticalScrollDecorator {}
     }
 
