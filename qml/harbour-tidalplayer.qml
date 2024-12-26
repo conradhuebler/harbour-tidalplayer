@@ -5,6 +5,7 @@ import QtMultimedia 5.6
 import org.nemomobile.mpris 1.0
 import Nemo.Configuration 1.0
 
+
 import "pages"
 import "pages/widgets"
 
@@ -38,9 +39,6 @@ ApplicationWindow
     }
 
 
-    MiniPlayer {
-        id: miniPlayerPanel
-    }
 
     MprisPlayer{
         id: mprisPlayer
@@ -606,6 +604,13 @@ ApplicationWindow
     initialPage: Component { FirstPage { } }
     cover: Qt.resolvedUrl("cover/CoverPage.qml")
     allowedOrientations: defaultAllowedOrientations
+
+
+    MiniPlayer {
+        parent: pageStack
+        id: miniPlayerPanel
+        z:10
+    }
 
 
     Component.onCompleted: {

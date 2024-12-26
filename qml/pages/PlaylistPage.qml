@@ -11,8 +11,8 @@ Item {
 
     // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
-        width: parent.width
-        anchors.fill: parent
+        //width: parent.width
+        anchors.bottom: miniPlayerPanel.top // Panel als Referenz nutzen
         clip: miniPlayerPanel.expanded
         contentHeight: parent.height - Theme.itemSizeExtraLarge - Theme.paddingLarge
 

@@ -20,6 +20,7 @@ Item {
         }
         clip: miniPlayerPanel.expanded
         contentHeight: parent.height - Theme.itemSizeExtraLarge - Theme.paddingLarge
+        anchors.bottom: miniPlayerPanel.top // Panel als Referenz nutzen
 
         Column
         {
@@ -52,7 +53,7 @@ Item {
                     anchors {
                         leftMargin: Theme.horizontalPageMargin
                         rightMargin: Theme.horizontalPageMargin
-                        bottom: searchString
+                       // bottom: searchString
                     }
                     Switch {
                         id: searchAlbum

@@ -11,16 +11,14 @@ Page {
 
     // The effective value will be restricted by ApplicationWindow.allowedOrientations
     allowedOrientations: Orientation.All
-    clip: true
 
     // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
         clip: true
         anchors {
             fill: parent
-            bottom: minPlayerPanel.top
         }
-        contentHeight: parent.height - Theme.itemSizeExtraLarge - Theme.paddingLarge
+        contentHeight: parent.height - miniPlayerPanel.height
 
         // PullDownMenu and PushUpMenu must be declared in SilicaFlickable, SilicaListView or SilicaGridView
         PullDownMenu {
@@ -55,7 +53,7 @@ Page {
         SlideshowView {
                   clip: true
                   id: swipeView
-                  height: parent.height
+                  height: parent.height - miniPlayerPanel.height
                   itemWidth: width
                   itemHeight: height
                   orientation: Qt.Horizontal

@@ -3,6 +3,7 @@ import Sailfish.Silica 1.0
 
 Item {
     id: personalPage
+    anchors.bottom: miniPlayerPanel.top // Panel als Referenz nutzen
 
     // The effective value will be restricted by ApplicationWindow.allowedOrientations
     //allowedOrientations: Orientation.All
@@ -12,7 +13,9 @@ Item {
 //    }
     SilicaListView {
         id: listView
-        width: 480; height: 800
+//        width: 480; height: 800
+        anchors.bottom: miniPlayerPanel.top // Panel als Referenz nutzen
+
         model: ListModel {id: listModel }
         delegate: ListItem {
             id: listEntry
