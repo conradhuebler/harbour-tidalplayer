@@ -1,78 +1,53 @@
-name: BUILD on Sailfish OS 4.4.0.58
+# .github/workflows/sailfish-build.yml
+name: Sailfish OS Package Build
 
 on:
   push:
-    branches:
-      - master
-    tags:
-      - '*'
-  # to prevent secrets leaking,
-  # we don't build on PRs
-  #pull_request:
-  #  branches:
-  #    - master
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: coderus/sailfishos-platform-sdk:4.4.0.58
+      options: --privileged
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-    
-      - name: Prepare
-        run: mkdir output
-      
-      - name: Build armv7hl
-        id: build_armv7hl
-        uses: coderus/github-sfos-build@master
-        with:
-          release: 4.4.0.58
-          arch: armv7hl
-        
-      - name: Build i486
-        id: build_i486
-        uses: coderus/github-sfos-build@master
-        with:
-          release: 4.4.0.58
-          arch: i486
+    - uses: actions/checkout@v2
 
-      - name: Build aarch64
-        id: build_aarch64
-        uses: coderus/github-sfos-build@master
-        with:
-          release: 4.4.0.58
-          arch: aarch64
-      
-      - name: Upload build result
-        uses: actions/upload-artifact@v2
-        with:
-          name: rpm-build-result
-          path: RPMS
-          
-      - name: Create release
-        if: contains(github.ref, 'v')
-        run: |
-          set -x
-          assets=()
-          for asset in RPMS/*.rpm; do
-            assets+=("$asset")
-          done
-          tag_name="${GITHUB_REF##*/}"
-          gh release create "$tag_name" "${assets[@]}" 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                
-      - name: Create prerelease
-        if: contains(github.ref, 'master')
-        run: |
-          set -x
-          assets=()
-          for asset in RPMS/*.rpm; do
-            assets+=("$asset")
-          done
-          tag_name="${GITHUB_REF##*/}"
-          gh release create "$tag_name" -p -n "This is a pre-release for testing purposes only. It may or may not be unstable." "${assets[@]}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Prepare build environment
+      run: |
+        mkdir -p ~/rpmbuild/SOURCES
+        mkdir -p ~/rpmbuild/SPECS
+        cp rpm/harbour-tidalplayer.spec ~/rpmbuild/SPECS/
+        cp rpm/harbour-tidalplayer.yaml ~/rpmbuild/SPECS/
+
+    - name: Create source tarball
+      run: |
+        VERSION=$(grep "Version:" rpm/harbour-tidalplayer.yaml | cut -d':' -f2 | tr -d ' ')
+        tar --transform "s,^,harbour-tidalplayer-$VERSION/," -czf ~/rpmbuild/SOURCES/harbour-tidalplayer-$VERSION.tar.gz *
+
+    - name: Build RPM package
+      run: |
+        cd ~/rpmbuild/SPECS
+        mb2 -t SailfishOS-4.4.0.58 -s harbour-tidalplayer.spec build
+
+    - name: Upload RPM artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: harbour-tidalplayer-rpm
+        path: |
+          ~/rpmbuild/RPMS/**/*.rpm
+
+    # Optional: Release erstellen wenn getaggt
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ~/rpmbuild/RPMS/**/*.rpm
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
