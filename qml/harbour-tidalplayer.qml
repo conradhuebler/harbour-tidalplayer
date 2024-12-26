@@ -5,6 +5,7 @@ import QtMultimedia 5.6
 import org.nemomobile.mpris 1.0
 import Nemo.Configuration 1.0
 
+import "components"
 
 import "pages"
 import "pages/widgets"
@@ -16,7 +17,7 @@ ApplicationWindow
     property var locale: Qt.locale()
     property date currentDate: new Date()
     property MiniPlayer minPlayerPanel : miniPlayerPanel
-
+/*
     ConfigurationValue {
       id: token_type
       key:"/token_type"
@@ -37,7 +38,7 @@ ApplicationWindow
       id: expiry_time
       key:"/expiry_time"
     }
-
+*/
 
 
     MprisPlayer{
@@ -413,7 +414,7 @@ ApplicationWindow
             setHandler('albumsSearchFinished', function() {
                 pythonApi.albumSearchFinished()
             });
-
+/*
             setHandler('oauth_success', function() {
                 pythonApi.loginIn()
             });
@@ -452,7 +453,7 @@ ApplicationWindow
                 pythonApi.loginIn()
 
             });
-
+    */
             setHandler('oauth_failed',function() {
                 pythonApi.loginFailed()
             });
@@ -509,10 +510,10 @@ ApplicationWindow
 
         function loginIn() {
             console.log("Want login now")
-            //console.log(expiry_time.value)
-            //console.log(currentDate.toLocaleString(locale, "yyyy-MM-ddThh:mm:ss"))
-            //print(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss"));
-            //console.log(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss") < currentDate)
+            console.log(expiry_time.value)
+            console.log(currentDate.toLocaleString(locale, "yyyy-MM-ddThh:mm:ss"))
+            print(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss"));
+            console.log(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss") < currentDate)
             if(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss") > currentDate)
             {
                 console.log("Valid login time");
@@ -613,10 +614,44 @@ ApplicationWindow
     }
 
 
-    Component.onCompleted: {
-        pythonApi.loginIn()
-        mprisPlayer.setCanControl(true)
+    AuthManager {
+            id: authManager
+        }
+
+        TidalApi {
+            id: tidalApi
+            onOAuthSuccess: {
+                // type, token, rtoken, date werden als Parameter übergeben
+                authManager.updateTokens(type, token, rtoken, date)
+            }
+            onLoginSuccess: {
+                loginTrue = true
+            }
+            onLoginFailed: {
+                loginTrue = false
+                authManager.clearTokens()
+            }
+        }
+
+        Component.onCompleted: {
+            authManager.checkAndLogin()
+            mprisPlayer.setCanControl(true)
+
+        }
+
+    // Neue Connections für TidalApi
+    Connections {
+        target: tidalApi
+        onOAuthSuccess: {
+            // Diese Funktion wird aufgerufen, wenn neue Tokens empfangen werden
+            authManager.updateTokens(type, token, rtoken, date)
+        }
+        onLoginFailed: {
+            authManager.clearTokens()
+        }
     }
+
+
     Connections
     {
         target: playlistManager

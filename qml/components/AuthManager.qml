@@ -1,20 +1,13 @@
+// AuthManager.qml
 import QtQuick 2.0
 import Nemo.Configuration 1.0
 
 Item {
     id: root
 
-    // Signals
-    signal loginStateChanged(bool isLoggedIn)
-    signal tokenUpdated()
-
     // Properties
     property bool isLoggedIn: false
     property date currentDate: new Date()
-    readonly property alias accessToken: access_token.value
-    readonly property alias tokenType: token_type.value
-    readonly property alias refreshToken: refresh_token.value
-    readonly property alias expiryTime: expiry_time.value
 
     // Configuration Storage
     ConfigurationValue {
@@ -38,26 +31,30 @@ Item {
         key: "/expiry_time"
     }
 
-    // Public Functions
+    // Funktionen zum Token-Management
     function updateTokens(type, token, rtoken, expiry) {
         token_type.value = type
         access_token.value = token
         refresh_token.value = rtoken
         expiry_time.value = expiry
-
         isLoggedIn = true
-        tokenUpdated()
-        loginStateChanged(true)
     }
 
-    function clearTokens() {
-        token_type.value = ""
-        access_token.value = ""
-        refresh_token.value = ""
-        expiry_time.value = ""
-
-        isLoggedIn = false
-        loginStateChanged(false)
+    function checkAndLogin() {
+        if (token_type.value && access_token.value) {
+            if (isTokenValid()) {
+                tidalApi.loginIn(token_type.value,
+                                access_token.value,
+                                refresh_token.value,
+                                expiry_time.value)
+            } else {
+                // Token abgelaufen, mit Refresh Token versuchen
+                tidalApi.loginIn(token_type.value,
+                                refresh_token.value,
+                                refresh_token.value,
+                                expiry_time.value)
+            }
+        }
     }
 
     function isTokenValid() {
@@ -67,21 +64,11 @@ Item {
                                    "yyyy-MM-ddThh:mm:ss") > currentDate
     }
 
-    function getLoginCredentials() {
-        return {
-            tokenType: token_type.value,
-            accessToken: access_token.value,
-            refreshToken: refresh_token.value,
-            expiryTime: expiry_time.value
-        }
-    }
-
-    // Debug Function
-    function printLoginState() {
-        console.log("Token Type:", token_type.value)
-        console.log("Access Token:", access_token.value)
-        console.log("Refresh Token:", refresh_token.value)
-        console.log("Expiry Time:", expiry_time.value)
-        console.log("Is Valid:", isTokenValid())
+    function clearTokens() {
+        token_type.value = ""
+        access_token.value = ""
+        refresh_token.value = ""
+        expiry_time.value = ""
+        isLoggedIn = false
     }
 }
