@@ -16,7 +16,7 @@ jobs:
       options: --privileged
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Prepare build environment
       run: |
@@ -36,11 +36,11 @@ jobs:
         mb2 -t SailfishOS-4.4.0.58 -s harbour-tidalplayer.spec build
 
     - name: Upload RPM artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: harbour-tidalplayer-rpm
-        path: |
-          ~/rpmbuild/RPMS/**/*.rpm
+        path: ~/rpmbuild/RPMS/**/*.rpm
+        if-no-files-found: error
 
     # Optional: Release erstellen wenn getaggt
     - name: Create Release
