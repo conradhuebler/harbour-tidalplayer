@@ -18,6 +18,7 @@ class PlaylistManager:
 
     def _notify_current_track(self):
         """Benachrichtigt über den aktuellen Track"""
+
         if 0 <= self.current_index < len(self.playlist):
             pyotherside.send("currentTrack",
                            self.playlist[self.current_index],

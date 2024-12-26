@@ -1,10 +1,20 @@
+// PlaylistManager.qml
 import QtQuick 2.0
 import io.thp.pyotherside 1.5
 
 Item {
-    id: root
+    id: playlistManager
 
-    // Signals
+    property var currentPlaylist: []
+    property int currentIndex: -1
+    property bool canNext: currentPlaylist.length > 0 && currentIndex < currentPlaylist.length - 1
+    property bool canPrev: currentIndex > 0
+    property int size: currentPlaylist.length
+    property int current_track: -1
+
+    signal currentTrackChanged(var track)
+    signal playlistChanged()
+    signal trackInformation(int id, int index, string title, string album, string artist, string image, int duration)
     signal currentId(int id)
     signal currentPosition(int position)
     signal containsTrack(int id)
@@ -12,66 +22,203 @@ Item {
     signal currentTrack(int position)
     signal playListFinished()
     signal playListChanged()
-    signal trackInformation(int id, int index, string title, string album, string artist, string image, int duration)
 
-    // Properties
-    property bool canNext: true
-    property bool canPrev: true
-    property int size: 0
-    property int current_track: 0
-
-    // Python Interface
     Python {
-        id: playlistPython
 
-        Component.onCompleted: {
-            setHandler('printConsole', function(string) {
-                console.log("playlistManager::printConsole" + string)
-            })
+              property bool canNext : true
+              property bool canPrev : true
+              property int size: 0
+              property int current_track : 0
 
-            setHandler('currentTrack', function(id, position) {
-                root.currentId(id)
-                root.currentTrack(position)
-            })
+              property string playlist_track
+              property string playlist_artist
+              property string playlist_album
+              property string playlist_image
+              property int playlist_duration
+              property int playlist_track_id
 
-            setHandler('clearList', function() {
-                root.clearList()
-            })
+              id: playlistPython
 
-            setHandler('containsTrack', function(id) {
-                root.containsTrack(id)
-            })
+              Component.onCompleted: {
 
-            setHandler('playlistFinished', function() {
-                root.canNext = false
-            })
+                  setHandler('printConsole', function(string)
+                  {
+                     console.log("playlistManager::printConsole" + string)
+                  });
 
-            setHandler('playlistUnFinished', function() {
-                root.canNext = true
-            })
+                  setHandler('currentTrack', function(id, position) {
+                      console.log("Current track in playlist is", id, position)
+                      playlistManager.currentId(id);
+                      currentTrack(position)
+                  });
 
-            importModule('playlistmanager', function() {})
-        }
+                  setHandler('clearList', function() {
+                      playlistManager.clearList();
+                  });
+
+                  setHandler('containsTrack', function(id) {
+                      console.log(id)
+                      playlistManager.containsTrack(id);
+                  });
+
+                  setHandler('playlistFinished', function() {
+                      console.log("Playlist Finished")
+                      canNext = false
+                  });
+
+                  setHandler('playlistUnFinished', function() {
+                      console.log("Playlist unfinished")
+                      canNext = true
+                  });
+
+                  importModule('playlistmanager', function () {});
+              }
+
+              function appendTrack(id) {
+                  console.log("PlaylistMagaer.appendTrack", id)
+
+                  call('playlistmanager.PL.AppendTrack', [id], {});
+                  canNext = true
+              }
+
+              function currentTrackIndex()
+              {
+                  call("playlistmanager.PL.PlaylistIndex", [], function(index){
+                       current_track = index
+                      });
+              }
+
+              function getSize()
+              {
+                  call("playlistmanager.PL.size", [], function(name){
+                       tracks = name
+                      });
+              }
+
+              function requestPlaylistItem(index)
+              {
+                  console.log("Request PlaylistTrack", index)
+                  call("playlistmanager.PL.TidalId", [index], function(id){
+                          var track = pythonApi.getTrackInfo(id)
+                          trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
+                      });
+              }
+
+              function playAlbum(id)
+              {
+                  console.log("playalbum", id)
+                  playlistManager.clearPlayList()
+                  currentTrackIndex()
+                  pythonApi.playAlbumTracks(id)
+              }
+
+              function playAlbumFromTrack(id)
+              {
+                  playlistManager.clearPlayList()
+                  pythonApi.playAlbumFromTrack(id)
+                  currentTrackIndex()
+              }
+
+              function playTrack(id) {
+                  mediaPlayer.blockAutoNext = true
+                  console.log("PythonQMLQMP", id);
+                  call('playlistmanager.PL.PlayTrack', [id], {});
+                  currentTrackIndex()
+              }
+
+              function playPosition(id) {
+                  console.log(id)
+                  playlistPython.canNext = false
+                  mediaPlayer.blockAutoNext = true
+                  call('playlistmanager.PL.PlayPosition', [id], {});
+                  currentTrackIndex()
+              }
+
+              function insertTrack(id) {
+                  console.log("PlaylistMagaer.insertTrack", id)
+
+                  call('playlistmanager.PL.InsertTrack', [id], {});
+                  currentTrackIndex()
+              }
+
+
+              function nextTrack() {
+                  console.log("Next track called")
+                  if(mediaPlayer.playbackState !== 1 )
+                  {
+                      playlistPython.canNext = false
+                      call('playlistmanager.PL.NextTrack', function() {});
+                  }
+                  currentTrackIndex()
+              }
+
+              function nextTrackClicked() {
+                  console.log("Next track called")
+                  mediaPlayer.blockAutoNext = true
+
+                  playlistPython.canNext = false
+                  call('playlistmanager.PL.NextTrack', function() {});
+                  currentTrackIndex()
+              }
+
+              function restartTrack(id) {
+                  console.log(id)
+
+                  call('playlistmanager.PL.RestartTrack', function() {});
+                  currentTrackIndex()
+              }
+
+              function previousTrack() {
+                  playlistPython.canNext = false
+                  call('playlistmanager.PL.PreviousTrack', function() {});
+                  currentTrackIndex()
+              }
+
+              function previousTrackClicked() {
+                  playlistPython.canNext = false
+                  mediaPlayer.blockAutoNext = true
+                  call('playlistmanager.PL.PreviousTrack', function() {});
+                  currentTrackIndex()
+              }
+
+              function generateList()
+              {
+
+                  console.log("Playlist changed from main.qml")
+                  call("playlistmanager.PL.size", [], function(tracks){
+                      console.log("got ", tracks, " as name")
+                      size = tracks
+                      playlistManager.playListChanged();
+                      });
+              }
+
+              function clearPlayList()
+              {
+                  call('playlistmanager.PL.clearList', function() {});
+              }
+}
+
+    function clearPlayList()
+    {
+        playlistPython.call('playlistmanager.PL.clearList', function() {});
     }
-
-    // Public Functions
     function appendTrack(id) {
         console.log("PlaylistMagaer.appendTrack", id)
 
-        call('playlistmanager.PL.AppendTrack', [id], {});
+        playlistPython.call('playlistmanager.PL.AppendTrack', [id], {});
         canNext = true
     }
 
     function currentTrackIndex()
     {
-        call("playlistmanager.PL.PlaylistIndex", [], function(index){
+        playlistPython.call("playlistmanager.PL.PlaylistIndex", [], function(index){
              current_track = index
             });
     }
 
     function getSize()
     {
-        call("playlistmanager.PL.size", [], function(name){
+        playlistPython.call("playlistmanager.PL.size", [], function(name){
              tracks = name
             });
     }
@@ -79,7 +226,7 @@ Item {
     function requestPlaylistItem(index)
     {
         console.log("Request PlaylistTrack", index)
-        call("playlistmanager.PL.TidalId", [index], function(id){
+        playlistPython.call("playlistmanager.PL.TidalId", [index], function(id){
                 var track = pythonApi.getTrackInfo(id)
                 trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
             });
@@ -88,27 +235,28 @@ Item {
     function playAlbum(id)
     {
         console.log("playalbum", id)
-        playlistManager.clearPlayList()
+        clearPlayList()
         currentTrackIndex()
         pythonApi.playAlbumTracks(id)
     }
 
     function playAlbumFromTrack(id)
     {
-        playlistManager.clearPlayList()
+        clearPlayList()
         pythonApi.playAlbumFromTrack(id)
         currentTrackIndex()
     }
 
     function playTrack(id) {
+        console.log("Playlistmanager::playtrack", id)
         mediaPlayer.blockAutoNext = true
-        call('playlistmanager.PL.PlayTrack', [id], {});
+        playlistPython.playTrack(id)//call('playlistmanager.PL.PlayTrack', [id], {});
         currentTrackIndex()
     }
 
     function playPosition(id) {
         console.log(id)
-        playlistManager.canNext = false
+        playlistPython.canNext = false
         mediaPlayer.blockAutoNext = true
         call('playlistmanager.PL.PlayPosition', [id], {});
         currentTrackIndex()
@@ -126,7 +274,7 @@ Item {
         console.log("Next track called")
         if(mediaPlayer.playbackState !== 1 )
         {
-            playlistManager.canNext = false
+            playlistPython.canNext = false
             call('playlistmanager.PL.NextTrack', function() {});
         }
         currentTrackIndex()
@@ -136,28 +284,28 @@ Item {
         console.log("Next track called")
         mediaPlayer.blockAutoNext = true
 
-        playlistManager.canNext = false
-        call('playlistmanager.PL.NextTrack', function() {});
+        playlistPython.canNext = false
+        playlistPython.call('playlistmanager.PL.NextTrack', function() {});
         currentTrackIndex()
     }
 
     function restartTrack(id) {
         console.log(id)
 
-        call('playlistmanager.PL.RestartTrack', function() {});
+        playlistPython.call('playlistmanager.PL.RestartTrack', function() {});
         currentTrackIndex()
     }
 
     function previousTrack() {
-        playlistManager.canNext = false
-        call('playlistmanager.PL.PreviousTrack', function() {});
+        playlistPython.canNext = false
+        playlistPython.call('playlistmanager.PL.PreviousTrack', function() {});
         currentTrackIndex()
     }
 
     function previousTrackClicked() {
-        playlistManager.canNext = false
+        playlistPython.canNext = false
         mediaPlayer.blockAutoNext = true
-        call('playlistmanager.PL.PreviousTrack', function() {});
+        playlistPython.call('playlistmanager.PL.PreviousTrack', function() {});
         currentTrackIndex()
     }
 
@@ -165,15 +313,11 @@ Item {
     {
 
         console.log("Playlist changed from main.qml")
-        call("playlistmanager.PL.size", [], function(tracks){
+        playlistPython.call("playlistmanager.PL.size", [], function(tracks){
             console.log("got", tracks, " as name")
             size = tracks
             playlistManager.playListChanged();
             });
     }
 
-    function clearPlayList()
-    {
-        call('playlistmanager.PL.clearList', function() {});
-    }
 }

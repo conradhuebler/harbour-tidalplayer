@@ -17,29 +17,6 @@ ApplicationWindow
     property var locale: Qt.locale()
     property date currentDate: new Date()
     property MiniPlayer minPlayerPanel : miniPlayerPanel
-/*
-    ConfigurationValue {
-      id: token_type
-      key:"/token_type"
-    }
-
-    ConfigurationValue {
-      id: access_token
-      key:"/access_token"
-      value:""
-    }
-
-    ConfigurationValue {
-      id: refresh_token
-      key:"/refresh_token"
-    }
-
-    ConfigurationValue {
-      id: expiry_time
-      key:"/expiry_time"
-    }
-*/
-
 
     MprisPlayer{
         id: mprisPlayer
@@ -67,6 +44,16 @@ ApplicationWindow
 
         }
 
+    }
+
+    PlaylistManager {
+        id: playlistManager
+        onCurrentTrackChanged: {
+            if (track) {
+                pythonApi.playTrackId(track.id)
+                console.log("playlistmanager call id", track)
+            }
+        }
     }
 
     MediaPlayer {
@@ -129,188 +116,6 @@ ApplicationWindow
         onPaused:
         {
             mprisPlayer.playbackStatus = Mpris.Paused
-        }
-    }
-
-    Python {
-        signal currentId(int id)
-        signal currentPosition(int position)
-        signal containsTrack(int id)
-        signal clearList()
-        signal currentTrack(int position)
-        signal playListFinished()
-        signal playListChanged()
-        signal trackInformation(int id, int index, string title, string album, string artist, string image, int duration)
-
-        property bool canNext : true
-        property bool canPrev : true
-        property int size: 0
-        property int current_track : 0
-
-        property string playlist_track
-        property string playlist_artist
-        property string playlist_album
-        property string playlist_image
-        property int playlist_duration
-        property int playlist_track_id
-
-        id: playlistManager
-
-        Component.onCompleted: {
-
-            setHandler('printConsole', function(string)
-            {
-               console.log("playlistManager::printConsole" + string)
-            });
-
-            setHandler('currentTrack', function(id, position) {
-                console.log(id, position)
-                playlistManager.currentId(id);
-                playlistManager.currentTrack(position)
-            });
-
-            setHandler('clearList', function() {
-                playlistManager.clearList();
-            });
-
-            setHandler('containsTrack', function(id) {
-                console.log(id)
-                playlistManager.containsTrack(id);
-            });
-
-            setHandler('playlistFinished', function() {
-                console.log("Playlist Finished")
-                canNext = false
-            });
-
-            setHandler('playlistUnFinished', function() {
-                console.log("Playlist unfinished")
-                canNext = true
-            });
-
-            importModule('playlistmanager', function () {});
-        }
-
-        function appendTrack(id) {
-            console.log("PlaylistMagaer.appendTrack", id)
-
-            call('playlistmanager.PL.AppendTrack', [id], {});
-            canNext = true
-        }
-
-        function currentTrackIndex()
-        {
-            call("playlistmanager.PL.PlaylistIndex", [], function(index){
-                 current_track = index
-                });
-        }
-
-        function getSize()
-        {
-            call("playlistmanager.PL.size", [], function(name){
-                 tracks = name
-                });
-        }
-
-        function requestPlaylistItem(index)
-        {
-            console.log("Request PlaylistTrack", index)
-            call("playlistmanager.PL.TidalId", [index], function(id){
-                    var track = pythonApi.getTrackInfo(id)
-                    trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
-                });            
-        }
-
-        function playAlbum(id)
-        {
-            console.log("playalbum", id)
-            playlistManager.clearPlayList()
-            currentTrackIndex()
-            pythonApi.playAlbumTracks(id)
-        }
-
-        function playAlbumFromTrack(id)
-        {
-            playlistManager.clearPlayList()
-            pythonApi.playAlbumFromTrack(id)
-            currentTrackIndex()
-        }
-
-        function playTrack(id) {
-            mediaPlayer.blockAutoNext = true
-            call('playlistmanager.PL.PlayTrack', [id], {});
-            currentTrackIndex()
-        }
-
-        function playPosition(id) {
-            console.log(id)
-            playlistManager.canNext = false
-            mediaPlayer.blockAutoNext = true
-            call('playlistmanager.PL.PlayPosition', [id], {});
-            currentTrackIndex()
-        }
-
-        function insertTrack(id) {
-            console.log("PlaylistMagaer.insertTrack", id)
-
-            call('playlistmanager.PL.InsertTrack', [id], {});
-            currentTrackIndex()
-        }
-
-
-        function nextTrack() {
-            console.log("Next track called")
-            if(mediaPlayer.playbackState !== 1 )
-            {
-                playlistManager.canNext = false
-                call('playlistmanager.PL.NextTrack', function() {});
-            }
-            currentTrackIndex()
-        }
-
-        function nextTrackClicked() {
-            console.log("Next track called")
-            mediaPlayer.blockAutoNext = true
-
-            playlistManager.canNext = false
-            call('playlistmanager.PL.NextTrack', function() {});
-            currentTrackIndex()
-        }
-
-        function restartTrack(id) {
-            console.log(id)
-
-            call('playlistmanager.PL.RestartTrack', function() {});
-            currentTrackIndex()
-        }
-
-        function previousTrack() {
-            playlistManager.canNext = false
-            call('playlistmanager.PL.PreviousTrack', function() {});
-            currentTrackIndex()
-        }
-
-        function previousTrackClicked() {
-            playlistManager.canNext = false
-            mediaPlayer.blockAutoNext = true
-            call('playlistmanager.PL.PreviousTrack', function() {});
-            currentTrackIndex()
-        }
-
-        function generateList()
-        {
-
-            console.log("Playlist changed from main.qml")
-            call("playlistmanager.PL.size", [], function(tracks){
-                console.log("got", tracks, " as name")
-                size = tracks
-                playlistManager.playListChanged();
-                });
-        }
-
-        function clearPlayList()
-        {
-            call('playlistmanager.PL.clearList', function() {});
         }
     }
 
@@ -414,46 +219,7 @@ ApplicationWindow
             setHandler('albumsSearchFinished', function() {
                 pythonApi.albumSearchFinished()
             });
-/*
-            setHandler('oauth_success', function() {
-                pythonApi.loginIn()
-            });
 
-            setHandler('oauth_login_success', function() {
-                loginTrue = true
-                console.log("Login Successful")
-                pythonApi.loginSuccess()
-            });
-
-            setHandler('oauth_login_failed', function() {
-                loginTrue = false
-                pythonApi.loginFailed()
-            });
-
-            setHandler('get_token', function(type, token, rtoken, date) {
-                token_type.value = type
-                access_token.value = token
-
-                refresh_token.value = rtoken
-                expiry_time.value = date
-                console.log(expiry_time)
-                loginTrue = true
-                pythonApi.loginSuccess()
-                pythonApi.loginIn()
-
-            });
-
-            setHandler('oauth_updated', function(type, token, rtoken, date) {
-                token_type.value = type
-                access_token.value = token
-
-                refresh_token.value = rtoken
-                expiry_time.value = date
-                pythonApi.loginSuccess()
-                pythonApi.loginIn()
-
-            });
-    */
             setHandler('oauth_failed',function() {
                 pythonApi.loginFailed()
             });
@@ -499,36 +265,6 @@ ApplicationWindow
 
         }
 
-        function printLogin()
-        {
-            console.log(token_type.value+ "\n" +  access_token.value + "\n" + refresh_token.value + "\n" + expiry_time.value)
-        }
-
-        function getOAuth() {
-            call('tidal.Tidaler.request_oauth', function() {});
-        }
-
-        function loginIn() {
-            console.log("Want login now")
-            console.log(expiry_time.value)
-            console.log(currentDate.toLocaleString(locale, "yyyy-MM-ddThh:mm:ss"))
-            print(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss"));
-            console.log(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss") < currentDate)
-            if(Date.fromLocaleString(locale, expiry_time.value, "yyyy-MM-ddThh:mm:ss") > currentDate)
-            {
-                console.log("Valid login time");
-                //console.log(token_type.value, access_token.value, refresh_token.value, expiry_time.value);
-                call('tidal.Tidaler.login', [token_type.value, access_token.value, refresh_token.value, expiry_time.value], {});
-            }
-            else
-            {
-                console.log("inValid login time");
-                //console.log(token_type.value, refresh_token.value, refresh_token.value, expiry_time.value);
-                call('tidal.Tidaler.login', [token_type.value, refresh_token.value, refresh_token.value, expiry_time.value], {});
-                console.log("Need to renew login")
-            }
-
-        }
 
         function genericSearch(text) {
             call("tidal.Tidaler.genericSearch", [text], {});
@@ -631,19 +367,33 @@ ApplicationWindow
                 loginTrue = false
                 authManager.clearTokens()
             }
+            // Neue Handler für Tracks
+            onTrackAdded: {
+                // Wenn ein Track aus der Suche hinzugefügt wird
+                console.log("TidalApi: Track added signal", id, title)
+                playlistManager.appendTrack({
+                    id: id,
+                    title: title,
+                    album: album,
+                    artist: artist,
+                    image: image,
+                    duration: duration
+                })
+            }
         }
 
         Component.onCompleted: {
             authManager.checkAndLogin()
             mprisPlayer.setCanControl(true)
+            importModule('playlistmanager', function () {
+                console.log("Playlist module imported successfully")
+            });
 
         }
 
-    // Neue Connections für TidalApi
     Connections {
         target: tidalApi
         onOAuthSuccess: {
-            // Diese Funktion wird aufgerufen, wenn neue Tokens empfangen werden
             authManager.updateTokens(type, token, rtoken, date)
         }
         onLoginFailed: {
@@ -657,6 +407,7 @@ ApplicationWindow
         target: playlistManager
         onCurrentId:
         {
+            console.log("From playlistmanager")
             pythonApi.playTrackId(id)
         }
     }

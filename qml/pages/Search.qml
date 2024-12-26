@@ -220,7 +220,10 @@ Item {
                         onClicked: {
                             console.log(listModel.get(model.index).type)
                             if(listModel.get(model.index).type === 1)
+                            {
+                               console.log("play track ", listModel.get(model.index).id)
                                playlistManager.playTrack(listModel.get(model.index).id)
+                            }
                             else if(listModel.get(model.index).type === 2)
                                playlistManager.playAlbum(listModel.get(model.index).id)
                             else if(listModel.get(model.index).type === 4)
