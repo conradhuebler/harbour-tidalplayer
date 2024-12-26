@@ -1,4 +1,3 @@
-// PlaylistManager.qml
 import QtQuick 2.0
 import io.thp.pyotherside 1.5
 
@@ -11,6 +10,7 @@ Item {
     property bool canPrev: currentIndex > 0
     property int size: currentPlaylist.length
     property int current_track: -1
+    property int tidalId : 0
 
     signal currentTrackChanged(var track)
     signal playlistChanged()
@@ -24,224 +24,157 @@ Item {
     signal playListChanged()
 
     Python {
+        id: playlistPython
 
-              property bool canNext : true
-              property bool canPrev : true
-              property int size: 0
-              property int current_track : 0
+        property bool canNext: true
+        property bool canPrev: true
+        property int current_track: 0
 
-              property string playlist_track
-              property string playlist_artist
-              property string playlist_album
-              property string playlist_image
-              property int playlist_duration
-              property int playlist_track_id
-
-              id: playlistPython
-
-              Component.onCompleted: {
-
-                  setHandler('printConsole', function(string)
-                  {
-                     console.log("playlistManager::printConsole" + string)
-                  });
-
-                  setHandler('currentTrack', function(id, position) {
-                      console.log("Current track in playlist is", id, position)
-                      playlistManager.currentId(id);
-                      currentTrack(position)
-                  });
-
-                  setHandler('clearList', function() {
-                      playlistManager.clearList();
-                  });
-
-                  setHandler('containsTrack', function(id) {
-                      console.log(id)
-                      playlistManager.containsTrack(id);
-                  });
-
-                  setHandler('playlistFinished', function() {
-                      console.log("Playlist Finished")
-                      canNext = false
-                  });
-
-                  setHandler('playlistUnFinished', function() {
-                      console.log("Playlist unfinished")
-                      canNext = true
-                  });
-
-                  importModule('playlistmanager', function () {});
-              }
-
-              function appendTrack(id) {
-                  console.log("PlaylistMagaer.appendTrack", id)
-
-                  call('playlistmanager.PL.AppendTrack', [id], {});
-                  canNext = true
-              }
-
-              function currentTrackIndex()
-              {
-                  call("playlistmanager.PL.PlaylistIndex", [], function(index){
-                       current_track = index
-                      });
-              }
-
-              function getSize()
-              {
-                  call("playlistmanager.PL.size", [], function(name){
-                       tracks = name
-                      });
-              }
-
-              function requestPlaylistItem(index)
-              {
-                  console.log("Request PlaylistTrack", index)
-                  call("playlistmanager.PL.TidalId", [index], function(id){
-                          var track = pythonApi.getTrackInfo(id)
-                          trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
-                      });
-              }
-
-              function playAlbum(id)
-              {
-                  console.log("playalbum", id)
-                  playlistManager.clearPlayList()
-                  currentTrackIndex()
-                  pythonApi.playAlbumTracks(id)
-              }
-
-              function playAlbumFromTrack(id)
-              {
-                  playlistManager.clearPlayList()
-                  pythonApi.playAlbumFromTrack(id)
-                  currentTrackIndex()
-              }
-
-              function playTrack(id) {
-                  mediaPlayer.blockAutoNext = true
-                  console.log("PythonQMLQMP", id);
-                  call('playlistmanager.PL.PlayTrack', [id], {});
-                  currentTrackIndex()
-              }
-
-              function playPosition(id) {
-                  console.log(id)
-                  playlistPython.canNext = false
-                  mediaPlayer.blockAutoNext = true
-                  call('playlistmanager.PL.PlayPosition', [id], {});
-                  currentTrackIndex()
-              }
-
-              function insertTrack(id) {
-                  console.log("PlaylistMagaer.insertTrack", id)
-
-                  call('playlistmanager.PL.InsertTrack', [id], {});
-                  currentTrackIndex()
-              }
+        property string playlist_track
+        property string playlist_artist
+        property string playlist_album
+        property string playlist_image
+        property int playlist_duration
+        property int playlist_track_id
 
 
-              function nextTrack() {
-                  console.log("Next track called")
-                  if(mediaPlayer.playbackState !== 1 )
-                  {
-                      playlistPython.canNext = false
-                      call('playlistmanager.PL.NextTrack', function() {});
-                  }
-                  currentTrackIndex()
-              }
+        Component.onCompleted: {
+            addImportPath(Qt.resolvedUrl('.'))
 
-              function nextTrackClicked() {
-                  console.log("Next track called")
-                  mediaPlayer.blockAutoNext = true
+            setHandler('printConsole', function(string) {
+                console.log("playlistManager::printConsole" + string)
+            })
 
-                  playlistPython.canNext = false
-                  call('playlistmanager.PL.NextTrack', function() {});
-                  currentTrackIndex()
-              }
+            setHandler('currentTrack', function(id, position) {
+                console.log("Current track in playlist is", id, position)
+                playlistManager.currentId(id)
+                currentTrack(position)
+            })
 
-              function restartTrack(id) {
-                  console.log(id)
+            setHandler('clearList', function() {
+                playlistManager.clearList()
+            })
 
-                  call('playlistmanager.PL.RestartTrack', function() {});
-                  currentTrackIndex()
-              }
+            setHandler('containsTrack', function(id) {
+                console.log(id)
+                playlistManager.containsTrack(id)
+            })
 
-              function previousTrack() {
-                  playlistPython.canNext = false
-                  call('playlistmanager.PL.PreviousTrack', function() {});
-                  currentTrackIndex()
-              }
+            setHandler('playlistFinished', function() {
+                console.log("Playlist Finished")
+                canNext = false
+            })
 
-              function previousTrackClicked() {
-                  playlistPython.canNext = false
-                  mediaPlayer.blockAutoNext = true
-                  call('playlistmanager.PL.PreviousTrack', function() {});
-                  currentTrackIndex()
-              }
+            setHandler('playlistUnFinished', function() {
+                console.log("Playlist unfinished")
+                canNext = true
+            })
 
-              function generateList()
-              {
+            importModule('playlistmanager', function() {})
+        }
 
-                  console.log("Playlist changed from main.qml")
-                  call("playlistmanager.PL.size", [], function(tracks){
-                      console.log("got ", tracks, " as name")
-                      size = tracks
-                      playlistManager.playListChanged();
-                      });
-              }
+        // Python-Funktionen
+        function appendTrack(id) {
+            call('playlistmanager.PL.AppendTrack', [id], {})
+        }
 
-              function clearPlayList()
-              {
-                  call('playlistmanager.PL.clearList', function() {});
-              }
-}
+        function currentTrackIndex() {
+            call("playlistmanager.PL.PlaylistIndex", [], function(index){
+                current_track = index
+            })
+        }
 
-    function clearPlayList()
-    {
-        playlistPython.call('playlistmanager.PL.clearList', function() {});
+        function getSize() {
+            call("playlistmanager.PL.size", [], function(name){
+                playlistManager.size = name
+                console.log(name)
+            })
+            console.log(playlistManager.size)
+        }
+
+        function requestPlaylistItem(index) {
+            call("playlistmanager.PL.TidalId", [index], function(id){
+                var track = pythonApi.getTrackInfo(id)
+                playlistManager.trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
+            })
+        }
+
+        function playTrack(id) {
+            call('playlistmanager.PL.PlayTrack', [id], {})
+        }
+
+        function playPosition(id) {
+            canNext = false
+            call('playlistmanager.PL.PlayPosition', [id], {})
+        }
+
+        function insertTrack(id) {
+            call('playlistmanager.PL.InsertTrack', [id], {})
+        }
+
+        function nextTrack() {
+            call('playlistmanager.PL.NextTrack', {})
+        }
+
+        function previousTrack() {
+            call('playlistmanager.PL.PreviousTrack', {})
+        }
+
+        function restartTrack() {
+            call('playlistmanager.PL.RestartTrack', {})
+        }
+
+        function clearPlayList() {
+            call('playlistmanager.PL.clearList', {})
+        }
+
+        function generateList() {
+            call("playlistmanager.PL.size", [], function(tracks){
+                playlistManager.size = tracks
+                console.log("Current playlist size", size)
+                playlistManager.playListChanged()
+            })
+        }
     }
-    function appendTrack(id) {
-        console.log("PlaylistMagaer.appendTrack", id)
 
-        playlistPython.call('playlistmanager.PL.AppendTrack', [id], {});
+    // Öffentliche Funktionen
+    function clearPlayList() {
+        playlistPython.clearPlayList()
+    }
+
+    function appendTrack(id) {
+        console.log("PlaylistManager.appendTrack", id)
+        playlistPython.appendTrack(id)
         canNext = true
     }
 
-    function currentTrackIndex()
-    {
-        playlistPython.call("playlistmanager.PL.PlaylistIndex", [], function(index){
-             current_track = index
-            });
+    function currentTrackIndex() {
+        playlistPython.currentTrackIndex()
     }
 
-    function getSize()
-    {
-        playlistPython.call("playlistmanager.PL.size", [], function(name){
-             tracks = name
-            });
+    function getSize() {
+        playlistPython.getSize()
     }
 
-    function requestPlaylistItem(index)
-    {
+    function requestPlaylistItem(index) {
         console.log("Request PlaylistTrack", index)
-        playlistPython.call("playlistmanager.PL.TidalId", [index], function(id){
-                var track = pythonApi.getTrackInfo(id)
-                trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
-            });
+        playlistPython.call("playlistmanager.PL.TidalId", [index], function(index){
+            playlistManager.tidalId = index
+            console.log("Current playlist size", playlistManager.tidalId)
+        })
+        console.log(tidalId)
+        console.log(pythonApi.getTrackInfo(tidalId))
+        playlistPython.requestPlaylistItem(index)
     }
 
-    function playAlbum(id)
-    {
+    function playAlbum(id) {
         console.log("playalbum", id)
         clearPlayList()
         currentTrackIndex()
         pythonApi.playAlbumTracks(id)
     }
 
-    function playAlbumFromTrack(id)
-    {
+    function playAlbumFromTrack(id) {
         clearPlayList()
         pythonApi.playAlbumFromTrack(id)
         currentTrackIndex()
@@ -250,7 +183,7 @@ Item {
     function playTrack(id) {
         console.log("Playlistmanager::playtrack", id)
         mediaPlayer.blockAutoNext = true
-        playlistPython.playTrack(id)//call('playlistmanager.PL.PlayTrack', [id], {});
+        playlistPython.playTrack(id)
         currentTrackIndex()
     }
 
@@ -258,24 +191,21 @@ Item {
         console.log(id)
         playlistPython.canNext = false
         mediaPlayer.blockAutoNext = true
-        call('playlistmanager.PL.PlayPosition', [id], {});
+        playlistPython.playPosition(id)
         currentTrackIndex()
     }
 
     function insertTrack(id) {
-        console.log("PlaylistMagaer.insertTrack", id)
-
-        call('playlistmanager.PL.InsertTrack', [id], {});
+        console.log("PlaylistManager.insertTrack", id)
+        playlistPython.insertTrack(id)
         currentTrackIndex()
     }
 
-
     function nextTrack() {
         console.log("Next track called")
-        if(mediaPlayer.playbackState !== 1 )
-        {
+        if(mediaPlayer.playbackState !== 1) {
             playlistPython.canNext = false
-            call('playlistmanager.PL.NextTrack', function() {});
+            playlistPython.nextTrack()
         }
         currentTrackIndex()
     }
@@ -283,41 +213,32 @@ Item {
     function nextTrackClicked() {
         console.log("Next track called")
         mediaPlayer.blockAutoNext = true
-
         playlistPython.canNext = false
-        playlistPython.call('playlistmanager.PL.NextTrack', function() {});
+        playlistPython.nextTrack()
         currentTrackIndex()
     }
 
     function restartTrack(id) {
         console.log(id)
-
-        playlistPython.call('playlistmanager.PL.RestartTrack', function() {});
+        playlistPython.restartTrack()
         currentTrackIndex()
     }
 
     function previousTrack() {
         playlistPython.canNext = false
-        playlistPython.call('playlistmanager.PL.PreviousTrack', function() {});
+        playlistPython.previousTrack()
         currentTrackIndex()
     }
 
     function previousTrackClicked() {
         playlistPython.canNext = false
         mediaPlayer.blockAutoNext = true
-        playlistPython.call('playlistmanager.PL.PreviousTrack', function() {});
+        playlistPython.previousTrack()
         currentTrackIndex()
     }
 
-    function generateList()
-    {
-
+    function generateList() {
         console.log("Playlist changed from main.qml")
-        playlistPython.call("playlistmanager.PL.size", [], function(tracks){
-            console.log("got", tracks, " as name")
-            size = tracks
-            playlistManager.playListChanged();
-            });
+        playlistPython.generateList()
     }
-
 }

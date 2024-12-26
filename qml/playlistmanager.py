@@ -90,7 +90,7 @@ class PlaylistManager:
                 return self.playlist[index]
         except (ValueError, TypeError):
             pass
-        return None
+        return 0
 
     def PlaylistIndex(self):
         """Gibt den aktuellen Index zurück"""

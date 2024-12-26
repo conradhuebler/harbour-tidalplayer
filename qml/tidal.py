@@ -167,11 +167,10 @@ class Tidal:
         pyotherside.send("printConsole", " insert Track: " + str(playlist.tracks()[0].id))
 
         for i, item in enumerate(playlist.tracks()):
-            if( i > 0):
                 pyotherside.send("addTracktoPL", item.id)
-                pyotherside.send("printConsole", " append Track: " + str(item.id))
+                if i == 0:
+                    pyotherside.send("fillStarted")
 
         pyotherside.send("fillFinished")
 
 Tidaler = Tidal()
-

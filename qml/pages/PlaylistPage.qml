@@ -40,6 +40,7 @@ Item {
         }
         onPlayListChanged:
         {
+            console.log("Update playlist now", playlistManager.size)
             pLtrackList.clear();
             for(var i = 0; i < playlistManager.size; ++i)
             {
@@ -47,6 +48,7 @@ Item {
                 pLtrackList.addTrack(playlistManager.playlist_track, playlistManager.playlist_artist, playlistManager.playlist_album, playlistManager.playlist_track_id, playlistManager.playlist_duration)
             }
             pLtrackList.highlight_index = playlistManager.current_track
+
         }
 
         onClearList:
@@ -57,6 +59,7 @@ Item {
         onTrackInformation:
         {
             pLtrackList.setTrack(index, id, title, artist, album, image, duration)
+            console.log(title)
         }
 
     }

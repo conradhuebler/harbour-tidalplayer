@@ -43,13 +43,15 @@ Item {
     function checkAndLogin() {
         if (token_type.value && access_token.value) {
             if (isTokenValid()) {
-                tidalApi.loginIn(token_type.value,
+                console.log("old token valid");
+                pythonApi.loginIn(token_type.value,
                                 access_token.value,
                                 refresh_token.value,
                                 expiry_time.value)
             } else {
                 // Token abgelaufen, mit Refresh Token versuchen
-                tidalApi.loginIn(token_type.value,
+                console.log("old token invalid");
+                pythonApi.loginIn(token_type.value,
                                 refresh_token.value,
                                 refresh_token.value,
                                 expiry_time.value)
