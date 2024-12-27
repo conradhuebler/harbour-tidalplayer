@@ -40,20 +40,10 @@ jobs:
         cd /home/mersdk/harbour-tidalplayer/RPMS/
         mv harbour-tidalplayer-*-1.aarch64.rpm harbour-tidalplayer-master-1.noarch.rpm
         ls -la
-      
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: rpms
-        path: /home/mersdk/harbour-tidalplayer/RPMS/harbour-tidalplayer-master-1.noarch.rpm
 
-    - name: Create/Update Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: nightly
-        name: Nightly Build
-        files: /home/mersdk/harbour-tidalplayer/RPMS/harbour-tidalplayer-master-1.noarch.rpm
-        prerelease: true
-        body: Automated nightly build
-        token: ${{ secrets.GITHUB_TOKEN }}
-        replace_artifacts: true
+    - name: Upload Release
+      working-directory: /home/mersdk/harbour-tidalplayer
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create nightly RPMS/harbour-tidalplayer-master-1.noarch.rpm --title "Nightly Build" --notes "Automated nightly build" --prerelease
