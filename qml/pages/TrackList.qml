@@ -162,7 +162,7 @@ SilicaListView {
 
                     visible: listModel.get(model.index).type === 1
                     x: Theme.horizontalPageMargin
-                    truncationMode: Fade
+                    //truncationMode: Fade
                     font.pixelSize: Theme.fontSizeSmall
                 }
                 }

@@ -20,6 +20,8 @@ class Tidal:
         self.config = None
 
     def initialize(self, quality="HIGH"):
+        pyotherside.send("printConsole", "Initialise tidal api")
+
         if quality == "LOW":
             selected_quality = tidalapi.Quality.low
         elif quality == "HIGH":

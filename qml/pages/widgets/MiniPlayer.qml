@@ -102,7 +102,7 @@ DockedPanel {
             IconButton {
                 id: prevButton
                 icon.source: "image://theme/icon-m-previous"
-                visible: playlistManager.canPrev
+                //visible: playlistManager.canPrev
                 onClicked: playlistManager.previousTrackClicked()
             }
 
@@ -121,7 +121,7 @@ DockedPanel {
             IconButton {
                 id: nextButton
                 icon.source: "image://theme/icon-m-next"
-                visible: playlistManager.canNext
+                //visible: playlistManager.canNext
                 onClicked: {
                     mediaPlayer.blockAutoNext = true
                     playlistManager.nextTrackClicked()

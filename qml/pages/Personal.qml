@@ -81,7 +81,7 @@ Item {
     }
 
     Component.onCompleted: {
-        pythonApi.getPersonalPlaylists()
+        if(pythonApi.loginTrue)  pythonApi.getPersonalPlaylists()
     }
 
     Connections
@@ -98,6 +98,11 @@ Item {
                             "duration" : duration,
 
                         })
+        }
+
+        onLoginSuccess:
+        {
+            pythonApi.getPersonalPlaylists()
         }
     }
 }

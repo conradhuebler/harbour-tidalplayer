@@ -44,7 +44,7 @@ Item {
 
     // Funktionen zum Token-Management
     function updateTokens(type, token, rtoken, expiry) {
-
+        console.log("Update tokes")
         var currentUnixTime = Math.floor(new Date().getTime() / 1000)
         var oneWeekLater = currentUnixTime + 604800
 

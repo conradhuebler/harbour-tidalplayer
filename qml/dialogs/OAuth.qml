@@ -16,6 +16,7 @@ Dialog {
         key: "/mail"
     }
 
+
     WebView {
         width: parent.width
         anchors.horizontalCenter: parent.horizontalCenter
@@ -27,30 +28,15 @@ Dialog {
 
         popupProvider: PopupProvider { }
 
-        onLoadingChanged: {
-            if (loadRequest.status === WebView.LoadSucceededStatus) {
-                var script = "function fillEmail() {" +
-                    "var emailInput = document.querySelector('input[type=\"email\"]') || " +
-                    "document.querySelector('input[name=\"email\"]') || " +
-                    "document.querySelector('#email');" +
-                    "if (emailInput) {" +
-                    "    emailInput.value = '" + mail.value + "';" +
-                    "    emailInput.dispatchEvent(new Event('input'));" +
-                    "    emailInput.dispatchEvent(new Event('change'));" +
-                    "}" +
-                    "};" +
-                    "fillEmail();" +
-                    "setTimeout(fillEmail, 500);";
 
-                webView.runJavaScript(script);
-            }
-        }
+
     }
 
     Connections {
         target: pythonApi
         onAuthUrl: {
             console.log(url)
+            Clipboard.text = mail.value
             webView.url = "https://" + url
         }
 

@@ -108,12 +108,12 @@ Item {
                     onLoginSuccess:
                     {
                         searchString.label = "Find"
-                        searchString.enabled = loginTrue
+                        searchString.enabled = pythonApi.loginTrue
                     }
                     onLoginFailed:
                     {
                         searchString.label = "Please go to the settings and login via OAuth"
-                        searchString.enabled = loginTrue
+                        searchString.enabled = pythonApi.loginTrue
                     }
                 }
 

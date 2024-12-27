@@ -40,6 +40,8 @@ Item {
     property bool tracks: true
     property bool playlists: true
 
+    property bool loginTrue: false
+
     property string playlist_track: ""
     property string playlist_artist: ""
     property string playlist_album: ""
@@ -51,7 +53,6 @@ Item {
     property int playlist_duration: 0
     property int playlist_track_id: 0
 
-    property AuthManager authManager
     Python {
         id: pythonTidal
 
@@ -158,11 +159,9 @@ Item {
     }
 
     onOAuthSuccess: {
-        console.log(type, token, rtoken, date)
-            //if (authManager) {
-                authManager.updateTokens(type, token, rtoken, date)
-        loginSuccess()
-            //}
+            console.log(type, token, rtoken, date)
+            authManager.updateTokens(type, token, rtoken, date)
+            loginSuccess()
         }
 
         onLoginSuccess: {
@@ -179,6 +178,8 @@ Item {
 
     // Login Funktionen
     function getOAuth() {
+        console.log("Request new login")
+        pythonTidal.call('tidal.Tidaler.initialize', [quality])
         pythonTidal.call('tidal.Tidaler.request_oauth', [])
     }
 
