@@ -13,13 +13,13 @@ jobs:
     container: coderus/sailfishos-platform-sdk:4.2.0.21
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     
     - name: Build for aarch64
       run: mb2 -t SailfishOS-4.2.0.21-aarch64 build
       
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: rpms
         path: RPMS/*.rpm
@@ -34,4 +34,3 @@ jobs:
         body: Automated nightly build
         token: ${{ secrets.GITHUB_TOKEN }}
         replace_artifacts: true
-
