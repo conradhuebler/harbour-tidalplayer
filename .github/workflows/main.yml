@@ -35,27 +35,24 @@ jobs:
         pwd
         mb2 -t SailfishOS-4.6.0.13-aarch64 build
         
-    - name: List RPMs
+    - name: Rename RPM to noarch
       run: |
-        ls -la /home/mersdk/harbour-tidalplayer/RPMS/
-        
-    - name: Copy RPMs
-      run: |
-        mkdir -p /github/workspace/RPMS
-        cp /home/mersdk/harbour-tidalplayer/RPMS/*.rpm /github/workspace/RPMS/
+        cd /home/mersdk/harbour-tidalplayer/RPMS/
+        mv harbour-tidalplayer-*-1.aarch64.rpm harbour-tidalplayer-master-1.noarch.rpm
+        ls -la
       
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: rpms
-        path: /github/workspace/RPMS/*.rpm
+        path: /home/mersdk/harbour-tidalplayer/RPMS/harbour-tidalplayer-master-1.noarch.rpm
 
     - name: Create/Update Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: nightly
         name: Nightly Build
-        files: /github/workspace/RPMS/*.rpm
+        files: /home/mersdk/harbour-tidalplayer/RPMS/harbour-tidalplayer-master-1.noarch.rpm
         prerelease: true
         body: Automated nightly build
         token: ${{ secrets.GITHUB_TOKEN }}
