@@ -213,8 +213,8 @@ DockedPanel {
         onCurrentTrackInfo: {
             mediaTitle.text = track_num + " - " + title + " - " + album + " - " + artist
             bgImage.source = album_image
-            prevButton.enabled = playlistManager.canPrev
-            nextButton.enabled = playlistManager.canNext
+            //prevButton.enabled = playlistManager.canPrev
+            //nextButton.enabled = playlistManager.canNext
             progressSlider.visible = true
             mprisPlayer.updateTrack(title, artist, album)
         }
