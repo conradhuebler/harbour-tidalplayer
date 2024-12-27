@@ -33,7 +33,7 @@ jobs:
         HOME: /home/mersdk
       run: |
         pwd
-        mb2 -t SailfishOS-4.6.0.13-noarch build
+        mb2 -t SailfishOS-4.6.0.13-aarch64 build
       
     - name: Upload artifact
       uses: actions/upload-artifact@v4
