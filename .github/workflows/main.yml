@@ -13,26 +13,38 @@ jobs:
     container: coderus/sailfishos-platform-sdk:4.2.0.21
 
     steps:
+    - name: Setup and Check Environment
+      run: |
+        whoami
+        pwd
+        ls -la /home/mersdk
+        
     - name: Manual Checkout
       run: |
-        git clone https://github.com/conradhuebler/harbour-tidalplayer.git .
+        cd /home/mersdk
+        git clone https://github.com/conradhuebler/harbour-tidalplayer.git
+        cd harbour-tidalplayer
         git submodule update --init --recursive
+        ls -la
     
     - name: Build for aarch64
-      run: mb2 -t SailfishOS-4.2.0.21-aarch64 build
+      working-directory: /home/mersdk/harbour-tidalplayer
+      run: |
+        pwd
+        mb2 -t SailfishOS-4.2.0.21-aarch64 build
       
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: rpms
-        path: RPMS/*.rpm
+        path: /home/mersdk/harbour-tidalplayer/RPMS/*.rpm
 
     - name: Create/Update Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: nightly
         name: Nightly Build
-        files: RPMS/*.rpm
+        files: /home/mersdk/harbour-tidalplayer/RPMS/*.rpm
         prerelease: true
         body: Automated nightly build
         token: ${{ secrets.GITHUB_TOKEN }}
