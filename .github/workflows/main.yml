@@ -45,17 +45,6 @@ jobs:
       run: |
         sudo zypper --non-interactive install curl
 
-
-    - name: Get Release ID
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        RELEASE_ID=$(curl -H "Authorization: token $GITHUB_TOKEN" \
-                         -H "Accept: application/vnd.github.v3+json" \
-                         https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/tags/master | \
-                    grep -o '"id": [0-9]*' | head -1 | cut -d' ' -f2)
-        echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
-
     - name: Upload to Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -65,4 +54,4 @@ jobs:
           -H "Authorization: token $GITHUB_TOKEN" \
           -H "Content-Type: application/x-rpm" \
           --data-binary @harbour-tidalplayer-master-1.noarch.rpm \
-          "https://uploads.github.com/repos/conradhuebler/harbour-tidalplayer/releases/${RELEASE_ID}/assets?name=harbour-tidalplayer-master-1.noarch.rpm"
+          "https://uploads.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets?name=harbour-tidalplayer-master-1.noarch.rpm"
