@@ -26,14 +26,11 @@ jobs:
         cd harbour-tidalplayer
         git submodule update --init --recursive
         ls -la
-        
-    - name: Fix Permissions
-      run: |
-        mkdir -p /github/home
-        chmod 777 /github/home
     
     - name: Build noarch
       working-directory: /home/mersdk/harbour-tidalplayer
+      env:
+        HOME: /home/mersdk
       run: |
         pwd
         mb2 -t SailfishOS-4.6.0.13-noarch build
