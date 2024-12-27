@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: coderus/sailfishos-platform-sdk-aarch64:4.6.0.24
+    container: coderus/sailfishos-platform-sdk-aarch64:4.6.0.13
 
     steps:
     - name: Setup and Check Environment
@@ -31,7 +31,7 @@ jobs:
       working-directory: /home/mersdk/harbour-tidalplayer
       run: |
         pwd
-        mb2 -t SailfishOS-4.6.0.24 build
+        mb2 -t SailfishOS-4.6.0.13 build
       
     - name: Upload artifact
       uses: actions/upload-artifact@v4
