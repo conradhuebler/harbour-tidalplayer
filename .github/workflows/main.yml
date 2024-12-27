@@ -41,16 +41,12 @@ jobs:
         mv harbour-tidalplayer-*-1.aarch64.rpm harbour-tidalplayer-master-1.noarch.rpm
         ls -la
 
-    - name: Install curl
-      run: |
-        zypper --non-interactive install curl
-
     - name: Upload to Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         cd /home/mersdk/harbour-tidalplayer/RPMS/
-        curl -H "Authorization: token $GITHUB_TOKEN" \
-             -H "Content-Type: application/x-rpm" \
-             --data-binary @harbour-tidalplayer-master-1.noarch.rpm \
+        wget --header="Authorization: token $GITHUB_TOKEN" \
+             --header="Content-Type: application/x-rpm" \
+             --post-file=harbour-tidalplayer-master-1.noarch.rpm \
              "https://uploads.github.com/repos/conradhuebler/harbour-tidalplayer/releases/nightly/assets?name=harbour-tidalplayer-master-1.noarch.rpm"
