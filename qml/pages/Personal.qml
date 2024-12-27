@@ -81,7 +81,10 @@ Item {
     }
 
     Component.onCompleted: {
-        if(pythonApi.loginTrue)  pythonApi.getPersonalPlaylists()
+        //if(pythonApi.loginTrue)
+         pythonApi.getPersonalPlaylists()
+        //else
+        //console.log("Login failed")
     }
 
     Connections
@@ -102,6 +105,7 @@ Item {
 
         onLoginSuccess:
         {
+            console.log("Personal playlists")
             pythonApi.getPersonalPlaylists()
         }
     }

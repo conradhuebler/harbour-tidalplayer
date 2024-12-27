@@ -27,9 +27,6 @@ Dialog {
         httpUserAgent: "Mozilla/5.0 (Mobile; rv:78.0) Gecko/78.0 Firefox/78.0"
 
         popupProvider: PopupProvider { }
-
-
-
     }
 
     Connections {
@@ -43,13 +40,11 @@ Dialog {
         onLoginSuccess: {
             accountSettings.canAccept = true
             accountSettings.accept()
-            loginTrue = true
             authManager.checkAndLogin()
         }
 
         onLoginFailed: {
             mainLabel.text = "Failed"
-            loginTrue = false
         }
     }
 

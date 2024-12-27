@@ -63,14 +63,39 @@ class Tidal:
             pyotherside.send("oauth_failed")
 
     def getTrackInfo(self, id):
-        i = self.session.track(int(id))
+        print("Python received id:", id, type(id))  # Debug-Ausgabe
         try:
-            #//pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration)
-            return i.id, i.name, i.album.name, i.artist.name, i.album.image(320), i.duration
-        except AttributeError:
-            #//pyotherside.send("trackInfo", i.id, i.name, i.album.name, i.artist.name, "", i.duration)
-            return i.id, i.name, i.album.name, i.artist.name, "", i.duration
+            if isinstance(id, str):
+                id = id.split('/')[-1]  # Falls es eine URL ist
+                id = ''.join(filter(str.isdigit, id))  # Nur Zahlen
 
+            if not id or id == "0" or str(id).strip() == "":
+                print("Invalid ID detected:", id)  # Debug-Ausgabe
+                pyotherside.send("trackError", "Invalid track ID")
+                return None
+
+            track_id = int(id)
+
+            i = self.session.track(track_id)
+            if i:
+                result = {
+                    "title": str(i.name),
+                    "artist": str(i.artist.name),
+                    "duration": int(i.duration),
+                    "album": str(i.album.name),
+                    "id": str(i.id),
+                }
+                return result
+            else:
+                pyotherside.send("trackError", "Track not found")
+                return None
+
+        except requests.exceptions.HTTPError as e:
+            pyotherside.send("trackError", f"HTTP Error: {str(e)}")
+            return None
+        except Exception as e:
+            pyotherside.send("trackError", f"Error: {str(e)}")
+            return None
 
     def getAlbumInfo(self, id):
         i = self.session.album(int(id))
@@ -191,7 +216,9 @@ class Tidal:
         pyotherside.send("printConsole", " insert Track: " + str(playlist.tracks()[0].id))
 
         for i, item in enumerate(playlist.tracks()):
+                pyotherside.send("addTrack", item.id, item.name, item.album.name, item.artist.name, item.album.image(80), item.duration)
                 pyotherside.send("addTracktoPL", item.id)
+
                 if i == 0:
                     pyotherside.send("fillStarted")
 

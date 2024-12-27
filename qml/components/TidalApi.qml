@@ -66,7 +66,24 @@ Item {
             setHandler('oauth_success', function() {
                 pythonApi.loginSuccess()
             })
-            setHandler('oauth_login_success', function() {
+            setHandler('oauth_login_suc console.log("Got track info:", result)
+        if (result) {
+            // Aktualisiere die Properties direkt mit den Track-Informationen
+            playlist_track = result.title
+            playlist_artist = result.artist
+            playlist_album = result.album
+        function getTrackInfo(id)
+        {
+            console.log("getTrackInfo ", id)
+            var track = (call_sync("tidal.Tidaler.getTrackInfo", [id], function(track) {
+                console.log(track)
+            }));
+            console.log(track)
+            return track
+        }
+            // Falls es ein Image-Property im result gibt:
+            // playlist_image = result.image
+        }cess', function() {
                 pythonApi.loginSuccess()
             })
             setHandler('oauth_failed', function() {
@@ -96,6 +113,7 @@ Item {
             setHandler('addPlaylist', function(id, name, image, duration, uid) {
                 pythonApi.playlistSearchAdded(id, name, image, duration, uid)
             })
+
 
             // Search Finished Handler
             setHandler('trackSearchFinished', function() {
@@ -156,6 +174,19 @@ Item {
                 console.log("Tidal module imported successfully")
             })
         }
+
+
+        function getTrackInfo(id)
+        {
+            console.log("getTrackInfo ", id)
+            var track = (call_sync("tidal.Tidaler.getTrackInfo", [id], function(track) {
+                console.log(track)
+            }));
+            console.log(track)
+            return track
+        }
+
+
     }
 
     onOAuthSuccess: {
@@ -188,7 +219,6 @@ Item {
         pythonTidal.call('tidal.Tidaler.initialize', [quality])
         pythonTidal.call('tidal.Tidaler.login',
             [tokenType, accessToken, refreshToken, expiryTime])
-        //pythonTidal.call('tidal.Tidaler.checkAndLogin', [])
     }
 
     // Search Funktionen
@@ -223,7 +253,28 @@ Item {
     }
 
     function getTrackInfo(id) {
-        return pythonTidal.call_sync("tidal.Tidaler.getTrackInfo", [id])
+        if (typeof id === 'string') {
+            id = id.split('/').pop()
+            id = id.replace(/[^0-9]/g, '')
+        }
+        console.log("JavaScript id after:", id, typeof id)
+
+        var returnValue = null
+        var val = (pythonTidal.getTrackInfo(id))
+        console.log(val.title)
+        pythonTidal.call("tidal.Tidaler.getTrackInfo", [id], function(result) {
+            if (result) {
+                // Properties aktualisieren
+                playlist_track = result.title
+                playlist_artist = result.artist
+                playlist_album = result.album
+                // playlist_image = result.image
+                // Return-Wert setzen
+                returnValue = result
+            }
+        })
+        console.log(returnValue)
+        return returnValue
     }
 
     // Album Funktionen
@@ -264,4 +315,8 @@ Item {
     function getFavorites() {
         pythonTidal.call('tidal.Tidaler.get_favorite_tracks', [])
     }
+
+
 }
+
+

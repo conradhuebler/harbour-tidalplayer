@@ -85,16 +85,23 @@ Item {
         }
 
         function getSize() {
+        /*
             call("playlistmanager.PL.size", [], function(name){
                 playlistManager.size = name
                 console.log(name)
             })
-            console.log(playlistManager.size)
+            console.log(playlistManager.size)*/
+            playlistManager.size = playlistPython.call_sync("playlistmanager.PL.size", [])
+            console.log("Playlist size:", playlistManager.size)
+            return playlistManager.size
         }
 
         function requestPlaylistItem(index) {
+            console.log("request item", index)
             call("playlistmanager.PL.TidalId", [index], function(id){
-                var track = pythonApi.getTrackInfo(id)
+            console.log("got id for track", id);
+                var track = cacheManager.getTrackInfo(id)
+                console.log("after function", id, index, track);
                 playlistManager.trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
             })
         }
@@ -129,11 +136,15 @@ Item {
         }
 
         function generateList() {
+            getSize()
+            playlistManager.playListChanged()
+/*
             call("playlistmanager.PL.size", [], function(tracks){
                 playlistManager.size = tracks
                 console.log("Current playlist size", size)
                 playlistManager.playListChanged()
             })
+            */
         }
     }
 
@@ -157,14 +168,18 @@ Item {
     }
 
     function requestPlaylistItem(index) {
+        /*
         console.log("Request PlaylistTrack", index)
-        playlistPython.call("playlistmanager.PL.TidalId", [index], function(index){
-            playlistManager.tidalId = index
-            console.log("Current playlist size", playlistManager.tidalId)
+        playlistPython.call("playlistmanager.PL.TidalId", [index], function(id){
+            playlistManager.tidalId = id
+            console.log("Current playlist tidalid", playlistManager.tidalId)
         })
-        console.log(tidalId)
-        console.log(pythonApi.getTrackInfo(tidalId))
-        playlistPython.requestPlaylistItem(index)
+        console.log("Current playlist tidalid and size", playlistManager.tidalId, playlistManager.size)
+        */
+        console.log("Request PlaylistTrack", index)
+        var id = playlistPython.call_sync("playlistmanager.PL.TidalId", [index])
+        playlistManager.tidalId = id
+        console.log("Current playlist tidalid and size", playlistManager.tidalId, playlistManager.size)
     }
 
     function playAlbum(id) {

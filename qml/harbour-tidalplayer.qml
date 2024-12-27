@@ -47,22 +47,7 @@ ApplicationWindow
     }
 
     TidalApi {
-
         id: pythonApi
-        /*
-        // Neue Handler für Tracks
-        onTrackAdded: {
-            // Wenn ein Track aus der Suche hinzugefügt wird
-            console.log("TidalApi: Track added signal", id, title)
-            playlistManager.appendTrack({
-                id: id,
-                title: title,
-                album: album,
-                artist: artist,
-                image: image,
-                duration: duration
-            })
-        }*/
     }
 
 
@@ -74,6 +59,11 @@ ApplicationWindow
                 console.log("playlistmanager call id", track)
             }
         }
+    }
+
+    TidalCache
+    {
+        id: cacheManager
     }
 
     MediaPlayer {
@@ -155,8 +145,6 @@ ApplicationWindow
             id: authManager
         }
 
-
-
         Component.onCompleted: {
             authManager.checkAndLogin()
             mprisPlayer.setCanControl(true)
@@ -181,6 +169,7 @@ ApplicationWindow
             pythonApi.playTrackId(id)
         }
     }
+
 
     Connections{
         target: mprisPlayer

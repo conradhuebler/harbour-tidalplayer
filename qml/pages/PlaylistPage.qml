@@ -1,66 +1,85 @@
+// PlaylistPage.qml
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtMultimedia 5.6
 import Sailfish.Media 1.0
-
 import "widgets"
-
 
 Item {
     id: playlistPage
+    width: parent.width
+    height: parent.height
 
-    // To enable PullDownMenu, place our content in a SilicaFlickable
+    // Timer für verzögerte Ausführung
+    Timer {
+        id: updateTimer
+        interval: 100  // 100ms Verzögerung
+        repeat: false
+        onTriggered: {
+            for(var i = 0; i < playlistManager.size; ++i) {
+                console.log("Requesting item", i)
+                playlistManager.requestPlaylistItem(i)
+                var track = cacheManager.getTrackInfo(playlistManager.tidalId)
+                if (track) {
+                    console.log("Adding track:", track.title)
+                    pLtrackList.addTrack(track.title, track.artist, track.album, track.track_id, track.duration)
+                } else {
+                    console.log("No track data for index:", i)
+                }
+            }
+            pLtrackList.highlight_index = playlistManager.current_track
+        }
+    }
+
     SilicaFlickable {
-        //width: parent.width
-        anchors.bottom: miniPlayerPanel.top // Panel als Referenz nutzen
-        clip: miniPlayerPanel.expanded
-        contentHeight: parent.height - Theme.itemSizeExtraLarge - Theme.paddingLarge
+        id: flickable
+        anchors.fill: parent
+        contentHeight: column.height
+
+        Column {
+            id: column
+            width: parent.width
+            spacing: Theme.paddingMedium
 
             TrackList {
                 id: pLtrackList
-                title :  "Current Playlist"
+                width: parent.width
+                height: playlistPage.height
                 allow_add: false
-                start_on_tap : true
+                start_on_tap: true
                 allow_play: false
-                anchors {
-                    top : parent.bottom
-                    fill: parent
-                    horizontalCenter: parent.horizontalCenter
-                }
+                title: ""
             }
+        }
+    }
 
-   }
-
-    Connections
-    {
+    Connections {
         target: playlistManager
-        onCurrentTrack:
-        {
+        onCurrentTrack: {
             pLtrackList.highlight_index = playlistManager.current_track
         }
-        onPlayListChanged:
-        {
+        onPositionChanged: {
+            console.log("Current position changed to:", playlistManager.current_position)
+            pLtrackList.highlight_index = playlistManager.current_position
+        }
+        onPlayListChanged: {
             console.log("Update playlist now", playlistManager.size)
-            pLtrackList.clear();
-            for(var i = 0; i < playlistManager.size; ++i)
-            {
-                playlistManager.requestPlaylistItem(i)
-                pLtrackList.addTrack(playlistManager.playlist_track, playlistManager.playlist_artist, playlistManager.playlist_album, playlistManager.playlist_track_id, playlistManager.playlist_duration)
-            }
-            pLtrackList.highlight_index = playlistManager.current_track
-
+            pLtrackList.clear()
+            updateTimer.start()  // Timer starten statt Qt.callLater
         }
-
-        onClearList:
-        {
-            pLtrackList.clear();
+        onClearList: {
+            pLtrackList.clear()
         }
-
-        onTrackInformation:
-        {
+        onTrackInformation: {
             pLtrackList.setTrack(index, id, title, artist, album, image, duration)
-            console.log(title)
+            console.log("Track information updated:", title)
         }
+    }
 
+    Component.onCompleted: {
+        console.log("PlaylistPage loaded")
+        if (playlistManager.size > 0) {
+            playlistManager.generateList()
+        }
     }
 }
