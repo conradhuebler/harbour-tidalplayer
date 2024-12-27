@@ -44,9 +44,14 @@ Item {
     property string playlist_artist: ""
     property string playlist_album: ""
     property string playlist_image: ""
+
+    property string quality: ""
+
+
     property int playlist_duration: 0
     property int playlist_track_id: 0
 
+    property AuthManager authManager
     Python {
         id: pythonTidal
 
@@ -67,6 +72,8 @@ Item {
                 pythonApi.loginFailed()
             })
             setHandler('get_token', function(type, token, rtoken, date) {
+                console.log("Got new token from session")
+                console.log(type, token, rtoken, date)
                 pythonApi.oAuthSuccess(type, token, rtoken, date)
             })
 
@@ -151,9 +158,11 @@ Item {
     }
 
     onOAuthSuccess: {
-            if (authManager) {
+        console.log(type, token, rtoken, date)
+            //if (authManager) {
                 authManager.updateTokens(type, token, rtoken, date)
-            }
+        loginSuccess()
+            //}
         }
 
         onLoginSuccess: {
@@ -175,8 +184,10 @@ Item {
 
     function loginIn(tokenType, accessToken, refreshToken, expiryTime) {
         console.log(accessToken)
+        pythonTidal.call('tidal.Tidaler.initialize', [quality])
         pythonTidal.call('tidal.Tidaler.login',
             [tokenType, accessToken, refreshToken, expiryTime])
+        //pythonTidal.call('tidal.Tidaler.checkAndLogin', [])
     }
 
     // Search Funktionen

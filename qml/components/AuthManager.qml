@@ -3,7 +3,7 @@ import QtQuick 2.0
 import Nemo.Configuration 1.0
 
 Item {
-    id: root
+    id: authManager
 
     // Properties
     property bool isLoggedIn: false
@@ -31,16 +31,32 @@ Item {
         key: "/expiry_time"
     }
 
+    ConfigurationValue {
+        id: mail
+        key: "/mail"
+    }
+
+    ConfigurationValue {
+        id: audioQuality
+        key: "/audioQuality"
+        defaultValue: "HIGH"  // Standardwert
+    }
+
     // Funktionen zum Token-Management
     function updateTokens(type, token, rtoken, expiry) {
+
+        var currentUnixTime = Math.floor(new Date().getTime() / 1000)
+        var oneWeekLater = currentUnixTime + 604800
+
         token_type.value = type
         access_token.value = token
         refresh_token.value = rtoken
-        expiry_time.value = expiry
+        expiry_time.value = oneWeekLater
         isLoggedIn = true
     }
 
     function checkAndLogin() {
+        pythonApi.quality = audioQuality.value
         if (token_type.value && access_token.value) {
             if (isTokenValid()) {
                 console.log("old token valid");
@@ -60,10 +76,10 @@ Item {
     }
 
     function isTokenValid() {
+
+        var currentUnixTime = Math.floor(new Date().getTime() / 1000)
         if (!expiry_time.value) return false
-        return Date.fromLocaleString(Qt.locale(),
-                                   expiry_time.value,
-                                   "yyyy-MM-ddThh:mm:ss") > currentDate
+        return expiry_time.value > currentUnixTime
     }
 
     function clearTokens() {

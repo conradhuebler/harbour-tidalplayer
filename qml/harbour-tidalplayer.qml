@@ -161,7 +161,7 @@ ApplicationWindow
             authManager.checkAndLogin()
             mprisPlayer.setCanControl(true)
         }
-    /*
+
     Connections {
         target: pythonApi
         onOAuthSuccess: {
@@ -171,7 +171,7 @@ ApplicationWindow
             authManager.clearTokens()
         }
     }
-*/
+
 
     Connections
     {

@@ -16,7 +16,22 @@ import pyotherside
 
 class Tidal:
     def __init__(self):
-        self.session = tidalapi.Session()
+        self.session = None
+        self.config = None
+
+    def initialize(self, quality="HIGH"):
+        if quality == "LOW":
+            selected_quality = tidalapi.Quality.low
+        elif quality == "HIGH":
+            selected_quality = tidalapi.Quality.high
+        elif quality == "LOSSLESS":
+            selected_quality = tidalapi.Quality.lossless
+        else:
+            # Fallback auf HIGH wenn unbekannte Qualität
+            selected_quality = tidalapi.Quality.high
+
+        self.config = tidalapi.Config(quality=selected_quality, video_quality=tidalapi.VideoQuality.low)
+        self.session = tidalapi.Session(self.config)
 
     def login(self, token_type, access_token, refresh_token, expiry_time):
         if access_token == token_type:
@@ -30,9 +45,16 @@ class Tidal:
                 pyotherside.send("oauth_updated", self.session.token_type, self.session.access_token, self.session.refresh_token,  self.session.expiry_time)
 
     def request_oauth(self):
+        pyotherside.send("printConsole", "Start new session")
         self.login, self.future = self.session.login_oauth()
+        pyotherside.send("printConsole", "getting url")
+
         pyotherside.send("get_url", self.login.verification_uri_complete)
+        pyotherside.send("printConsole", "waiting for done")
+
         self.future.result()
+        pyotherside.send("printConsole", "Done", self.session.token_type, self.session.access_token)
+
         if self.session.check_login() == True:
             pyotherside.send("get_token", self.session.token_type, self.session.access_token, self.session.refresh_token,  self.session.expiry_time)
         else:

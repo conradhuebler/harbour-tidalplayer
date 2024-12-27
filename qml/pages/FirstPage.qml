@@ -24,7 +24,10 @@ Page {
         PullDownMenu {
             MenuItem {
                 text: qsTr("Settings")
-                onClicked: pageStack.push(Qt.resolvedUrl("Settings.qml"))
+                onClicked: {
+                    minPlayerPanel.open = false
+                    pageStack.push(Qt.resolvedUrl("Settings.qml"))
+                }
             }
 
 
