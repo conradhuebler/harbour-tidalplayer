@@ -13,7 +13,10 @@ jobs:
     container: coderus/sailfishos-platform-sdk:4.2.0.21
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Manual Checkout
+      run: |
+        git clone https://github.com/conradhuebler/harbour-tidalplayer.git .
+        git submodule update --init --recursive
     
     - name: Build for aarch64
       run: mb2 -t SailfishOS-4.2.0.21-aarch64 build
