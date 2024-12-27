@@ -20,6 +20,17 @@ The current development is driven by Claude 3.5 Sonnet. The icon is made by Midj
 
 ## Requirements
 
+Include https://openrepos.net/user/7598/repository and https://openrepos.net/user/2414/repository as repository:
+
+or look for
+Python3-request
+and
+Python3-future
+
+in storeman and add the corresponding repos.
+
+and 
+
 - Python 3.x
 - Qt/QML
 - PyOtherSide

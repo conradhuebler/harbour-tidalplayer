@@ -27,9 +27,6 @@ jobs:
         git submodule update --init --recursive
         ls -la
     
-    - name: Set Timestamp
-      run: echo "BUILD_TIMESTAMP=$(date +%Y%m%d_%H%M%S)" >> $GITHUB_ENV
-    
     - name: Build noarch
       working-directory: /home/mersdk/harbour-tidalplayer
       env:
@@ -38,10 +35,10 @@ jobs:
         pwd
         mb2 -t SailfishOS-4.6.0.13-aarch64 build
         
-    - name: Rename RPM to noarch with timestamp
+    - name: Rename RPM to fixed name
       run: |
         cd /home/mersdk/harbour-tidalplayer/RPMS/
-        mv harbour-tidalplayer-*-1.aarch64.rpm "harbour-tidalplayer-master-${{ env.BUILD_TIMESTAMP }}-1.noarch.rpm"
+        mv harbour-tidalplayer-*-1.aarch64.rpm "harbour-tidalplayer-master-1.noarch.rpm"
         ls -la
 
     - name: Install curl
@@ -53,8 +50,19 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         cd /home/mersdk/harbour-tidalplayer/RPMS/
+        # Erst altes Asset löschen falls vorhanden
+        ASSET_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets" | \
+          grep -B 2 '"name": "harbour-tidalplayer-master-1.noarch.rpm"' | \
+          grep '"id":' | sed 's/.*"id": \([0-9]*\).*/\1/')
+        if [ ! -z "$ASSET_ID" ]; then
+          curl -X DELETE \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/assets/$ASSET_ID"
+        fi
+        # Neues Asset hochladen
         curl -X POST \
           -H "Authorization: token $GITHUB_TOKEN" \
           -H "Content-Type: application/x-rpm" \
-          --data-binary @"harbour-tidalplayer-master-${{ env.BUILD_TIMESTAMP }}-1.noarch.rpm" \
-          "https://uploads.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets?name=harbour-tidalplayer-master-${{ env.BUILD_TIMESTAMP }}-1.noarch.rpm"
+          --data-binary @"harbour-tidalplayer-master-1.noarch.rpm" \
+          "https://uploads.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets?name=harbour-tidalplayer-master-1.noarch.rpm"
