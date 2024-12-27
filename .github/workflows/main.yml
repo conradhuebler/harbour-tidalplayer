@@ -43,7 +43,7 @@ jobs:
 
     - name: Install curl
       run: |
-        devel-su zypper --non-interactive install curl
+        sudo zypper --non-interactive install curl
 
     - name: Upload to Release
       env:
