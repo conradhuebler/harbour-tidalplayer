@@ -60,6 +60,7 @@ Item {
         if (token_type.value && access_token.value) {
             if (isTokenValid()) {
                 console.log("old token valid");
+                console.log(token_type.value, access_token.value)
                 pythonApi.loginIn(token_type.value,
                                 access_token.value,
                                 refresh_token.value,

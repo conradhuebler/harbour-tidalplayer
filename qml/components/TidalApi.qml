@@ -20,6 +20,11 @@ Item {
     signal trackAdded(int id, string title, string album, string artist, string image, int duration)
     signal albumAdded(int id, string title, string artist, string image, int duration)
     signal artistAdded(int id, string name, string image)
+
+    signal cacheTrack(int id, string title, string album, string artist, string image, int duration)
+    signal cacheAlbum(int id, string title, string artist, string image, int duration)
+    signal cacheArtist(int id, string name, string image)
+
     signal playlistSearchAdded(int id, string name, string image, int duration, string uid)
     signal personalPlaylistAdded(string id, string title, string image, int num_tracks, string description, int duration)
     signal playlistAdded(string id, string title, string image, int num_tracks, string description, int duration)
@@ -66,24 +71,7 @@ Item {
             setHandler('oauth_success', function() {
                 pythonApi.loginSuccess()
             })
-            setHandler('oauth_login_suc console.log("Got track info:", result)
-        if (result) {
-            // Aktualisiere die Properties direkt mit den Track-Informationen
-            playlist_track = result.title
-            playlist_artist = result.artist
-            playlist_album = result.album
-        function getTrackInfo(id)
-        {
-            console.log("getTrackInfo ", id)
-            var track = (call_sync("tidal.Tidaler.getTrackInfo", [id], function(track) {
-                console.log(track)
-            }));
-            console.log(track)
-            return track
-        }
-            // Falls es ein Image-Property im result gibt:
-            // playlist_image = result.image
-        }cess', function() {
+            setHandler('oauth_login_success', function() {
                 pythonApi.loginSuccess()
             })
             setHandler('oauth_failed', function() {
@@ -99,6 +87,18 @@ Item {
             setHandler('printConsole', function(string) {
                 console.log("pythonApi::printConsole " + string)
             })
+
+            // Search Handler
+            setHandler('cacheTrack', function(id, title, album, artist, image, duration) {
+                pythonApi.cacheTrack(id, title, album, artist, image, duration)
+            })
+            setHandler('cacheArtist', function(id, name, image) {
+                pythonApi.cacheArtist(id, name, image)
+            })
+            setHandler('cacheAlbum', function(id, title, artist, image, duration) {
+                pythonApi.cacheAlbum(id, title, artist, image, duration)
+            })
+
 
             // Search Handler
             setHandler('addTrack', function(id, title, album, artist, image, duration) {
