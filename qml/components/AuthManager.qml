@@ -3,7 +3,7 @@ import QtQuick 2.0
 import Nemo.Configuration 1.0
 
 Item {
-    id: authManager
+    id: root
 
     // Properties
     property bool isLoggedIn: false

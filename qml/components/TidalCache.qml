@@ -2,7 +2,7 @@ import QtQuick 2.0
 import QtQuick.LocalStorage 2.0
 
 Item {
-id: cacheManager
+id: root
     property var trackCache: ({})
     property var albumCache: ({})
     property var artistCache: ({})

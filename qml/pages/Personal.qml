@@ -80,13 +80,6 @@ Item {
         VerticalScrollDecorator {}
     }
 
-    Component.onCompleted: {
-        //if(pythonApi.loginTrue)
-         pythonApi.getPersonalPlaylists()
-        //else
-        //console.log("Login failed")
-    }
-
     Connections
     {
         target: pythonApi

@@ -5,10 +5,44 @@ import org.nemomobile.mpris 1.0
 Item {
     id: root
 
-    // Exposed Properties
+    // signals
+    signal currentTrackChanged()
+
+    property string current_track_title : ""
+    property string current_track_artist : ""
+    property string current_track_album : ""
+    property string current_track_image : ""
+    property double current_track_duration : 0
+
+   // MediaPlayer Properties (durchgereicht via alias)
+    readonly property alias mediaPlayer: mediaPlayer
     property alias player: mediaPlayer
     property alias mpris: mprisPlayer
-    property bool isPlaying: mediaPlayer.isPlaying
+    property alias source: mediaPlayer.source
+    property alias position: mediaPlayer.position
+    property alias duration: mediaPlayer.duration
+    property alias volume: mediaPlayer.volume
+    property alias muted: mediaPlayer.muted
+    //property alias playbackState: mediaPlayer.playbackState
+    property alias bufferProgress: mediaPlayer.bufferProgress
+    property alias seekable: mediaPlayer.seekable
+    property alias autoLoad: mediaPlayer.autoLoad
+    property alias error: mediaPlayer.error
+    property alias status: mediaPlayer.status
+
+    readonly property int playingState: MediaPlayer.PlayingState
+    readonly property int pausedState: MediaPlayer.PausedState
+    readonly property int stoppedState: MediaPlayer.StoppedState
+
+    property int playbackState: mediaPlayer.playbackState
+    property bool isPlaying: playbackState === MediaPlayer.PlayingState
+
+
+    // Custom Properties
+    //property alias isPlaying: mediaPlayer.isPlaying
+    property alias blockAutoNext: mediaPlayer.blockAutoNext
+    property alias videoPlaying: mediaPlayer.videoPlaying
+    property string errorMsg: mediaPlayer.errorMsg
 
     // MPRIS Player
     MprisPlayer {
@@ -28,6 +62,7 @@ Item {
             metadata[Mpris.metadataToString(Mpris.Title)] = track
             metadata[Mpris.metadataToString(Mpris.Artist)] = artist
             metadata[Mpris.metadataToString(Mpris.Album)] = album
+            console.log("mpris", track)
             mprisPlayer.metadata = metadata
         }
     }
@@ -120,6 +155,12 @@ Item {
         mediaPlayer.stop()
     }
 
+    function seek(position) {
+        if (mediaPlayer.seekable) {
+            mediaPlayer.seek(position)
+        }
+    }
+
     function setSource(url) {
         mediaPlayer.source = url
     }
@@ -127,4 +168,26 @@ Item {
     function updateMprisMetadata(track, artist, album) {
         mprisPlayer.updateTrack(track, artist, album)
     }
+
+    function playUrl(url) {
+        console.log("only this function is allowed to start playback")
+        mediaPlayer.source = url
+        mediaPlayer.play()
+    }
+
+
+    Connections {
+        target: pythonApi
+        onCurrentPlayback: {
+            console.log("current track info media controller")
+            console.log("track", trackinfo.title)
+            current_track_title = trackinfo.title
+            current_track_artist = trackinfo.artist
+            current_track_album = trackinfo.album
+            current_track_image = trackinfo.image
+            current_track_duration = trackinfo.duration
+            updateMprisMetadata(current_track_title, current_track_artist, current_track_album)
+        }
+    }
+
 }

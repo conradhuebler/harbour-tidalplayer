@@ -2,7 +2,7 @@ import QtQuick 2.0
 import io.thp.pyotherside 1.5
 
 Item {
-    id: playlistManager
+    id: root
 
     property var currentPlaylist: []
     property int currentIndex: -1
@@ -47,6 +47,7 @@ Item {
 
             setHandler('currentTrack', function(id, position) {
                 console.log("Current track in playlist is", id, position)
+                playlistManager.currentTrackChanged(id)
                 playlistManager.currentId(id)
                 currentTrack(position)
             })
@@ -69,6 +70,8 @@ Item {
                 console.log("Playlist unfinished")
                 canNext = true
             })
+            /* new handler will be placed here */
+
 
             importModule('playlistmanager', function() {})
         }
@@ -106,9 +109,6 @@ Item {
             })
         }
 
-        function playTrack(id) {
-            call('playlistmanager.PL.PlayTrack', [id], {})
-        }
 
         function playPosition(id) {
             canNext = false
@@ -133,6 +133,12 @@ Item {
 
         function clearPlayList() {
             call('playlistmanager.PL.clearList', {})
+        }
+
+/* new functions are here */
+
+        function playTrack(id) {
+            call('playlistmanager.PL.PlayTrack', [id], {})
         }
 
         function generateList() {
@@ -168,14 +174,6 @@ Item {
     }
 
     function requestPlaylistItem(index) {
-        /*
-        console.log("Request PlaylistTrack", index)
-        playlistPython.call("playlistmanager.PL.TidalId", [index], function(id){
-            playlistManager.tidalId = id
-            console.log("Current playlist tidalid", playlistManager.tidalId)
-        })
-        console.log("Current playlist tidalid and size", playlistManager.tidalId, playlistManager.size)
-        */
         console.log("Request PlaylistTrack", index)
         var id = playlistPython.call_sync("playlistmanager.PL.TidalId", [index])
         playlistManager.tidalId = id
@@ -197,7 +195,7 @@ Item {
 
     function playTrack(id) {
         console.log("Playlistmanager::playtrack", id)
-        mediaPlayer.blockAutoNext = true
+        mediaController.blockAutoNext = true
         playlistPython.playTrack(id)
         currentTrackIndex()
     }
@@ -205,7 +203,7 @@ Item {
     function playPosition(id) {
         console.log(id)
         playlistPython.canNext = false
-        mediaPlayer.blockAutoNext = true
+        mediaController.blockAutoNext = true
         playlistPython.playPosition(id)
         currentTrackIndex()
     }

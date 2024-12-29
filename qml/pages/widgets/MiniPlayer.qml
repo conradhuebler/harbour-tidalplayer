@@ -15,8 +15,8 @@ DockedPanel {
     property int track_id
 
     function play() {
-        mediaPlayer.source = url;
-        mediaPlayer.play();
+        mediaController.source = url;
+        mediaController.play();
         progressSlider.visible = true
         show();
     }
@@ -103,17 +103,22 @@ DockedPanel {
                 id: prevButton
                 icon.source: "image://theme/icon-m-previous"
                 //visible: playlistManager.canPrev
-                onClicked: playlistManager.previousTrackClicked()
+                onClicked:
+                {
+                    console.log("prev button pressed")
+                    playlistManager.previousTrackClicked()
+                }
             }
 
             IconButton {
                 id: playButton
-                icon.source: mediaPlayer.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
-                onClicked: {
-                    if (mediaPlayer.playbackState == 1) {
-                        mediaPlayer.pause()
-                    } else if(mediaPlayer.playbackState == 2) {
-                        mediaPlayer.play()
+                icon.source: mediaController.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
+                onClicked:
+                {
+                    if (mediaController.mediaPlayer.playbackState === 1) {
+                        mediaController.pause()
+                    } else if(mediaController.mediaPlayer.playbackState === 2) {
+                        mediaController.play()
                     }
                 }
             }
@@ -123,7 +128,9 @@ DockedPanel {
                 icon.source: "image://theme/icon-m-next"
                 //visible: playlistManager.canNext
                 onClicked: {
-                    mediaPlayer.blockAutoNext = true
+                    console.log("next button pressed")
+
+                    mediaController.blockAutoNext = true
                     playlistManager.nextTrackClicked()
                 }
             }
@@ -161,10 +168,10 @@ DockedPanel {
                             Label {
                                 id: playedTime
                                 property string pos: {
-                                    if ((mediaPlayer.position / 1000) > 3599)
+                                    if ((mediaController.position / 1000) > 3599)
                                         return Format.formatDuration(minPlayer.position / 1000, Formatter.DurationLong)
                                     else
-                                        return Format.formatDuration(mediaPlayer.position / 1000, Formatter.DurationShort)
+                                        return Format.formatDuration(mediaController.position / 1000, Formatter.DurationShort)
                                 }
                                 text: pos
                                 font.pixelSize: Theme.fontSizeExtraSmall
@@ -173,10 +180,10 @@ DockedPanel {
                             Label {
                                 id: playTime
                                 property string dur: {
-                                    if ((mediaPlayer.duration / 1000) > 3599)
+                                    if ((mediaController.duration / 1000) > 3599)
                                         return Format.formatDuration(minPlayer.duration / 1000, Formatter.DurationLong)
                                     else
-                                        return Format.formatDuration(mediaPlayer.duration / 1000, Formatter.DurationShort)
+                                        return Format.formatDuration(mediaController.duration / 1000, Formatter.DurationShort)
                                 }
                                 text: dur
                                 font.pixelSize: Theme.fontSizeExtraSmall
@@ -188,35 +195,54 @@ DockedPanel {
     }
 
     // Connections bleiben unverändert
+
+
     Connections {
-        target: mediaPlayer
+        target: mediaController
         onCurrentPosition: {
             progressSlider.value = position
         }
         onPlaybackStateChanged: {
-            if(mediaPlayer.playbackState === 1)
+            if(mediaController.playbackState === 1)
                 playButton.icon.source = "image://theme/icon-m-pause"
-            else if(mediaPlayer.playbackState === 2)
+            else if(mediaController.playbackState === 2)
                 playButton.icon.source = "image://theme/icon-m-play"
         }
     }
 
     Connections {
+        target: mediaController
+        /*
+        onCurrentTrack: {
+            mediaTitle.text = track_num + " - " + mediaController.current_track_title
+            + " - "
+            + mediaController.current_track_album
+            + " - "
+            + mediaController.current_track_artist
+            bgImage.source = mediaController.current_track_image
+            //prevButton.enabled = playlistManager.canPrev
+            //nextButton.enabled = playlistManager.canNext
+            progressSlider.visible = true
+        }*/
+    }
+
+    Connections {
         target: progressSlider
         onReleased: {
-            mediaPlayer.seek(progressSlider.value/100*mediaPlayer.duration)
+            player.seek(progressSlider.value/100*mediaController.duration)
         }
     }
 
     Connections {
         target: pythonApi
-        onCurrentTrackInfo: {
-            mediaTitle.text = track_num + " - " + title + " - " + album + " - " + artist
-            bgImage.source = album_image
+            onCurrentPlayback:
+         {
+            mediaTitle.text = trackinfo.track_num + " - " + trackinfo.title + " - " + trackinfo.album + " - " + trackinfo.artist
+            bgImage.source = trackinfo.image
             //prevButton.enabled = playlistManager.canPrev
             //nextButton.enabled = playlistManager.canNext
             progressSlider.visible = true
-            mprisPlayer.updateTrack(title, artist, album)
+            //mprisPlayer.updateTrack(title, artist, album)
         }
     }
 

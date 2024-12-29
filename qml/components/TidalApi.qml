@@ -2,7 +2,7 @@ import QtQuick 2.0
 import io.thp.pyotherside 1.5
 
 Item {
-    id: pythonApi
+    id: root
 
     // Wichtige Login/Auth Signale
     signal authUrl(string url)
@@ -35,6 +35,11 @@ Item {
     signal artistChanged(int id, string name, string img)
     signal currentTrackInfo(string title, int track_num, string album, string artist, int duration, string album_image, string artist_image)
 
+    /* new signals come here*/
+    signal searchResults(var search_results)
+    signal playurl(string url)
+    signal currentPlayback(var trackinfo)
+
     // Properties für die Suche
     property string artistsResults
     property string albumsResults
@@ -51,6 +56,11 @@ Item {
     property string playlist_artist: ""
     property string playlist_album: ""
     property string playlist_image: ""
+
+    property string current_track_title : ""
+    property string current_track_artist : ""
+    property string current_track_album : ""
+    property string current_track_image : ""
 
     property string quality: ""
 
@@ -170,6 +180,28 @@ Item {
                 mediaPlayer.play()
             })
 
+            /* new handler will be placed here */
+
+            setHandler('search_results', function(search_result) {
+                console.log(search_result)
+                searchResults(search_result)
+            })
+
+            setHandler('playback_info', function(info) {
+                mediaController.playUrl(info.url)
+                currentPlayback(info.track)
+                /*
+                mediaPlayer.source = info.url
+                mediaPlayer.play()
+                */
+                pythonApi.current_track_title = info.track.title
+                pythonApi.current_track_artist = info.track.artist
+                pythonApi.current_track_album = info.track.album
+                pythonApi.current_track_image = info.track.image
+
+                //searchResults(search_result)
+            })
+
             importModule('tidal', function() {
                 console.log("Tidal module imported successfully")
             })
@@ -223,6 +255,7 @@ Item {
 
     // Search Funktionen
     function genericSearch(text) {
+        console.log("generic search", text)
         pythonTidal.call("tidal.Tidaler.genericSearch", [text])
     }
 
@@ -243,8 +276,9 @@ Item {
 
     // Track Funktionen
     function playTrackId(id) {
+        console.log(id)
         pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(name) {
-            console.log(name)
+            console.log(name.url)
             if(typeof name === 'undefined')
                 console.log(typeof name)
             else

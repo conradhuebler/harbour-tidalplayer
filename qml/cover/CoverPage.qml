@@ -34,7 +34,7 @@ CoverBackground {
             id: prevButton
             iconSource: "image://theme/icon-m-simple-previous"
             onTriggered: {
-                mediaPlayer.blockAutoNext = true
+                mediaController.blockAutoNext = true
                 playlistManager.previousTrack()
             }
         }
@@ -43,12 +43,12 @@ CoverBackground {
             id: playpause
             onTriggered:
             {
-                if (mediaPlayer.playbackState === 1)
+                if (mediaController.playbackState === 1)
                 {
-                    mediaPlayer.pause()
+                    mediaController.pause()
                 }
-                else if(mediaPlayer.playbackState === 2){
-                    mediaPlayer.play()
+                else if(mediaController.playbackState === 2){
+                    mediaController.play()
                 }
             }
         }
@@ -57,7 +57,7 @@ CoverBackground {
             id: nextButton
             iconSource: "image://theme/icon-m-simple-next"
             onTriggered: {
-                mediaPlayer.blockAutoNext = true
+                mediaController.blockAutoNext = true
                 playlistManager.nextTrackClicked()
             }
         }
@@ -70,11 +70,11 @@ CoverBackground {
     Connections
     {
         target: pythonApi
-        onCurrentTrackInfo:
+        onCurrentPlayback:
         {
-            titleLabel.text = track_num + " - " + title
-            artist_albumLabel.text = album + " - " + artist
-            coverImage.source = album_image
+            titleLabel.text = trackinfo.track_num + " - " + trackinfo.title
+            artist_albumLabel.text = trackinfo.album + " - " + trackinfo.artist
+            coverImage.source = trackinfo.image
         }
     }
     Connections
@@ -91,12 +91,12 @@ CoverBackground {
     }
     Connections
     {
-        target: mediaPlayer
+        target: mediaController
         onPlaybackStateChanged:
         {
-            if(mediaPlayer.playbackState === 1)
+            if(mediaController.playbackState === 1)
                  playpause.iconSource = "image://theme/icon-m-simple-pause"
-             else if(mediaPlayer.playbackState === 2)
+             else if(mediaController.playbackState === 2)
                  playpause.iconSource =  "image://theme/icon-m-simple-play"
         }
     }

@@ -55,7 +55,7 @@ ApplicationWindow
         id: playlistManager
         onCurrentTrackChanged: {
             if (track) {
-                pythonApi.playTrackId(track.id)
+                pythonApi.playTrackId(track)
                 console.log("playlistmanager call id", track)
             }
         }
@@ -66,67 +66,9 @@ ApplicationWindow
         id: cacheManager
     }
 
-    MediaPlayer {
-        id: mediaPlayer
-        autoLoad: true
-        signal currentPosition(int position)
-        property bool blockAutoNext : false
-        property bool isPlaying : false
-        property bool videoPlaying: false
-        property string errorMsg: ""
-
-        onError: {
-            if ( error === MediaPlayer.ResourceError ) errorMsg = qsTr("Error: Problem with allocating resources")
-            else if ( error === MediaPlayer.ServiceMissing ) errorMsg = qsTr("Error: Media service error")
-            else if ( error === MediaPlayer.FormatError ) errorMsg = qsTr("Error: Video or Audio format is not supported")
-            else if ( error === MediaPlayer.AccessDenied ) errorMsg = qsTr("Error: Access denied to the video")
-            else if ( error === MediaPlayer.NetworkError ) errorMsg = qsTr("Error: Network error")
-            stop()
-            isPlaying = false
-        }
-
-        onStopped:
-        {
-            console.log("playing stopped", playlistManager.canNext, blockAutoNext)
-            if(!blockAutoNext)
-            {
-                console.log("playing next is not blocked", playlistManager.canNext, blockAutoNext)
-
-                if(playlistManager.canNext)
-                {
-                    playlistManager.nextTrack()
-                }
-                else
-                {
-                    console.log("there is no next track to play", playlistManager.canNext, blockAutoNext)
-
-                    playlistManager.playListFinished()
-                    isPlaying = false
-                }
-            }else
-            console.log("playing next was blocked", playlistManager.canNext, blockAutoNext)
-
-            blockAutoNext = false
-        }
-
-        onPositionChanged:
-        {
-            mediaPlayer.currentPosition(mediaPlayer.position/mediaPlayer.duration*100)
-        }
-
-        onPlaying:
-        {
-            isPlaying = true
-            //mprisPlayer.canPause = true
-            mprisPlayer.canGoNext = playlistManager.canNext
-            mprisPlayer.canGoPrevious = playlistManager.canPrev
-            mprisPlayer.playbackStatus = Mpris.Playing
-        }
-
-        onPaused:
-        {
-            mprisPlayer.playbackStatus = Mpris.Paused
-        }
+    MediaController
+    {
+        id: mediaController
     }
 
     initialPage: Component { FirstPage { } }
