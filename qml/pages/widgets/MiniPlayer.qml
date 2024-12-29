@@ -234,7 +234,7 @@ DockedPanel {
     }
 
     Connections {
-        target: pythonApi
+        target: tidalApi
             onCurrentPlayback:
          {
             mediaTitle.text = trackinfo.track_num + " - " + trackinfo.title + " - " + trackinfo.album + " - " + trackinfo.artist

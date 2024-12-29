@@ -56,19 +56,19 @@ Item {
     }
 
     function checkAndLogin() {
-        pythonApi.quality = audioQuality.value
+        tidalApi.quality = audioQuality.value
         if (token_type.value && access_token.value) {
             if (isTokenValid()) {
                 console.log("old token valid");
                 console.log(token_type.value, access_token.value)
-                pythonApi.loginIn(token_type.value,
+                tidalApi.loginIn(token_type.value,
                                 access_token.value,
                                 refresh_token.value,
                                 expiry_time.value)
             } else {
                 // Token abgelaufen, mit Refresh Token versuchen
                 console.log("old token invalid");
-                pythonApi.loginIn(token_type.value,
+                tidalApi.loginIn(token_type.value,
                                 refresh_token.value,
                                 refresh_token.value,
                                 expiry_time.value)

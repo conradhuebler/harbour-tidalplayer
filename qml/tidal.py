@@ -135,7 +135,7 @@ class Tidal:
         for track in result["tracks"]:
             if track_info := self.handle_track(track):
                 search_results["tracks"].append(track_info)
-                self.send_object("track_data", track_info)
+                self.send_object("cacheTrack", track_info)
 
         # Artists verarbeiten
         for artist in result["artists"]:
@@ -206,6 +206,18 @@ class Tidal:
             self.send_object("error", {"message": str(e)})
             return None
 
+    def getTrackInfo(self, id):
+        try:
+            track = self.session.track(int(id))
+            track_info = self.handle_track(track)
+            if track_info:
+                self.send_object("cacheTrack", track_info)
+                return track_info
+            return None
+        except Exception as e:
+            self.send_object("error", {"message": str(e)})
+            return None
+
     def getTrackUrl(self, id):
         try:
             track = self.session.track(int(id))
@@ -234,7 +246,7 @@ class Tidal:
                     if track_info := self.handle_track(track):
                         tracks.append(track_info)
 
-                self.send_object("playlist_data", {
+                self.send_object("playlist_replace", {
                     "playlist": playlist_info,
                     "tracks": tracks
                 })
@@ -253,26 +265,15 @@ class Tidal:
         for track in album.tracks():
             track_info = self.handle_track(track)
             if track_info:
-                pyotherside.send("cacheTrack",
-                    track_info['id'],
-                    track_info['title'],
-                    track_info['album'],
-                    track_info['artist'],
-                    track_info['image'],
-                    track_info['duration'])
+                pyotherside.send("cacheTrack", track_info)
+
 
     def playAlbumTracks(self, id):
         album = self.session.album(int(id))
         for track in album.tracks():
             track_info = self.handle_track(track)
             if track_info:
-                pyotherside.send("cacheTrack",
-                    track_info['id'],
-                    track_info['title'],
-                    track_info['album'],
-                    track_info['artist'],
-                    track_info['image'],
-                    track_info['duration'])
+                pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("addTracktoPL", track_info['id'])
         pyotherside.send("fillFinished")
 
@@ -280,13 +281,7 @@ class Tidal:
         for track in self.session.track(int(id)).album.tracks():
             track_info = self.handle_track(track)
             if track_info:
-                pyotherside.send("cacheTrack",
-                    track_info['id'],
-                    track_info['title'],
-                    track_info['album'],
-                    track_info['artist'],
-                    track_info['image'],
-                    track_info['duration'])
+                pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("addTracktoPL", track_info['id'])
         pyotherside.send("fillFinished")
 
@@ -295,13 +290,7 @@ class Tidal:
         for track in toptracks:
             track_info = self.handle_track(track)
             if track_info:
-                pyotherside.send("cacheTrack",
-                    track_info['id'],
-                    track_info['title'],
-                    track_info['album'],
-                    track_info['artist'],
-                    track_info['image'],
-                    track_info['duration'])
+                pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("addTrack",
                     track_info['id'],
                     track_info['title'],
@@ -327,29 +316,24 @@ class Tidal:
 
         for ti in playlist.tracks():
             i = self.handle_track(ti)
-            pyotherside.send("cacheTrack", i.id, i.name, i.album.name, i.artist.name, i.album, i.duration)
+            pyotherside.send("cacheTrack", i)
+            #pyotherside.send("cacheTrack", i.id, i.name, i.album.name, i.artist.name, i.album, i.duration)
 
-    #def playPlaylist(self, id):
-    #    playlist = self.session.playlist(id)
-    #    first_track = playlist.tracks()[0]
-    #    pyotherside.send("insertTrack", first_track.id)
-    #    pyotherside.send("printConsole", f" insert Track: {first_track.id}")
+    def playPlaylist(self, id):
+        playlist = self.session.playlist(id)
+        first_track = playlist.tracks()[0]
+        pyotherside.send("insertTrack", first_track.id)
+        pyotherside.send("printConsole", f" insert Track: {first_track.id}")
 
-    #    for i, track in enumerate(playlist.tracks()):
-    #        track_info = self.handle_track(track)
-    #        if track_info:
-    #            pyotherside.send("cacheTrack",
-    #                track_info['id'],
-    #                track_info['title'],
-    #                track_info['album'],
-    #                track_info['artist'],
-    #                track_info['image'],
-    #                track_info['duration'])
-    #            pyotherside.send("addTracktoPL", track_info['id'])
+        for i, track in enumerate(playlist.tracks()):
+            track_info = self.handle_track(track)
+            if track_info:
+                pyotherside.send("cacheTrack", track_info)
+                pyotherside.send("addTracktoPL", track_info['id'])
 
-    #        if i == 0:
-    #            pyotherside.send("fillStarted")
+            if i == 0:
+                pyotherside.send("fillStarted")
 
-    #    pyotherside.send("fillFinished")
+        pyotherside.send("fillFinished")
 
 Tidaler = Tidal()

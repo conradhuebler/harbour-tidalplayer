@@ -16,7 +16,7 @@ id: root
 
     // Verbindungen zu den Python-Signalen
  Connections {
-        target: pythonApi
+        target: tidalApi
 
         // Bestehende Connections
         onTrackChanged: {
@@ -54,6 +54,22 @@ id: root
         }
 
         // Neue Connections für Suchergebnisse
+
+        onCacheTrack: {
+            //track_info
+            console.log("cache track info", track_info.title)
+            saveTrackToCache({
+                id: track_info.id,
+                title: track_info.title,
+                album: track_info.album,
+                artist: track_info.artist,
+                image: track_info.image,
+                duration: track_info.duration,
+                timestamp: Date.now(),
+                fromSearch: true  // Optional: markiert Einträge aus der Suche
+            })
+        }
+
         onTrackAdded: {
             // id, title, album, artist, image, duration
             saveTrackToCache({
@@ -163,8 +179,8 @@ id: root
         }
 
         // Wenn nicht im Cache oder zu alt, von Python holen
-        /*
-        var result = pythonTidal.call_sync("tidal.Tidaler.getTrackInfo", [id])
+
+        var result = tidalApi.getTrackInfo(id)
         if (result) {
             var trackData = {
                 id: id,
@@ -178,7 +194,7 @@ id: root
             saveTrackToCache(trackData)
             return trackData
         }
-        */
+
         return null
     }
 

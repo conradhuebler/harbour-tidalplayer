@@ -16,10 +16,12 @@ Item {
         interval: 100  // 100ms Verzögerung
         repeat: false
         onTriggered: {
+            console.log(playlistManager.size)
             for(var i = 0; i < playlistManager.size; ++i) {
                 console.log("Requesting item", i)
-                playlistManager.requestPlaylistItem(i)
-                var track = cacheManager.getTrackInfo(playlistManager.tidalId)
+                var id = playlistManager.requestPlaylistItem(i)
+                console.log("here id", id)
+                var track = cacheManager.getTrackInfo(id)
                 if (track) {
                     console.log("Adding track:", track.title)
                     pLtrackList.addTrack(track.title, track.artist, track.album, track.track_id, track.duration)
@@ -62,7 +64,7 @@ Item {
             console.log("Current position changed to:", playlistManager.current_position)
             pLtrackList.highlight_index = playlistManager.current_position
         }
-        onPlayListChanged: {
+        onListChanged: {
             console.log("Update playlist now", playlistManager.size)
             pLtrackList.clear()
             updateTimer.start()  // Timer starten statt Qt.callLater

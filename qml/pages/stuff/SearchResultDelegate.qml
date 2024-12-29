@@ -115,7 +115,7 @@ ListItem {
                 playlistManager.playAlbum(item.id)
                 break
             case 4: // Playlist
-                pythonApi.playPlaylist(item.uid)
+                tidalApi.playPlaylist(item.uid)
                 break
         }
     }
@@ -124,15 +124,15 @@ ListItem {
         switch(item.type) {
             case 1: // Track
                 pageStack.push(Qt.resolvedUrl("../pages/AlbumPage.qml"))
-                pythonApi.getTrackInfo(item.id)
+                tidalApi.getTrackInfo(item.id)
                 break
             case 2: // Album
                 pageStack.push(Qt.resolvedUrl("../pages/AlbumPage.qml"))
-                pythonApi.getAlbumInfo(item.id)
+                tidalApi.getAlbumInfo(item.id)
                 break
             case 3: // Artist
                 pageStack.push(Qt.resolvedUrl("../pages/ArtistPage.qml"))
-                pythonApi.getArtistInfo(item.id)
+                tidalApi.getArtistInfo(item.id)
                 break
         }
     }

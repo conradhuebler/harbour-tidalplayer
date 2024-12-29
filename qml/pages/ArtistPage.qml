@@ -88,7 +88,7 @@ Page {
         }
 
     Connections {
-        target: pythonApi
+        target: tidalApi
 
         onArtistChanged:
         {

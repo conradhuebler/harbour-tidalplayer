@@ -69,7 +69,7 @@ CoverBackground {
 
     Connections
     {
-        target: pythonApi
+        target: tidalApi
         onCurrentPlayback:
         {
             titleLabel.text = trackinfo.track_num + " - " + trackinfo.title

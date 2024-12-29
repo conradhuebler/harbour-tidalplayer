@@ -10,6 +10,7 @@ class PlaylistManager:
         """Benachrichtigt über den aktuellen Playlist-Status"""
         is_last_track = self.current_index >= len(self.playlist) - 1
         pyotherside.send("playlistSize", len(self.playlist))
+        pyotherside.send("currentIndex", self.current_index)
 
         if is_last_track:
             pyotherside.send("playlistFinished")
@@ -29,6 +30,8 @@ class PlaylistManager:
         if track_id:
             self.playlist.append(track_id)
             self._notify_playlist_state()
+            pyotherside.send("listChanged")
+
 
     def InsertTrack(self, track_id):
         """Fügt einen Track nach dem aktuellen Track ein"""
@@ -37,6 +40,7 @@ class PlaylistManager:
             self.playlist.insert(insert_pos, track_id)
             self._notify_playlist_state()
             self._notify_current_track()
+            pyotherside.send("listChanged")
 
     def PlayTrack(self, track_id):
         """Spielt einen bestimmten Track sofort"""
@@ -46,6 +50,7 @@ class PlaylistManager:
             self.current_index = insert_pos
             self._notify_playlist_state()
             self._notify_current_track()
+            #pyotherside.send("listChanged")
 
     def NextTrack(self):
         """Wechselt zum nächsten Track"""
@@ -77,6 +82,8 @@ class PlaylistManager:
         pyotherside.send("clearList")
         for track_id in self.playlist:
             pyotherside.send("containsTrack", track_id)
+
+        pyotherside.send("listChanged")
 
     def size(self):
         """Gibt die Größe der Playlist zurück"""

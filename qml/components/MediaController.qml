@@ -177,7 +177,7 @@ Item {
 
 
     Connections {
-        target: pythonApi
+        target: tidalApi
         onCurrentPlayback: {
             console.log("current track info media controller")
             console.log("track", trackinfo.title)

@@ -142,7 +142,7 @@ Column {
 
             onClicked: {
                 if(start_on_tap) {
-                    mediaPlayer.blockAutoNext = true
+                    mediaController.blockAutoNext = true
                     playlistManager.playPosition(model.index)
                     highlight_index = model.index
                 }
@@ -242,7 +242,7 @@ Column {
     Connections {
         target: playlistManager
         onContainsTrack: {
-            pythonApi.getTrackInfo(id)
+            tidalApi.getTrackInfo(id)
         }
     }
 

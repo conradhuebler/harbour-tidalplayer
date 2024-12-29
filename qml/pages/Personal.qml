@@ -64,7 +64,7 @@ Item {
                 MenuItem {
                     text: "Play Playlist"
                     onClicked: {
-                        pythonApi.playPlaylist(listModel.get(model.index).id)
+                        tidalApi.playPlaylist(listModel.get(model.index).id)
                     }
 
                 }
@@ -82,7 +82,7 @@ Item {
 
     Connections
     {
-        target: pythonApi
+        target: tidalApi
         onPersonalPlaylistAdded:
         {
             listModel.append(
@@ -99,7 +99,7 @@ Item {
         onLoginSuccess:
         {
             console.log("Personal playlists")
-            pythonApi.getPersonalPlaylists()
+            tidalApi.getPersonalPlaylists()
         }
     }
 }

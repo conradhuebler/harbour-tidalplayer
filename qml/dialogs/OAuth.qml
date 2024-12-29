@@ -30,7 +30,7 @@ Dialog {
     }
 
     Connections {
-        target: pythonApi
+        target: tidalApi
         onAuthUrl: {
             console.log(url)
             Clipboard.text = mail.value
@@ -49,6 +49,6 @@ Dialog {
     }
 
     Component.onCompleted: {
-        pythonApi.getOAuth()
+        tidalApi.getOAuth()
     }
 }

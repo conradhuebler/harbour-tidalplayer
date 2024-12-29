@@ -21,7 +21,7 @@ Item {
     signal albumAdded(int id, string title, string artist, string image, int duration)
     signal artistAdded(int id, string name, string image)
 
-    signal cacheTrack(int id, string title, string album, string artist, string image, int duration)
+    //signal cacheTrack(int id, string title, string album, string artist, string image, int duration)
     signal cacheAlbum(int id, string title, string artist, string image, int duration)
     signal cacheArtist(int id, string name, string image)
 
@@ -39,6 +39,7 @@ Item {
     signal searchResults(var search_results)
     signal playurl(string url)
     signal currentPlayback(var trackinfo)
+    signal cacheTrack(var track_info)
 
     // Properties für die Suche
     property string artistsResults
@@ -76,64 +77,70 @@ Item {
 
             // Login Handler
             setHandler('get_url', function(newvalue) {
-                pythonApi.authUrl(newvalue)
+                tidalApi.authUrl(newvalue)
             })
             setHandler('oauth_success', function() {
-                pythonApi.loginSuccess()
+                tidalApi.loginSuccess()
             })
             setHandler('oauth_login_success', function() {
-                pythonApi.loginSuccess()
+                tidalApi.loginSuccess()
             })
             setHandler('oauth_failed', function() {
-                pythonApi.loginFailed()
+                tidalApi.loginFailed()
             })
             setHandler('get_token', function(type, token, rtoken, date) {
                 console.log("Got new token from session")
                 console.log(type, token, rtoken, date)
-                pythonApi.oAuthSuccess(type, token, rtoken, date)
+                tidalApi.oAuthSuccess(type, token, rtoken, date)
             })
 
             // Debug Handler
             setHandler('printConsole', function(string) {
-                console.log("pythonApi::printConsole " + string)
+                console.log("tidalApi::printConsole " + string)
             })
 
             // Search Handler
-            setHandler('cacheTrack', function(id, title, album, artist, image, duration) {
-                pythonApi.cacheTrack(id, title, album, artist, image, duration)
+            //setHandler('cacheTrack', function(id, title, album, artist, image, duration) {
+            //    tidalApi.cacheTrack(id, title, album, artist, image, duration)
+            //})
+
+            setHandler('cacheTrack', function(track_info) {
+                console.log("add track to cache")
+                tidalApi.cacheTrack(track_info)
             })
+
             setHandler('cacheArtist', function(id, name, image) {
-                pythonApi.cacheArtist(id, name, image)
+                tidalApi.cacheArtist(id, name, image)
             })
             setHandler('cacheAlbum', function(id, title, artist, image, duration) {
-                pythonApi.cacheAlbum(id, title, artist, image, duration)
+                tidalApi.cacheAlbum(id, title, artist, image, duration)
             })
 
 
             // Search Handler
             setHandler('addTrack', function(id, title, album, artist, image, duration) {
-                pythonApi.trackAdded(id, title, album, artist, image, duration)
+                tidalApi.trackAdded(id, title, album, artist, image, duration)
             })
             setHandler('addArtist', function(id, name, image) {
-                pythonApi.artistAdded(id, name, image)
+                tidalApi.artistAdded(id, name, image)
             })
             setHandler('addAlbum', function(id, title, artist, image, duration) {
-                pythonApi.albumAdded(id, title, artist, image, duration)
+                tidalApi.albumAdded(id, title, artist, image, duration)
             })
             setHandler('addPlaylist', function(id, name, image, duration, uid) {
-                pythonApi.playlistSearchAdded(id, name, image, duration, uid)
+                tidalApi.playlistSearchAdded(id, name, image, duration, uid)
             })
 
 
             // Search Finished Handler
             setHandler('trackSearchFinished', function() {
-                pythonApi.trackSearchFinished()
+                tidalApi.trackSearchFinished()
             })
             setHandler('artistsSearchFinished', function() {
-                pythonApi.artistSearchFinished()
+                tidalApi.artistSearchFinished()
             })
             setHandler('albumsSearchFinished', function() {
-                pythonApi.albumSearchFinished()
+                tidalApi.albumSearchFinished()
             })
 
             setHandler('fillStarted', function()
@@ -149,24 +156,24 @@ Item {
 
             // Info Handler
             setHandler('trackInfo', function(id, title, album, artist, image, duration) {
-                pythonApi.trackChanged(id, title, album, artist, image, duration)
+                tidalApi.trackChanged(id, title, album, artist, image, duration)
             })
             setHandler('albumInfo', function(id, title, artist, image) {
-                pythonApi.albumChanged(id, title, artist, image)
+                tidalApi.albumChanged(id, title, artist, image)
             })
             setHandler('artistInfo', function(id, name, img) {
-                pythonApi.artistChanged(id, name, img)
+                tidalApi.artistChanged(id, name, img)
             })
 
             // Playlist Handler
             setHandler('addPersonalPlaylist', function(id, name, image, num_tracks, description, duration) {
-                pythonApi.personalPlaylistAdded(id, name, image, num_tracks, description, duration)
+                tidalApi.personalPlaylistAdded(id, name, image, num_tracks, description, duration)
             })
             setHandler('setPlaylist', function(id, title, image, num_tracks, description, duration) {
-                pythonApi.playlistAdded(id, title, image, num_tracks, description, duration)
+                tidalApi.playlistAdded(id, title, image, num_tracks, description, duration)
             })
             setHandler('currentTrackInfo', function(title, track_num, album, artist, duration, album_image, artist_image) {
-                pythonApi.currentTrackInfo(title, track_num, album, artist, duration, album_image, artist_image)
+                tidalApi.currentTrackInfo(title, track_num, album, artist, duration, album_image, artist_image)
             })
 
             setHandler('addTracktoPL', function(id)
@@ -190,16 +197,16 @@ Item {
             setHandler('playback_info', function(info) {
                 mediaController.playUrl(info.url)
                 currentPlayback(info.track)
-                /*
-                mediaPlayer.source = info.url
-                mediaPlayer.play()
-                */
-                pythonApi.current_track_title = info.track.title
-                pythonApi.current_track_artist = info.track.artist
-                pythonApi.current_track_album = info.track.album
-                pythonApi.current_track_image = info.track.image
+                tidalApi.current_track_title = info.track.title
+                tidalApi.current_track_artist = info.track.artist
+                tidalApi.current_track_album = info.track.album
+                tidalApi.current_track_image = info.track.image
 
-                //searchResults(search_result)
+            })
+
+            setHandler('playlist_replace', function(playlist) {
+                playlistManager.clearList()
+                searchResults(playlist)
             })
 
             importModule('tidal', function() {
@@ -294,9 +301,8 @@ Item {
         console.log("JavaScript id after:", id, typeof id)
 
         var returnValue = null
-        var val = (pythonTidal.getTrackInfo(id))
-        console.log(val.title)
-        pythonTidal.call("tidal.Tidaler.getTrackInfo", [id], function(result) {
+
+        pythonTidal.call_sync("tidal.Tidaler.getTrackInfo", [id], function(result) {
             if (result) {
                 // Properties aktualisieren
                 playlist_track = result.title

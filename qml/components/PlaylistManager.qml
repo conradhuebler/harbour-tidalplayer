@@ -4,11 +4,11 @@ import io.thp.pyotherside 1.5
 Item {
     id: root
 
-    property var currentPlaylist: []
+    //property var currentPlaylist: []
     property int currentIndex: -1
-    property bool canNext: currentPlaylist.length > 0 && currentIndex < currentPlaylist.length - 1
-    property bool canPrev: currentIndex > 0
-    property int size: currentPlaylist.length
+    property bool canNext: false //currentPlaylist.length > 0 && currentIndex < currentPlaylist.length - 1
+    property bool canPrev: false //currentIndex > 0
+    property int size: 0 //currentPlaylist.length
     property int current_track: -1
     property int tidalId : 0
 
@@ -20,8 +20,10 @@ Item {
     signal containsTrack(int id)
     signal clearList()
     signal currentTrack(int position)
-    signal playListFinished()
-    signal playListChanged()
+
+
+    signal listFinished()
+    signal listChanged()
 
     Python {
         id: playlistPython
@@ -47,18 +49,39 @@ Item {
 
             setHandler('currentTrack', function(id, position) {
                 console.log("Current track in playlist is", id, position)
-                playlistManager.currentTrackChanged(id)
-                playlistManager.currentId(id)
+                root.currentTrackChanged(id)
+                root.currentId(id)
                 currentTrack(position)
             })
 
             setHandler('clearList', function() {
-                playlistManager.clearList()
+                root.clearList()
             })
 
             setHandler('containsTrack', function(id) {
                 console.log(id)
-                playlistManager.containsTrack(id)
+                root.containsTrack(id)
+            })
+
+
+            /* new handler will be placed here */
+
+            setHandler('listChanged', function() {
+                root.size = getSize()
+                console.log("list changed, new size: ", root.size)
+                root.listChanged()
+            })
+
+            setHandler('playlistSize', function(size) {
+                root.size = size
+                console.log("list changed, new size: ", root.size)
+                root.listChanged()
+            })
+
+            setHandler('currentIndex', function(index) {
+                root.currentIndex = index
+                console.log("list changed, new size: ", root.size)
+                root.listChanged()
             })
 
             setHandler('playlistFinished', function() {
@@ -70,9 +93,6 @@ Item {
                 console.log("Playlist unfinished")
                 canNext = true
             })
-            /* new handler will be placed here */
-
-
             importModule('playlistmanager', function() {})
         }
 
@@ -88,24 +108,19 @@ Item {
         }
 
         function getSize() {
-        /*
-            call("playlistmanager.PL.size", [], function(name){
-                playlistManager.size = name
-                console.log(name)
-            })
-            console.log(playlistManager.size)*/
-            playlistManager.size = playlistPython.call_sync("playlistmanager.PL.size", [])
+            root.size = playlistPython.call_sync("playlistmanager.PL.size", [])
             console.log("Playlist size:", playlistManager.size)
             return playlistManager.size
         }
 
         function requestPlaylistItem(index) {
             console.log("request item", index)
+
             call("playlistmanager.PL.TidalId", [index], function(id){
             console.log("got id for track", id);
                 var track = cacheManager.getTrackInfo(id)
                 console.log("after function", id, index, track);
-                playlistManager.trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
+                root.trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
             })
         }
 
@@ -138,19 +153,13 @@ Item {
 /* new functions are here */
 
         function playTrack(id) {
+            console.log("Add track to playlist and play and rebuild playlist", id)
             call('playlistmanager.PL.PlayTrack', [id], {})
         }
 
         function generateList() {
             getSize()
-            playlistManager.playListChanged()
-/*
-            call("playlistmanager.PL.size", [], function(tracks){
-                playlistManager.size = tracks
-                console.log("Current playlist size", size)
-                playlistManager.playListChanged()
-            })
-            */
+            root.listChanged()
         }
     }
 
@@ -176,20 +185,22 @@ Item {
     function requestPlaylistItem(index) {
         console.log("Request PlaylistTrack", index)
         var id = playlistPython.call_sync("playlistmanager.PL.TidalId", [index])
-        playlistManager.tidalId = id
-        console.log("Current playlist tidalid and size", playlistManager.tidalId, playlistManager.size)
+        console.log("Got TidalId", id)
+        root.tidalId = id
+        console.log("Current playlist tidalid and size", root.tidalId, root.size)
+        return id
     }
 
     function playAlbum(id) {
         console.log("playalbum", id)
         clearPlayList()
         currentTrackIndex()
-        pythonApi.playAlbumTracks(id)
+        tidalApi.playAlbumTracks(id)
     }
 
     function playAlbumFromTrack(id) {
         clearPlayList()
-        pythonApi.playAlbumFromTrack(id)
+        tidalApi.playAlbumFromTrack(id)
         currentTrackIndex()
     }
 

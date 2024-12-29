@@ -14,7 +14,7 @@ Page {
     }
 
     Connections {
-        target: pythonApi
+        target: tidalApi
 
         onSearchResults: {
             searchResultsModel.clear()
@@ -56,7 +56,7 @@ Page {
 
         onTextChanged: {
             if (text.length >= 3) {
-                pythonApi.search(text)
+                tidalApi.search(text)
             }
         }
     }
@@ -102,7 +102,7 @@ Page {
             onClicked: {
                 switch(type) {
                     case "track":
-                        pythonApi.playTrack(data.id)
+                        tidalApi.playTrack(data.id)
                         break
                     case "album":
                         pageStack.push(Qt.resolvedUrl("AlbumPage.qml"),

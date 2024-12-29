@@ -37,13 +37,13 @@ Item {
                 placeholderText: qsTr("Type and Search")
                 text: "Corvus Corax"
                 label: qsTr("Please wait for login ...")
-                enabled: pythonApi.loginTrue
+                enabled: tidalApi.loginTrue
 
                 EnterKey.enabled: text.length > 0
                 EnterKey.iconSource: "image://theme/icon-m-search"
                 EnterKey.onClicked: {
                     listModel.clear()
-                    pythonApi.genericSearch(text)
+                    tidalApi.genericSearch(text)
                     focus = false
                 }
             }
@@ -61,21 +61,21 @@ Item {
                     id: searchAlbum
                     icon: "image://theme/icon-m-media-albums"
                     checked: true
-                    onCheckedChanged: pythonApi.albums = checked
+                    onCheckedChanged: tidalApi.albums = checked
                 }
 
                 SearchFilterSwitch {
                     id: searchArtists
                     icon: "image://theme/icon-m-media-artists"
                     checked: true
-                    onCheckedChanged: pythonApi.artists = checked
+                    onCheckedChanged: tidalApi.artists = checked
                 }
 
                 SearchFilterSwitch {
                     id: searchTracks
                     icon: "image://theme/icon-m-media-songs"
                     checked: true
-                    onCheckedChanged: pythonApi.tracks = checked
+                    onCheckedChanged: tidalApi.tracks = checked
                 }
 
                 SearchFilterSwitch {
@@ -115,7 +115,7 @@ Item {
 
     // Connections
     Connections {
-        target: pythonApi
+        target: tidalApi
 
         onLoginSuccess: searchField.label = qsTr("Find")
 

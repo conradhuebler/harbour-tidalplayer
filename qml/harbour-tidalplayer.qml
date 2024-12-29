@@ -47,7 +47,7 @@ ApplicationWindow
     }
 
     TidalApi {
-        id: pythonApi
+        id: tidalApi
     }
 
 
@@ -55,7 +55,7 @@ ApplicationWindow
         id: playlistManager
         onCurrentTrackChanged: {
             if (track) {
-                pythonApi.playTrackId(track)
+                tidalApi.playTrackId(track)
                 console.log("playlistmanager call id", track)
             }
         }
@@ -93,7 +93,7 @@ ApplicationWindow
         }
 
     Connections {
-        target: pythonApi
+        target: tidalApi
         onOAuthSuccess: {
             authManager.updateTokens(type, token, rtoken, date)
         }
@@ -108,7 +108,7 @@ ApplicationWindow
         target: playlistManager
         onCurrentId:
         {
-            pythonApi.playTrackId(id)
+            tidalApi.playTrackId(id)
         }
     }
 
