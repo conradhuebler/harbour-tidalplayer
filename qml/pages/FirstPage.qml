@@ -30,12 +30,12 @@ Page {
                 }
             }
 
-            /*MenuItem {
-                text: qsTr("Playlist")
+            MenuItem {
+                text: qsTr("Clear Playlist")
                 onClicked: {
-                    pageStack.push(Qt.resolvedUrl("TrackList.qml"))
+                    playlistManager.clearPlayList()
                 }
-            }*/
+            }
 
             MenuItem {
                 text: minPlayerPanel.open ? "Hide player" : "Show player"

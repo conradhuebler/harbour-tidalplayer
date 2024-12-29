@@ -21,10 +21,6 @@ Item {
     signal albumAdded(int id, string title, string artist, string image, int duration)
     signal artistAdded(int id, string name, string image)
 
-    //signal cacheTrack(int id, string title, string album, string artist, string image, int duration)
-    signal cacheAlbum(int id, string title, string artist, string image, int duration)
-    signal cacheArtist(int id, string name, string image)
-
     signal playlistSearchAdded(int id, string name, string image, int duration, string uid)
     signal personalPlaylistAdded(string id, string title, string image, int num_tracks, string description, int duration)
     signal playlistAdded(string id, string title, string image, int num_tracks, string description, int duration)
@@ -40,7 +36,11 @@ Item {
     signal playurl(string url)
     signal currentPlayback(var trackinfo)
     signal cacheTrack(var track_info)
+    signal cacheAlbum(var album_info)
+    signal cacheArtist(var artist_info)
+
     signal playlistTrackAdded(var track_info)
+    signal albumTrackAdded(var track_info)
 
     // Properties für die Suche
     property string artistsResults
@@ -110,11 +110,11 @@ Item {
                 tidalApi.cacheTrack(track_info)
             })
 
-            setHandler('cacheArtist', function(id, name, image) {
-                tidalApi.cacheArtist(id, name, image)
+            setHandler('cacheArtist', function(artist_info) {
+                tidalApi.cacheArtist(artist_info)
             })
-            setHandler('cacheAlbum', function(id, title, artist, image, duration) {
-                tidalApi.cacheAlbum(id, title, artist, image, duration)
+            setHandler('cacheAlbum', function(album_info) {
+                tidalApi.cacheAlbum(album_info)
             })
 
 
@@ -220,6 +220,10 @@ Item {
 
             setHandler('playlistTrackAdded', function(track_info) {
                 root.playlistTrackAdded(track_info)
+            })
+
+            setHandler('albumTrackAdded', function(track_info) {
+                root.albumTrackAdded(track_info)
             })
 
             importModule('tidal', function() {
@@ -332,6 +336,7 @@ Item {
 
     // Album Funktionen
     function getAlbumTracks(id) {
+        console.log("Get album tracks", id)
         pythonTidal.call("tidal.Tidaler.getAlbumTracks", [id])
     }
 

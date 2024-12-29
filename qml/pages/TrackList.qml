@@ -7,7 +7,8 @@ Item {
     // Properties für verschiedene Verwendungszwecke
     property string title: ""
     property string playlistId: ""
-    property string type: "current"  // "playlist" oder "current"
+    property int albumId: -1
+    property string type: "current"  // "playlist" oder "current" oder "album"
 
     Timer {
         id: updateTimer
@@ -16,21 +17,9 @@ Item {
         onTriggered: {
             console.log(playlistManager.size)
             for(var i = 0; i < playlistManager.size; ++i) {
-                console.log("Requesting item", i)
                 var id = playlistManager.requestPlaylistItem(i)
-                console.log("here id", id)
                 var track = cacheManager.getTrackInfo(id)
                 if (track) {
-                    console.log("Adding track:", track.title)
-                console.log("Track details:", JSON.stringify({
-                    title: track.title,
-                    artist: track.artist,
-                    album: track.album,
-                    id: id,
-                    duration: track.duration,
-                    image: track.image,
-                    index: i
-                }))
                 listModel.append({
                     "title": track.title,
                     "artist": track.artist,
@@ -58,8 +47,6 @@ Item {
         height: parent.height
         clip: true  // Verhindert Überläufe
 
-        // Debug-Rechteck um die View-Grenzen zu sehen
-
         PullDownMenu {
             MenuItem {
                 text: qsTr("Play All")
@@ -76,7 +63,6 @@ Item {
 
         model: ListModel {
             id: listModel
-            onCountChanged: console.log("ListModel count changed to:", count)
         }
 
         delegate: ListItem {
@@ -164,10 +150,11 @@ Item {
             }
 
             onClicked: {
-                if (type === "playlist") {
-                    playlistManager.playTrack(model.id)
+                if (type === "current") {
+                     playlistManager.playPosition(model.index)
+
                 } else {
-                    playlistManager.playPosition(model.index)
+                   playlistManager.playTrack(model.id)
                 }
             }
         }
@@ -187,7 +174,11 @@ Item {
         if (type === "playlist") {
             // Playlist-Tracks laden
             tidalApi.getPlaylistTracks(playlistId)
-        } else {
+        } else if (type == "album")
+        {
+            tidalApi.getAlbumTracks(albumId)
+        }
+        else {
             // Aktuelle Playlist laden
             playlistManager.generateList()
         }
@@ -207,12 +198,25 @@ Item {
                 })
             }
         }
+
+        onAlbumTrackAdded: {
+            if (type === "album") {
+                listModel.append({
+                    "title": track_info.title,
+                    "artist": track_info.artist,
+                    "album": track_info.album,
+                    "id": track_info.id,
+                    "duration": track_info.duration,
+                    "image": track_info.image
+                })
+            }
+        }
     }
 
     Connections {
         target: playlistManager
         onTrackInformation: {
-            if (type !== "playlist") {
+            if (type === "current") {
                 listModel.append({
                     "title": title,
                     "artist": artist,
@@ -227,9 +231,9 @@ Item {
 
         onListChanged: {
         console.log("update playlist")
-            if (type !== "playlist") {
+            if (type === "current") {
                 console.log("update current playlist")
-                //listModel.clear()
+                listModel.clear()
                 updateTimer.start()
             }
         }

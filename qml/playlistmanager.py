@@ -107,6 +107,6 @@ class PlaylistManager:
         """Leert die komplette Playlist"""
         self.current_index = -1
         self.playlist = []
-        pyotherside.send("clearList")
+        self._notify_playlist_state()
 
 PL = PlaylistManager()

@@ -64,11 +64,36 @@ id: root
                 artist: track_info.artist,
                 image: track_info.image,
                 duration: track_info.duration,
+                albumid: track_info.albumid,
                 timestamp: Date.now(),
                 fromSearch: true  // Optional: markiert Einträge aus der Suche
             })
         }
 
+        onCacheArtist: {
+            //artist_info
+            saveArtistToCache({
+                id: artist_info.id,
+                name: artist_info.name,
+                bio: artist_info.bio,
+                image: artist_info.image,
+                timestamp: Date.now(),
+                fromSearch: true  // Optional: markiert Einträge aus der Suche
+            })
+        }
+
+        onCacheAlbum: {
+            //album_info
+            saveAlbumToCache({
+                id: album_info.id,
+                title: album_info.title,
+                artist: album_info.artist,
+                image: album_info.image,
+                duration: album_info.duration,
+                timestamp: Date.now(),
+                fromSearch: true  // Optional: markiert Einträge aus der Suche
+            })
+        }
         onTrackAdded: {
             // id, title, album, artist, image, duration
             saveTrackToCache({
@@ -125,7 +150,7 @@ id: root
     function addSearchTrack(id) {
         if (!searchResults.tracks.includes(id)) {
             searchResults.tracks.push(id)
-        }
+        }d, title, artist, image, duration
     }
 
     function addSearchAlbum(id) {

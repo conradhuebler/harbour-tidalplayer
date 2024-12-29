@@ -122,16 +122,23 @@ ListItem {
 
     function handleItemClick(item) {
         switch(item.type) {
+
             case 1: // Track
-                pageStack.push(Qt.resolvedUrl("../pages/AlbumPage.qml"))
-                tidalApi.getTrackInfo(item.id)
+                pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"),
+                {
+                    "albumId": item.albumid  // oder wie auch immer deine Album-ID gespeichert ist
+                })
+                console.log(item.albumid)
                 break
             case 2: // Album
-                pageStack.push(Qt.resolvedUrl("../pages/AlbumPage.qml"))
-                tidalApi.getAlbumInfo(item.id)
+                pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"),
+                {
+                    "albumId" :item.id
+                })
+                console.log(item.albumid)
                 break
             case 3: // Artist
-                pageStack.push(Qt.resolvedUrl("../pages/ArtistPage.qml"))
+                pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"))
                 tidalApi.getArtistInfo(item.id)
                 break
         }

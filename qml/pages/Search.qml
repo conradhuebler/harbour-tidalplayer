@@ -153,7 +153,8 @@ Item {
             id: track.id,
             type: typeTrack,
             image: track.image,
-            duration: track.duration
+            duration: track.duration,
+            albumid : track.albumid
         }
     }
 

@@ -70,7 +70,8 @@ class Tidal:
                 "duration": int(track.duration),
                 "image": track.album.image(320) if hasattr(track.album, 'image') else "",
                 "track_num" : track.track_num,
-                "type": "track"
+                "type": "track",
+                "albumid": track.album.id
             }
         except AttributeError as e:
             print(f"Error handling track: {e}")
@@ -82,7 +83,8 @@ class Tidal:
                 "id": str(artist.id),
                 "name": str(artist.name),
                 "image": artist.image(320) if hasattr(artist, 'image') else "",
-                "type": "artist"
+                "type": "artist",
+                "bio" : str(artist.get_bio())
             }
         except AttributeError as e:
             print(f"Error handling artist: {e}")
@@ -145,13 +147,13 @@ class Tidal:
         for artist in result["artists"]:
             if artist_info := self.handle_artist(artist):
                 search_results["artists"].append(artist_info)
-                self.send_object("artist_data", artist_info)
+                self.send_object("cacheArtist", artist_info)
 
         # Albums verarbeiten
         for album in result["albums"]:
             if album_info := self.handle_album(album):
                 search_results["albums"].append(album_info)
-                self.send_object("album_data", album_info)
+                self.send_object("cacheAlbum", album_info)
 
         # Playlists verarbeiten
         for playlist in result["playlists"]:
@@ -168,7 +170,7 @@ class Tidal:
             album = self.session.album(int(id))
             album_info = self.handle_album(album)
             if album_info:
-                self.send_object("album_data", album_info)
+                self.send_object("cacheAlbum", album_info)
 
                 # Album tracks auch gleich mitschicken
                 tracks = []
@@ -192,7 +194,7 @@ class Tidal:
             artist = self.session.artist(int(id))
             artist_info = self.handle_artist(artist)
             if artist_info:
-                self.send_object("artist_data", artist_info)
+                self.send_object("cacheArtist", artist_info)
 
                 # Top Tracks gleich mitschicken
                 top_tracks = []
@@ -271,6 +273,7 @@ class Tidal:
             track_info = self.handle_track(track)
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
+                pyotherside.send("albumTrackAdded",track_info)
 
 
     def playAlbumTracks(self, id):
