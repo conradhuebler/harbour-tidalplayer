@@ -13,6 +13,7 @@ class Tidal:
     def __init__(self):
         self.session = None
         self.config = None
+        pyotherside.send('loadingStarted')
 
     def initialize(self, quality="HIGH"):
         pyotherside.send("printConsole", "Initialise tidal api")
@@ -56,6 +57,8 @@ class Tidal:
             pyotherside.send("get_token", self.session.token_type, self.session.access_token, self.session.refresh_token,  self.session.expiry_time)
         else:
             pyotherside.send("oauth_failed")
+
+        pyotherside.send('loadingFinished')
 
     def handle_track(self, track):
         try:
@@ -123,6 +126,7 @@ class Tidal:
             return None
 
     def genericSearch(self, text):
+        pyotherside.send('loadingStarted')
         result = self.session.search(text)
         search_results = {
             "tracks": [],
@@ -157,6 +161,7 @@ class Tidal:
 
         # Gesamtergebnis senden
         self.send_object("search_results", search_results)
+        pyotherside.send('loadingFinished')
 
     def getAlbumInfo(self, id):
         try:
@@ -300,6 +305,7 @@ class Tidal:
                     track_info['duration'])
 
     def getPersonalPlaylists(self):
+        pyotherside.send('loadingStarted')
         playlists = self.session.user.playlists()
         for i in playlists:
             try:
@@ -307,7 +313,10 @@ class Tidal:
             except AttributeError:
                 pyotherside.send("addPersonalPlaylist", i.id, i.name, "", i.num_tracks, i.description, i.duration)
 
+        pyotherside.send('loadingFinished')
+
     def getPersonalPlaylist(self, id):
+        pyotherside.send('loadingStarted')
         playlist = self.session.playlist(int(id))
         try:
             pyotherside.send("setPlaylist", i.id, i.name, i.image(320), i.num_tracks, i.description, i.duration)
@@ -318,8 +327,10 @@ class Tidal:
             i = self.handle_track(ti)
             pyotherside.send("cacheTrack", i)
             #pyotherside.send("cacheTrack", i.id, i.name, i.album.name, i.artist.name, i.album, i.duration)
+        pyotherside.send('loadingFinished')
 
     def playPlaylist(self, id):
+        pyotherside.send('loadingStarted')
         playlist = self.session.playlist(id)
         first_track = playlist.tracks()[0]
         pyotherside.send("insertTrack", first_track.id)
@@ -335,5 +346,18 @@ class Tidal:
                 pyotherside.send("fillStarted")
 
         pyotherside.send("fillFinished")
+        pyotherside.send('loadingFinished')
+
+    def getPlaylistTracks(self, playlist_id):
+        pyotherside.send('loadingStarted')
+        try:
+            playlist = self.session.playlist(playlist_id)
+
+            for ti in playlist.tracks():
+                i = self.handle_track(ti)
+                pyotherside.send("cacheTrack", i)
+                pyotherside.send('playlistTrackAdded',i)
+        finally:
+            pyotherside.send('loadingFinished')
 
 Tidaler = Tidal()

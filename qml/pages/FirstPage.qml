@@ -30,6 +30,12 @@ Page {
                 }
             }
 
+            /*MenuItem {
+                text: qsTr("Playlist")
+                onClicked: {
+                    pageStack.push(Qt.resolvedUrl("TrackList.qml"))
+                }
+            }*/
 
             MenuItem {
                 text: minPlayerPanel.open ? "Hide player" : "Show player"
@@ -50,7 +56,7 @@ Page {
                 top: parent.top
             }
             iconArray: ["image://theme/icon-m-home", "image://theme/icon-m-search", "image://theme/icon-m-media-playlists"]
-            textArray: [qsTr("Home"), qsTr("Search"), qsTr("Playlist")]
+            textArray: [qsTr("Personal Page"), qsTr("Search"), qsTr("Playlist")]
         }
 
         SlideshowView {
@@ -66,7 +72,7 @@ Page {
                   anchors.left: parent.left
                   anchors.right: parent.right
                   anchors.bottom: miniPlayerPanel.top
-                  property var carouselPages: ["Personal.qml", "Search.qml", "PlaylistPage.qml"]
+                  property var carouselPages: ["Personal.qml", "Search.qml", "TrackList.qml"]
                   property int initialPage: 0
                   model: carouselPages.length
                   Component.onCompleted: currentIndex = initialPage
@@ -76,7 +82,17 @@ Page {
                       height: swipeView.height
                       source: swipeView.carouselPages[index]
                       asynchronous: true
-                  }
+
+                      onLoaded: {
+                    if (index === 2) { // TrackList
+                        item.title = ""
+                        item.type = "current"
+                        if (playlistManager.size > 0) {
+                            playlistManager.generateList()
+                        }
+                    }
+                }
+                }
               }
     }
 }

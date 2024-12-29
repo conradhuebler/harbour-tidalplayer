@@ -30,7 +30,7 @@ class PlaylistManager:
         if track_id:
             self.playlist.append(track_id)
             self._notify_playlist_state()
-            pyotherside.send("listChanged")
+            #pyotherside.send("listChanged")
 
 
     def InsertTrack(self, track_id):
@@ -40,7 +40,7 @@ class PlaylistManager:
             self.playlist.insert(insert_pos, track_id)
             self._notify_playlist_state()
             self._notify_current_track()
-            pyotherside.send("listChanged")
+            #pyotherside.send("listChanged")
 
     def PlayTrack(self, track_id):
         """Spielt einen bestimmten Track sofort"""
@@ -57,21 +57,21 @@ class PlaylistManager:
         if self.current_index < len(self.playlist) - 1:
             self.current_index += 1
             self._notify_current_track()
-        self._notify_playlist_state()
+        #self._notify_playlist_state()
 
     def PreviousTrack(self):
         """Wechselt zum vorherigen Track"""
         if self.current_index > 0:
             self.current_index -= 1
             self._notify_current_track()
-        self._notify_playlist_state()
+        #self._notify_playlist_state()
 
     def PlayPosition(self, position):
         """Spielt einen Track an einer bestimmten Position"""
         if 0 <= position < len(self.playlist):
             self.current_index = position
             self._notify_current_track()
-            self._notify_playlist_state()
+            #self._notify_playlist_state()
 
     def RestartTrack(self):
         """Startet den aktuellen Track neu"""

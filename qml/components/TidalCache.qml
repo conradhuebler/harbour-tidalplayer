@@ -57,7 +57,6 @@ id: root
 
         onCacheTrack: {
             //track_info
-            console.log("cache track info", track_info.title)
             saveTrackToCache({
                 id: track_info.id,
                 title: track_info.title,

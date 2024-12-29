@@ -40,6 +40,7 @@ Item {
     signal playurl(string url)
     signal currentPlayback(var trackinfo)
     signal cacheTrack(var track_info)
+    signal playlistTrackAdded(var track_info)
 
     // Properties für die Suche
     property string artistsResults
@@ -52,6 +53,7 @@ Item {
     property bool playlists: true
 
     property bool loginTrue: false
+    property bool loading: false
 
     property string playlist_track: ""
     property string playlist_artist: ""
@@ -105,7 +107,6 @@ Item {
             //})
 
             setHandler('cacheTrack', function(track_info) {
-                console.log("add track to cache")
                 tidalApi.cacheTrack(track_info)
             })
 
@@ -207,6 +208,18 @@ Item {
             setHandler('playlist_replace', function(playlist) {
                 playlistManager.clearList()
                 searchResults(playlist)
+            })
+
+            setHandler('loadingStarted', function() {
+                root.loading = true
+            })
+
+            setHandler('loadingFinished', function() {
+                root.loading = false
+            })
+
+            setHandler('playlistTrackAdded', function(track_info) {
+                root.playlistTrackAdded(track_info)
             })
 
             importModule('tidal', function() {
@@ -345,7 +358,7 @@ Item {
     }
 
     function getPlaylistTracks(id) {
-        pythonTidal.call('tidal.Tidaler.get_playlist_tracks', [id])
+        pythonTidal.call('tidal.Tidaler.getPlaylistTracks', [id])
     }
 
     function playPlaylist(id) {

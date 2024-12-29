@@ -49,6 +49,8 @@ Item {
 
             setHandler('currentTrack', function(id, position) {
                 console.log("Current track in playlist is", id, position)
+                root.currentIndex = position
+
                 root.currentTrackChanged(id)
                 root.currentId(id)
                 currentTrack(position)
@@ -168,6 +170,11 @@ Item {
         playlistPython.clearPlayList()
     }
 
+    // Öffentliche Funktionen
+    function play() {
+        playlistPython.playPosition(0)
+    }
+
     function appendTrack(id) {
         console.log("PlaylistManager.appendTrack", id)
         playlistPython.appendTrack(id)
@@ -183,11 +190,8 @@ Item {
     }
 
     function requestPlaylistItem(index) {
-        console.log("Request PlaylistTrack", index)
         var id = playlistPython.call_sync("playlistmanager.PL.TidalId", [index])
-        console.log("Got TidalId", id)
         root.tidalId = id
-        console.log("Current playlist tidalid and size", root.tidalId, root.size)
         return id
     }
 
@@ -227,7 +231,7 @@ Item {
 
     function nextTrack() {
         console.log("Next track called")
-        if(mediaPlayer.playbackState !== 1) {
+        if(mediaController.playbackState !== 1) {
             playlistPython.canNext = false
             playlistPython.nextTrack()
         }
@@ -236,14 +240,13 @@ Item {
 
     function nextTrackClicked() {
         console.log("Next track called")
-        mediaPlayer.blockAutoNext = true
+        mediaController.blockAutoNext = true
         playlistPython.canNext = false
         playlistPython.nextTrack()
         currentTrackIndex()
     }
 
     function restartTrack(id) {
-        console.log(id)
         playlistPython.restartTrack()
         currentTrackIndex()
     }
@@ -256,7 +259,7 @@ Item {
 
     function previousTrackClicked() {
         playlistPython.canNext = false
-        mediaPlayer.blockAutoNext = true
+        mediaController.blockAutoNext = true
         playlistPython.previousTrack()
         currentTrackIndex()
     }

@@ -56,7 +56,6 @@ ApplicationWindow
         onCurrentTrackChanged: {
             if (track) {
                 tidalApi.playTrackId(track)
-                console.log("playlistmanager call id", track)
             }
         }
     }
@@ -91,6 +90,12 @@ ApplicationWindow
             authManager.checkAndLogin()
             mprisPlayer.setCanControl(true)
         }
+
+    BusyIndicator {
+        size: BusyIndicatorSize.Large
+        anchors.centerIn: parent
+        running: tidalApi.loading
+    }
 
     Connections {
         target: tidalApi

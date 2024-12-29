@@ -62,7 +62,6 @@ Item {
             metadata[Mpris.metadataToString(Mpris.Title)] = track
             metadata[Mpris.metadataToString(Mpris.Artist)] = artist
             metadata[Mpris.metadataToString(Mpris.Album)] = album
-            console.log("mpris", track)
             mprisPlayer.metadata = metadata
         }
     }
@@ -179,8 +178,6 @@ Item {
     Connections {
         target: tidalApi
         onCurrentPlayback: {
-            console.log("current track info media controller")
-            console.log("track", trackinfo.title)
             current_track_title = trackinfo.title
             current_track_artist = trackinfo.artist
             current_track_album = trackinfo.album

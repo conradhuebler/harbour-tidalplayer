@@ -1,253 +1,237 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import QtMultimedia 5.6
-import Sailfish.Media 1.0
 
-Column {
-    id: listView
-    width: parent.width
+Item {
+    id: root
 
-    property string track_list
-    property string track_id_list
-    property bool allow_add: true
-    property bool start_on_tap: false
-    property int highlight_index: -1
-    property int type: 0
-    property bool allow_play: true
-    property string title: "Track List"
+    // Properties für verschiedene Verwendungszwecke
+    property string title: ""
+    property string playlistId: ""
+    property string type: "current"  // "playlist" oder "current"
 
-    onHighlight_indexChanged: {
-        if (highlight_index >= 0) {
-            tracks.positionViewAtIndex(highlight_index, ListView.Center)
-        }
-    }
-
-    SectionHeader {
-        id: sectionHeader
-        width: parent.width
-        text: title
-    }
-
-    IconButton {
-        id: playButton
-        icon.source: "image://theme/icon-m-simple-play"
-        visible: allow_play
-        onClicked: {
-            playlistManager.clearPlayList()
-            playlistManager.insertTrack(listModel.get(0).id)
-            for(var i = 1; i < listModel.count; ++i)
-                playlistManager.appendTrack(listModel.get(i).id)
+    Timer {
+        id: updateTimer
+        interval: 100  // 100ms Verzögerung
+        repeat: false
+        onTriggered: {
+            console.log(playlistManager.size)
+            for(var i = 0; i < playlistManager.size; ++i) {
+                console.log("Requesting item", i)
+                var id = playlistManager.requestPlaylistItem(i)
+                console.log("here id", id)
+                var track = cacheManager.getTrackInfo(id)
+                if (track) {
+                    console.log("Adding track:", track.title)
+                console.log("Track details:", JSON.stringify({
+                    title: track.title,
+                    artist: track.artist,
+                    album: track.album,
+                    id: id,
+                    duration: track.duration,
+                    image: track.image,
+                    index: i
+                }))
+                listModel.append({
+                    "title": track.title,
+                    "artist": track.artist,
+                    "album": track.album,
+                    "id": track.id,
+                    "duration": track.duration,
+                    "image": track.image,
+                    "index": track.index
+                })
+                } else {
+                    console.log("No track data for index:", i)
+                }
+            }
+            //highlight_index = playlistManager.current_track
         }
     }
 
     SilicaListView {
         id: tracks
-        width: parent.width
-        height: parent.height - sectionHeader.height - (playButton.visible ? playButton.height : 0)
-        clip: true
+        anchors.fill: parent
+
+        header: PageHeader {
+            title: root.title
+        }
+        height: parent.height
+        clip: true  // Verhindert Überläufe
+
+        // Debug-Rechteck um die View-Grenzen zu sehen
+
+        PullDownMenu {
+            MenuItem {
+                text: qsTr("Play All")
+                onClicked: {
+                    if (type === "playlist") {
+                        playlistManager.clearPlayList()
+                        tidalApi.playPlaylist(playlistId)
+                    }
+                }
+                visible: type === "playlist"
+            }
+            visible: type === "playlist"
+        }
 
         model: ListModel {
             id: listModel
-            onCountChanged: console.log("List model count:", count)
+            onCountChanged: console.log("ListModel count changed to:", count)
         }
 
         delegate: ListItem {
             id: listEntry
             width: parent.width
-            highlighted: model.index === highlight_index
-
-            Rectangle {
-                visible: model.index === highlight_index
-                anchors.fill: parent
-                color: Theme.highlightBackgroundColor
-                opacity: 0.2
-            }
+            contentHeight: contentRow.height + Theme.paddingMedium
 
             Row {
-                spacing: Theme.paddingMedium
+                id: contentRow
                 anchors {
                     left: parent.left
                     right: parent.right
-                    leftMargin: Theme.horizontalPageMargin
-                    rightMargin: Theme.horizontalPageMargin
+                    margins: Theme.horizontalPageMargin
                 }
+                spacing: Theme.paddingMedium
 
                 Image {
                     id: coverImage
-                    height: 100
-                    width: height
-                    fillMode: Image.PreserveAspectFit
-                    source: getImageSource(listModel.get(model.index).type, model.image)
+                    width: Theme.itemSizeMedium
+                    height: Theme.itemSizeMedium
+                    fillMode: Image.PreserveAspectCrop
+                    source: model.image || ""
+                    asynchronous: true
+
+                    Rectangle {
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                        anchors.fill: parent
+                        visible: coverImage.status !== Image.Ready
+                    }
                 }
 
                 Column {
                     width: parent.width - coverImage.width - parent.spacing
                     spacing: Theme.paddingSmall
 
-                    Row {
+                    Label {
                         width: parent.width
-                        spacing: Theme.paddingSmall
-
-                        Label {
-                            id: trackName
-                            width: parent.width - timeLabel.width - parent.spacing
-                            color: (model.index === highlight_index) ?
-                                   Theme.highlightColor : Theme.primaryColor
-                            text: model.name
-                            font.bold: model.index === highlight_index
-                            truncationMode: TruncationMode.Fade
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
-
-                        Label {
-                            id: timeLabel
-                            property string dur: {
-                                if ((model.duration) > 3599)
-                                    return Format.formatDuration(model.duration, Formatter.DurationLong)
-                                return Format.formatDuration(model.duration, Formatter.DurationShort)
-                            }
-                            color: (model.index === highlight_index) ?
-                                   Theme.highlightColor : Theme.primaryColor
-                            text: "(" + dur + ")"
-                            font.bold: model.index === highlight_index
-                            font.pixelSize: Theme.fontSizeSmall
-                        }
+                        text: model.title
+                        color: listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
+                        font.pixelSize: Theme.fontSizeMedium
+                        truncationMode: TruncationMode.Fade
                     }
 
                     Row {
                         width: parent.width
                         spacing: Theme.paddingSmall
-                        visible: listModel.get(model.index).type === 1
 
                         Label {
-                            id: artistName
-                            color: (model.index === highlight_index) ?
-                                   Theme.highlightColor : Theme.secondaryColor
                             text: model.artist
-                            font.bold: model.index === highlight_index
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            color: listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                            font.pixelSize: Theme.fontSizeSmall
                         }
 
                         Label {
-                            id: albumName
-                            color: (model.index === highlight_index) ?
-                                   Theme.highlightColor : Theme.secondaryColor
-                            text: " - " + model.album
-                            font.bold: model.index === highlight_index
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            text: " • "
+                            color: listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                            font.pixelSize: Theme.fontSizeSmall
+                        }
+
+                        Label {
+                            property string dur: (model.duration > 3599)
+                                ? Format.formatDuration(model.duration, Formatter.DurationLong)
+                                : Format.formatDuration(model.duration, Formatter.DurationShort)
+                            text: dur
+                            color: listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                            font.pixelSize: Theme.fontSizeSmall
                         }
                     }
-                }
-            }
-
-            onClicked: {
-                if(start_on_tap) {
-                    mediaController.blockAutoNext = true
-                    playlistManager.playPosition(model.index)
-                    highlight_index = model.index
                 }
             }
 
             menu: ContextMenu {
                 MenuItem {
-                    text: "Play"
-                    visible: allow_add
+                    text: qsTr("Play Now")
                     onClicked: {
-                        console.log(listModel.get(model.index).type)
-                        if(listModel.get(model.index).type === 1) {
-                            console.log("play track ", listModel.get(model.index).id)
-                            playlistManager.playTrack(listModel.get(model.index).id)
-                        }
-                        else if(listModel.get(model.index).type === 2)
-                            playlistManager.playAlbum(listModel.get(model.index).id)
-                        highlight_index = model.index
+                        playlistManager.playTrack(model.id)
                     }
                 }
-
                 MenuItem {
-                    text: "Queue"
-                    visible: allow_add
+                    text: qsTr("Add to Queue")
                     onClicked: {
-                        playlistManager.appendTrack(listModel.get(model.index).id)
+                        playlistManager.appendTrack(model.id)
                     }
                 }
             }
 
-            Component.onCompleted: {
-                if (model.index === highlight_index) {
-                    ListView.view.positionViewAtIndex(model.index, ListView.Center)
+            onClicked: {
+                if (type === "playlist") {
+                    playlistManager.playTrack(model.id)
+                } else {
+                    playlistManager.playPosition(model.index)
                 }
             }
         }
 
         ViewPlaceholder {
             enabled: listModel.count === 0
-            text: "No tracks"
-            textFormat: Text.StyledText
+            text: qsTr("No Tracks")
+            hintText: type === "playlist" ?
+                     qsTr("This playlist is empty") :
+                     qsTr("No tracks in queue")
         }
 
-        VerticalScrollDecorator { }
+        VerticalScrollDecorator {}
     }
 
-    function getImageSource(type, imageUrl) {
-        if (!imageUrl || imageUrl === "") {
-            switch(type) {
-                case 1: return "image://theme/icon-m-media-songs"
-                case 2: return "image://theme/icon-m-media-albums"
-                case 3: return "image://theme/icon-m-media-artists"
-                case 4: return "image://theme/icon-m-media-playlists"
-                case 5: return "image://theme/icon-m-video"
-                default: return "image://theme/icon-m-media-songs"
+    Component.onCompleted: {
+        if (type === "playlist") {
+            // Playlist-Tracks laden
+            tidalApi.getPlaylistTracks(playlistId)
+        } else {
+            // Aktuelle Playlist laden
+            playlistManager.generateList()
+        }
+    }
+
+    Connections {
+        target: tidalApi
+        onPlaylistTrackAdded: {
+            if (type === "playlist") {
+                listModel.append({
+                    "title": track_info.title,
+                    "artist": track_info.artist,
+                    "album": track_info.album,
+                    "id": track_info.id,
+                    "duration": track_info.duration,
+                    "image": track_info.image
+                })
             }
         }
-        return imageUrl
-    }
-
-    function addTrack(title, artist, album, id, duration) {
-        console.log("Adding track to model:", title, artist, album)
-        listModel.append({
-            "name": title,
-            "artist": artist,
-            "album": album,
-            "id": id,
-            "type": 1,
-            "duration": duration,
-            "image": ""
-        })
-        console.log("Current model count:", listModel.count)
-    }
-
-    function setTrack(index, id, title, artist, album, image, duration) {
-        console.log("Setting track at index:", index, title)
-        listModel.set(index, {
-            "name": title,
-            "artist": artist,
-            "album": album,
-            "id": id,
-            "type": 1,
-            "duration": duration,
-            "image": image
-        })
-    }
-
-    function scrollTo(index) {
-        tracks.positionViewAtIndex(index, ListView.Center)
-    }
-
-    function clear() {
-        console.log("Clearing list model")
-        listModel.clear()
     }
 
     Connections {
         target: playlistManager
-        onContainsTrack: {
-            tidalApi.getTrackInfo(id)
+        onTrackInformation: {
+            if (type !== "playlist") {
+                listModel.append({
+                    "title": title,
+                    "artist": artist,
+                    "album": album,
+                    "id": id,
+                    "duration": duration,
+                    "image": image,
+                    "index": index
+                })
+            }
         }
-    }
 
-    Component.onCompleted: {
-        console.log("TrackList component completed")
-        playlistManager.generateList()
+        onListChanged: {
+        console.log("update playlist")
+            if (type !== "playlist") {
+                console.log("update current playlist")
+                //listModel.clear()
+                updateTimer.start()
+            }
+        }
     }
 }

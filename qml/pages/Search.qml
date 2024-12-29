@@ -35,7 +35,7 @@ Item {
                 id: searchField
                 width: parent.width
                 placeholderText: qsTr("Type and Search")
-                text: "Corvus Corax"
+                text: ""
                 label: qsTr("Please wait for login ...")
                 enabled: tidalApi.loginTrue
 

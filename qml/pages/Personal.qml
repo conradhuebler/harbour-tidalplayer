@@ -3,102 +3,139 @@ import Sailfish.Silica 1.0
 
 Item {
     id: personalPage
-    anchors.bottom: miniPlayerPanel.top // Panel als Referenz nutzen
+    anchors.fill: parent
+    anchors.bottomMargin: miniPlayerPanel.height
 
-    // The effective value will be restricted by ApplicationWindow.allowedOrientations
-    //allowedOrientations: Orientation.All
-//    anchors{
-//        fill: parent
-//        bottomMargin: minPlayerPanel.margin
-//    }
     SilicaListView {
         id: listView
-//        width: 480; height: 800
-        anchors.bottom: miniPlayerPanel.top // Panel als Referenz nutzen
+        anchors.fill: parent
+        spacing: Theme.paddingMedium
+        clip: true
 
-        model: ListModel {id: listModel }
+        header: PageHeader {
+            title: "Personal Playlists"
+        }
+
+        model: ListModel {
+            id: listModel
+        }
+
         delegate: ListItem {
             id: listEntry
-            height: 220
-            Row{
-            Image {
-                id: coverImage
-                height: 200
-                //anchors.centerIn: parent.top
-                fillMode: Image.PreserveAspectFit
-                anchors.margins: Theme.paddingSmall
-                source: model.image
-            }
-            Column{
-            Label
-            {
-                id: trackName
-                truncationMode: TruncationMode.Fade
-                color: Theme.highlightColor
-                text: model.title
-            }
+            contentHeight: contentRow.height + 2 * Theme.paddingMedium
+            width: parent.width
 
-            Label
-            {
-                property string dur: {
-                    if ((model.duration) > 3599) Format.formatDuration(model.duration , Formatter.DurationLong)
-                    else return Format.formatDuration(model.duration , Formatter.DurationShort)
+            Row {
+                id: contentRow
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                    verticalCenter: parent.verticalCenter
                 }
-                id: trackNum
-                truncationMode: TruncationMode.Fade
-                color: Theme.highlightColor
-                text: model.num_tracks + " Tracks (" + dur + ")"
-            }
+                spacing: Theme.paddingMedium
 
-                Label
-                {
-                    id: descriptionLabel
-                    truncationMode: TruncationMode.Fade
-                    color: Theme.highlightColor
-                    text: description
+                Image {
+                    id: coverImage
+                    width: Theme.itemSizeExtraLarge
+                    height: Theme.itemSizeExtraLarge
+                    fillMode: Image.PreserveAspectCrop
+                    source: model.image
+                    smooth: true
+                    asynchronous: true
+
+                    Rectangle {
+                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                        anchors.fill: parent
+                        visible: coverImage.status !== Image.Ready
+                    }
                 }
-            }
-            }
-            menu: ContextMenu {
 
-                MenuItem {
-                    text: "Play Playlist"
-                    onClicked: {
-                        tidalApi.playPlaylist(listModel.get(model.index).id)
+                Column {
+                    width: parent.width - coverImage.width - parent.spacing
+                    spacing: Theme.paddingSmall
+
+                    Label {
+                        id: titleLabel
+                        width: parent.width
+                        text: model.title
+                        color: listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
+                        font.pixelSize: Theme.fontSizeMedium
+                        font.bold: true
+                        truncationMode: TruncationMode.Fade
                     }
 
+                    Label {
+                        id: trackCountLabel
+                        width: parent.width
+                        property string duration: {
+                            return (model.duration > 3599)
+                                ? Format.formatDuration(model.duration, Formatter.DurationLong)
+                                : Format.formatDuration(model.duration, Formatter.DurationShort)
+                        }
+                        text: model.num_tracks + " Tracks • " + duration
+                        color: listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                        font.pixelSize: Theme.fontSizeSmall
+                    }
+
+                    Label {
+                        id: descriptionLabel
+                        width: parent.width
+                        text: model.description || ""  // Fallback wenn keine Beschreibung
+                        color: listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                        visible: text !== ""  // Nur anzeigen wenn Text vorhanden
+                    }
                 }
             }
-            onClicked:
-            {
-                //tracklistpage = pageStack.push(Qt.resolvedUrl("TrackList.qml"))
-                //tracklistpage.
+
+            menu: ContextMenu {
+                MenuItem {
+                    text: qsTr("Play Playlist")
+                    onClicked: {
+                        tidalApi.playPlaylist(model.id)
+                        playlistManager.nextTrack()
+                    }
+                }
+            }
+
+            onClicked: {
+                    pageStack.push(Qt.resolvedUrl("SavedPlaylistPage.qml"), {
+                    playlistTitle: model.title,
+                    playlistId: model.id,
+                    type: "playlist"  // Um zu kennzeichnen, dass es eine Playlist ist
+                })
+                console.log(model.id)
             }
         }
-        anchors.fill: parent
+
+        ViewPlaceholder {
+            enabled: listModel.count === 0
+            text: qsTr("No Playlists")
+            hintText: qsTr("Your personal playlists will appear here")
+        }
 
         VerticalScrollDecorator {}
     }
 
-    Connections
-    {
+    Connections {
         target: tidalApi
-        onPersonalPlaylistAdded:
-        {
-            listModel.append(
-                        {   "title": title,
-                            "id" : id,
-                            "image" : image,
-                            "num_tracks" : num_tracks,
-                            "description" : description,
-                            "duration" : duration,
-
-                        })
+        onPersonalPlaylistAdded: {
+            listModel.append({
+                "title": title,
+                "id": id,
+                "image": image,
+                "num_tracks": num_tracks,
+                "description": description,
+                "duration": duration
+            })
         }
 
-        onLoginSuccess:
-        {
-            console.log("Personal playlists")
+        onLoginSuccess: {
+            console.log("Loading personal playlists")
             tidalApi.getPersonalPlaylists()
         }
     }
