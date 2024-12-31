@@ -231,20 +231,16 @@ Item {
 
     function nextTrack() {
         console.log("Next track called", mediaController.playbackState)
-        //if(mediaController.playbackState !== 1) {
-            playlistPython.canNext = false
-            playlistPython.nextTrack()
-        //}
+        playlistPython.nextTrack()
         currentTrackIndex()
-        //playTrack()
     }
 
     function nextTrackClicked() {
-        console.log("Next track called")
+        console.log("Next track clicked")
         mediaController.blockAutoNext = true
-        playlistPython.canNext = false
         playlistPython.nextTrack()
         currentTrackIndex()
+        mediaController.blockAutoNext = false
     }
 
     function restartTrack(id) {

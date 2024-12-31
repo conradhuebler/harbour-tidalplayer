@@ -14,11 +14,13 @@ Page {
     property int currentIndex : 0
     // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
-        clip: true
+        id: flickable
         anchors {
             fill: parent
+            bottomMargin: minPlayerPanel.margin
         }
-        contentHeight: parent.height - miniPlayerPanel.height
+
+        contentHeight: column.height
 
         // PullDownMenu and PushUpMenu must be declared in SilicaFlickable, SilicaListView or SilicaGridView
         PullDownMenu {

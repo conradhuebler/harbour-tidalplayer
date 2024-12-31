@@ -84,20 +84,25 @@ Item {
             else if (error === MediaPlayer.FormatError) errorMsg = qsTr("Error: Video or Audio format is not supported")
             else if (error === MediaPlayer.AccessDenied) errorMsg = qsTr("Error: Access denied to the video")
             else if (error === MediaPlayer.NetworkError) errorMsg = qsTr("Error: Network error")
+            console.log(errorMsg)
             stop()
             isPlaying = false
         }
 
         onStopped: {
+            console.log("Playback stopped, look for next track")
             if (!blockAutoNext) {
+                console.log("playing next track is not blocked by user interface")
                 if (playlistManager.canNext) {
                     playlistManager.nextTrack()
                 } else {
                     playlistManager.playListFinished()
                     isPlaying = false
                 }
+            }else{
+                console.log("playing next track is blocked by user interface")
+                //blockAutoNext = false
             }
-            blockAutoNext = false
         }
 
         onPositionChanged: {
@@ -113,6 +118,13 @@ Item {
 
         onPaused: {
             mprisPlayer.playbackStatus = Mpris.Paused
+        }
+
+        onStatusChanged:
+        {
+            console.log("Playback state changed: ", playbackState)
+            console.log("Next and prev ", playlistManager.canNext, playlistManager.canPrev)
+            console.log(errorMsg)
         }
     }
 
@@ -169,9 +181,13 @@ Item {
     }
 
     function playUrl(url) {
+        mediaPlayer.blockAutoNext = true
         console.log("only this function is allowed to start playback", url)
         mediaPlayer.source = url
         mediaPlayer.play()
+        console.log("track time", mediaPlayer.duration)
+        console.log("track time", mediaPlayer.metaData.albumArtist)
+        mediaPlayer.blockAutoNext = false
     }
 
 

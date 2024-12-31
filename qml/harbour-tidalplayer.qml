@@ -79,7 +79,7 @@ ApplicationWindow
     }
     cover: CoverPage {
         application: applicationWindow
-        home : firstpage
+        //home : firstpage
     }
     allowedOrientations: defaultAllowedOrientations
 

@@ -336,7 +336,7 @@ class Tidal:
         pyotherside.send('loadingStarted')
         playlist = self.session.playlist(id)
         first_track = playlist.tracks()[0]
-        pyotherside.send("insertTrack", first_track.id)
+        #pyotherside.send("insertTrack", first_track.id)
         pyotherside.send("printConsole", f" insert Track: {first_track.id}")
 
         for i, track in enumerate(playlist.tracks()):
@@ -345,8 +345,8 @@ class Tidal:
                 pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("addTracktoPL", track_info['id'])
 
-            if i == 0:
-                pyotherside.send("fillStarted")
+            #if i == 0:
+            #    pyotherside.send("fillStarted")
 
         pyotherside.send("fillFinished")
         pyotherside.send('loadingFinished')

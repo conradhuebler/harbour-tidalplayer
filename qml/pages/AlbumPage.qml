@@ -9,6 +9,7 @@ Page {
     id: albumPage
     property int albumId: -1
     property var albumData: null
+    property bool isHeaderCollapsed: false
 
     allowedOrientations: Orientation.All
 
@@ -21,8 +22,16 @@ Page {
 
         contentHeight: column.height
 
-        PullDownMenu {
+        // Überwache das Scrollen des Flickable
+        onContentYChanged: {
+            if (contentY > Theme.paddingLarge) {
+                isHeaderCollapsed = true
+            } else {
+                isHeaderCollapsed = false
+            }
+        }
 
+        PullDownMenu {
             MenuItem {
                 text: minPlayerPanel.open ? "Hide player" : "Show player"
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
@@ -39,44 +48,143 @@ Page {
                 title: albumData ? albumData.title : qsTr("Album Info")
             }
 
-            Image {
-                id: coverImage
-                width: parent.width * 0.8
-                height: width
-                anchors.horizontalCenter: parent.horizontalCenter
-                fillMode: Image.PreserveAspectFit
-                source: albumData ? albumData.image : ""
+            Item {
+                id: albumInfoContainer
+                width: parent.width
+                height: isHeaderCollapsed ? Theme.itemSizeLarge : parent.width * 0.4
+                clip: true
 
-                Rectangle {
-                    color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-                    anchors.fill: parent
-                    visible: coverImage.status !== Image.Ready
+                Behavior on height {
+                    NumberAnimation { duration: 200 }
+                }
+
+                Row {
+                    width: parent.width
+                    height: parent.height
+                    spacing: Theme.paddingMedium
+                    anchors.margins: Theme.paddingMedium
+
+                    Image {
+                        id: coverImage
+                        width: parent.height
+                        height: width
+                        fillMode: Image.PreserveAspectFit
+                        source: albumData ? albumData.image : ""
+
+                        Rectangle {
+                            color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                            anchors.fill: parent
+                            visible: coverImage.status !== Image.Ready
+                        }
+                    }
+
+                    Column {
+                        width: parent.width - coverImage.width - parent.spacing - Theme.paddingLarge * 2
+                        height: parent.height
+                        spacing: Theme.paddingSmall
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        Label {
+                            id: artistName
+                            width: parent.width
+                            text: albumData ? albumData.artist : ""
+                            truncationMode: TruncationMode.Fade
+                            color: Theme.highlightColor
+                            font.pixelSize: Theme.fontSizeLarge
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: albumData ? Format.formatDuration(albumData.duration, Format.DurationLong) : ""
+                            color: Theme.secondaryHighlightColor
+                            font.pixelSize: Theme.fontSizeMedium
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: albumData ? qsTr("Released: ") + albumData.releaseDate : ""
+                            color: Theme.secondaryColor
+                            font.pixelSize: Theme.fontSizeSmall
+                            opacity: isHeaderCollapsed ? 0.0 : 1.0
+                            visible: opacity > 0
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: albumData ? qsTr("Tracks: ") + albumData.numberOfTracks : ""
+                            color: Theme.secondaryColor
+                            font.pixelSize: Theme.fontSizeSmall
+                            opacity: isHeaderCollapsed ? 0.0 : 1.0
+                            visible: opacity > 0
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                        }
+                    }
+                }
+            }
+        Row {
+            id: albumControlBar
+            width: parent.width
+            height: Theme.itemSizeSmall
+            spacing: Theme.paddingMedium
+            anchors {
+                left: parent.left
+                right: parent.right
+                margins: Theme.paddingMedium
+            }
+
+            IconButton {
+                width: Theme.iconSizeMedium
+                height: Theme.iconSizeMedium
+                icon.source: "image://theme/icon-m-play"
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: {
+                    if (albumData) {
+                        playlistManager.clearPlayList()
+                        playlistManager.playAlbum(albumId)
+                        playlistManager.playTrack(0)
+                    }
+                }
+            }
+
+            IconButton {
+                width: Theme.iconSizeMedium
+                height: Theme.iconSizeMedium
+                icon.source: "image://theme/icon-m-add"
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: {
+                    if (albumData) {
+                        playlistManager.playAlbum(albumId)
+                    }
                 }
             }
 
             Label {
-                id: artistName
-                width: parent.width
-                horizontalAlignment: Text.AlignHCenter
-                text: albumData ? albumData.artist : ""
-                truncationMode: TruncationMode.Fade
+                text: qsTr("Play Album")
                 color: Theme.highlightColor
-                font.pixelSize: Theme.fontSizeLarge
-            }
-
-            Label {
-                width: parent.width
-                horizontalAlignment: Text.AlignHCenter
-                text: albumData ? Format.formatDuration(albumData.duration, Format.DurationLong) : ""
-                color: Theme.secondaryHighlightColor
-                font.pixelSize: Theme.fontSizeMedium
+                font.pixelSize: Theme.fontSizeSmall
+                anchors.verticalCenter: parent.verticalCenter
             }
 
             Item {
-                width: parent.width
-                height: Theme.paddingLarge
+                width: Theme.paddingLarge
+                height: parent.height
             }
 
+            Label {
+                text: albumData ? qsTr("%n tracks", "", albumData.numberOfTracks) : ""
+                color: Theme.secondaryColor
+                font.pixelSize: Theme.fontSizeExtraSmall
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        // Optional: Füge einen Separator hinzu
+        Separator {
+            width: parent.width
+            color: Theme.primaryColor
+            horizontalAlignment: Qt.AlignHCenter
+        }
             TrackList {
                 id: trackList
                 width: parent.width

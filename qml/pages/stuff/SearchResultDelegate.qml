@@ -126,16 +126,14 @@ ListItem {
             case 1: // Track
                 pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"),
                 {
-                    "albumId": item.albumid  // oder wie auch immer deine Album-ID gespeichert ist
+                    "albumId": item.albumid
                 })
-                console.log(item.albumid)
                 break
             case 2: // Album
                 pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"),
                 {
                     "albumId" :item.id
                 })
-                console.log(item.albumid)
                 break
             case 3: // Artist
                 pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"))

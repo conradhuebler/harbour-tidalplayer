@@ -96,8 +96,9 @@ Item {
                 MenuItem {
                     text: qsTr("Play Playlist")
                     onClicked: {
+                        playlistManager.clearPlayList()
                         tidalApi.playPlaylist(model.id)
-                        playlistManager.nextTrack()
+                        playlistManager.nextTrackClicked()
                     }
                 }
             }

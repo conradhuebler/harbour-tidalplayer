@@ -10,17 +10,6 @@ DockedPanel {
     open: true
     dock: Dock.Bottom
 
-
-    property string url: ""
-    property int track_id
-
-    function play() {
-        mediaController.source = url;
-        mediaController.play();
-        progressSlider.visible = true
-        show();
-    }
-
     // Hintergrundbild
     Image {
         id: bgImage
@@ -241,12 +230,12 @@ DockedPanel {
 
     Connections {
         target: tidalApi
-            onCurrentPlayback:
+         onCurrentPlayback:
          {
             mediaTitle.text = trackinfo.track_num + " - " + trackinfo.title + " - " + trackinfo.album + " - " + trackinfo.artist
             bgImage.source = trackinfo.image
-            //prevButton.enabled = playlistManager.canPrev
-            //nextButton.enabled = playlistManager.canNext
+            prevButton.enabled = playlistManager.canPrev
+            nextButton.enabled = playlistManager.canNext
             progressSlider.visible = true
             //mprisPlayer.updateTrack(title, artist, album)
         }
