@@ -57,7 +57,7 @@ class PlaylistManager:
         if self.current_index < len(self.playlist) - 1:
             self.current_index += 1
             self._notify_current_track()
-        #self._notify_playlist_state()
+            #self._notify_playlist_state()
 
     def PreviousTrack(self):
         """Wechselt zum vorherigen Track"""

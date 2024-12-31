@@ -7,11 +7,11 @@ import "widgets"
 import "stuff"
 
 Page {
-    id: searchPage
+    id: firstPage
 
     // The effective value will be restricted by ApplicationWindow.allowedOrientations
     allowedOrientations: Orientation.All
-
+    property int currentIndex : 0
     // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
         clip: true

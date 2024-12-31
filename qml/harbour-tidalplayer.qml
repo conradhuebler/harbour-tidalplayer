@@ -6,13 +6,15 @@ import org.nemomobile.mpris 1.0
 import Nemo.Configuration 1.0
 
 import "components"
-
+import "cover"
 import "pages"
 import "pages/widgets"
 
 
 ApplicationWindow
 {
+    id: applicationWindow
+    //property alias firstPage: firstpage  // Property für FirstPage
     property bool loginTrue : false
     property var locale: Qt.locale()
     property date currentDate: new Date()
@@ -70,8 +72,15 @@ ApplicationWindow
         id: mediaController
     }
 
-    initialPage: Component { FirstPage { } }
-    cover: Qt.resolvedUrl("cover/CoverPage.qml")
+    initialPage: Component {
+        FirstPage {
+            id: firstpage  // Diese ID wird nun über applicationWindow.firstPage verfügbar
+        }
+    }
+    cover: CoverPage {
+        application: applicationWindow
+        home : firstpage
+    }
     allowedOrientations: defaultAllowedOrientations
 
 

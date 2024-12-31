@@ -6,8 +6,8 @@ Item {
 
     //property var currentPlaylist: []
     property int currentIndex: -1
-    property bool canNext: false //currentPlaylist.length > 0 && currentIndex < currentPlaylist.length - 1
-    property bool canPrev: false //currentIndex > 0
+    property bool canNext: size > 0 && currentIndex < size - 1
+    property bool canPrev: currentIndex > 0
     property int size: 0 //currentPlaylist.length
     property int current_track: -1
     property int tidalId : 0
@@ -20,7 +20,6 @@ Item {
     signal containsTrack(int id)
     signal clearList()
     signal currentTrack(int position)
-
 
     signal listFinished()
     signal listChanged()
@@ -107,6 +106,7 @@ Item {
             call("playlistmanager.PL.PlaylistIndex", [], function(index){
                 current_track = index
             })
+
         }
 
         function getSize() {
@@ -137,7 +137,7 @@ Item {
         }
 
         function nextTrack() {
-            call('playlistmanager.PL.NextTrack', {})
+            call_sync('playlistmanager.PL.NextTrack', {})
         }
 
         function previousTrack() {
@@ -230,12 +230,13 @@ Item {
     }
 
     function nextTrack() {
-        console.log("Next track called")
-        if(mediaController.playbackState !== 1) {
+        console.log("Next track called", mediaController.playbackState)
+        //if(mediaController.playbackState !== 1) {
             playlistPython.canNext = false
             playlistPython.nextTrack()
-        }
+        //}
         currentTrackIndex()
+        //playTrack()
     }
 
     function nextTrackClicked() {

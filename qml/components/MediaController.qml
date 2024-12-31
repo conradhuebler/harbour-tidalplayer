@@ -7,6 +7,7 @@ Item {
 
     // signals
     signal currentTrackChanged()
+    signal currentPosition(double position)
 
     property string current_track_title : ""
     property string current_track_artist : ""
@@ -76,7 +77,6 @@ Item {
         property bool videoPlaying: false
         property string errorMsg: ""
 
-        signal currentPosition(int position)
 
         onError: {
             if (error === MediaPlayer.ResourceError) errorMsg = qsTr("Error: Problem with allocating resources")
@@ -101,7 +101,7 @@ Item {
         }
 
         onPositionChanged: {
-            mediaPlayer.currentPosition(mediaPlayer.position/mediaPlayer.duration*100)
+            root.currentPosition(mediaPlayer.position/mediaPlayer.duration*100)
         }
 
         onPlaying: {
@@ -169,7 +169,7 @@ Item {
     }
 
     function playUrl(url) {
-        console.log("only this function is allowed to start playback")
+        console.log("only this function is allowed to start playback", url)
         mediaPlayer.source = url
         mediaPlayer.play()
     }

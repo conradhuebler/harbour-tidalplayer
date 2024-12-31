@@ -102,7 +102,7 @@ DockedPanel {
             IconButton {
                 id: prevButton
                 icon.source: "image://theme/icon-m-previous"
-                //visible: playlistManager.canPrev
+                visible: playlistManager.canPrev
                 onClicked:
                 {
                     console.log("prev button pressed")
@@ -126,7 +126,7 @@ DockedPanel {
             IconButton {
                 id: nextButton
                 icon.source: "image://theme/icon-m-next"
-                //visible: playlistManager.canNext
+                visible: playlistManager.canNext
                 onClicked: {
                     console.log("next button pressed")
 
@@ -154,10 +154,16 @@ DockedPanel {
                             width: parent.width
                             minimumValue: 0
                             maximumValue: 100
+                            enabled: mediaController.duration > 0
                             visible: false
                             height: Theme.paddingMedium
                         }
-
+                        Connections {
+                            target: progressSlider
+                            onReleased: {
+                                mediaController.seek(progressSlider.value/100*mediaController.duration)
+                            }
+                        }
                         // Zeitanzeige
                         Row {
                             id: timeRow
@@ -199,19 +205,14 @@ DockedPanel {
 
     Connections {
         target: mediaController
-        onCurrentPosition: {
-            progressSlider.value = position
-        }
+
         onPlaybackStateChanged: {
             if(mediaController.playbackState === 1)
                 playButton.icon.source = "image://theme/icon-m-pause"
             else if(mediaController.playbackState === 2)
                 playButton.icon.source = "image://theme/icon-m-play"
         }
-    }
 
-    Connections {
-        target: mediaController
         /*
         onCurrentTrack: {
             mediaTitle.text = track_num + " - " + mediaController.current_track_title
@@ -224,12 +225,17 @@ DockedPanel {
             //nextButton.enabled = playlistManager.canNext
             progressSlider.visible = true
         }*/
+        onCurrentPosition: {
+        if (!progressSlider.pressed) {  // Nur updaten wenn der Slider nicht gedrückt ist
+            progressSlider.value = position
+        }
+    }
     }
 
     Connections {
         target: progressSlider
         onReleased: {
-            player.seek(progressSlider.value/100*mediaController.duration)
+            mediaController.seek(progressSlider.value/100*mediaController.duration)
         }
     }
 
