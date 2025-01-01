@@ -335,7 +335,7 @@ function processWimpLinks(text) {
 
     Component.onCompleted: {
         if (artistId > 0) {
-            artistData = cacheManager.getArtist(artistId)
+            artistData = cacheManager.getArtistInfo(artistId)
             if (!artistData) {
                 console.log("Artist nicht im Cache gefunden:", artistId)
             }

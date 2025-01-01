@@ -252,20 +252,20 @@ id: root
 
         var result = tidalApi.getAlbumInfo(id)
         if (result) {
-            var trackData = {
-                albumid: id,
+            var albumData = {
+                albumid: result.albumid,
                 title: result.title,
                 artist: result.artist,
                 artistid: result.artistid,
-                image : result.image,
+                image: result.image,
                 duration: result.duration,
                 num_tracks : result.num_tracks,
                 year : result.year,
                 timestamp: Date.now()
             }
 
-            saveAlbumToCache(trackData)
-            return trackData
+            saveAlbumToCache(albumData)
+            return albumData
         }
 
         return null
@@ -286,16 +286,16 @@ id: root
 
         var result = tidalApi.getArtistInfo(id)
         if (result) {
-            var trackData = {
-                artistid: id,
+            var artistData = {
+                artistid: result.artistid,
                 name: result.name,
-                image : result.image,
-                bio : result.bio,
-                timestamp: Date.now()
+                image: result.image,
+                bio: result.bio,
+                timestamp: Date.now(),
             }
 
-            saveAlbumToCache(trackData)
-            return trackData
+            saveArtistToCache(artistData)
+            return artistData
         }
 
         return null

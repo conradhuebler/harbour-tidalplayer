@@ -41,6 +41,11 @@ Item {
     signal albumofArtist(var album_info)
     signal topTracksofArtist(var track_info)
     signal similarArtist(var artist_info)
+
+    signal favTracks(var track_info)
+    signal favAlbums(var album_info)
+    signal favArtists(var artist_info)
+
     signal noSimilarArtists()
 
     signal playlistTrackAdded(var track_info)
@@ -135,6 +140,18 @@ Item {
 
             setHandler('noSimilarArtists', function() {
                 tidalApi.noSimilarArtists()
+            })
+
+            setHandler('FavAlbums', function(album_info) {
+                tidalApi.favAlbums(album_info)
+            })
+
+            setHandler('FavTracks', function(track_info) {
+                tidalApi.favTracks(track_info)
+            })
+
+            setHandler('FavArtist', function(artist_info) {
+                tidalApi.favArtists(artist_info)
             })
 
             // Search Handler
@@ -379,6 +396,8 @@ Item {
     // Playlist Funktionen
     function getPersonalPlaylists() {
         pythonTidal.call('tidal.Tidaler.getPersonalPlaylists', [])
+        pythonTidal.call('tidal.Tidaler.homepage', [])
+
     }
 
     function getPlaylistTracks(id) {
@@ -403,6 +422,10 @@ Item {
 
     function getSimiliarArtist(artistid) {
         pythonTidal.call('tidal.Tidaler.getSimiliarArtist', [artistid])
+    }
+
+    function getFavorits(artistid) {
+        pythonTidal.call('tidal.Tidaler.getFavorits', [artistid])
     }
 }
 

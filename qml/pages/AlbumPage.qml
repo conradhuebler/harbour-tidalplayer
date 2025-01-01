@@ -230,7 +230,7 @@ BackgroundItem {
 
     Component.onCompleted: {
         if (albumId > 0) {
-            albumData = cacheManager.getAlbum(albumId)
+            albumData = cacheManager.getAlbumInfo(albumId)
             if (!albumData) {
                 console.log("Album nicht im Cache gefunden:", albumId)
             }

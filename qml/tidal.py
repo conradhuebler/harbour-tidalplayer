@@ -9,6 +9,9 @@ import json
 import tidalapi
 import pyotherside
 
+from tidalapi.page import PageItem, PageLink
+from tidalapi.mix import Mix
+
 from requests.exceptions import HTTPError
 
 
@@ -53,7 +56,8 @@ class Tidal:
             if self.session.check_login() == True:
                 pyotherside.send("oauth_login_success")
             if access_token == refresh_token:
-                self.session.load_oauth_session(token_type, refresh_token)
+                self.session.token_refresh(refresh_token)
+                #self.session.load_oauth_session(token_type, refresh_token)
                 pyotherside.send("oauth_updated", self.session.token_type, self.session.access_token, self.session.refresh_token,  self.session.expiry_time)
 
     def request_oauth(self):
@@ -437,5 +441,58 @@ class Tidal:
             pyotherside.send("apiError", str(e))
         finally:
             pyotherside.send('loadingFinished')
+
+    def getFavorits(self, id):
+        pyotherside.send('loadingStarted')
+        albums = self.session.user.favorites.albums()
+        for ti in albums:
+            i = self.handle_album(ti)
+            pyotherside.send("cacheAlbum", i)
+            pyotherside.send("FavAlbums", i)
+
+        tracks = self.session.user.favorites.tracks()
+        for ti in tracks:
+            i = self.handle_track(ti)
+            pyotherside.send("cacheTrack", i)
+            pyotherside.send("FavTracks", i)
+
+        artists = self.session.user.favorites.artists()
+        for ti in artists:
+            i = self.handle_artist(ti)
+            pyotherside.send("cacheArtist", i)
+            pyotherside.send("FavArtist", i)
+
+        pyotherside.send('loadingFinished')
+
+
+    def homepage(self):
+        self.home = self.session.home()
+        self.home.categories.extend(self.session.explore().categories)
+        self.home.categories.extend(self.session.videos().categories)
+
+        for category in self.home.categories:
+            print(category.title)
+
+        for category in self.home.categories:
+            print(category.title)
+            self.items = []
+            for item in category.items:
+                if isinstance(item, PageItem):
+                    self.items.append("\t" + item.short_header)
+                    self.items.append("\t" + item.short_sub_header[0:50])
+                    # Call item.get() on this one, for example on click
+                elif isinstance(item, PageLink):
+                    self.items.append("\t" + item.title)
+                    # Call item.get() on this one, for example on click
+                elif isinstance(item, Mix):
+                    self.items.append("\t" + item.title)
+                    # You can optionally call item.get() to request the items() first, but it does it for you if you don't
+                else:
+                    self.items.append("\t" + item.name)
+                    # An album could be handled by session.album(item.id) for example,
+                    # to get full details. Usually the relevant info is there already however
+                print()
+            #[print(x) for x in sorted(items)]
+
 
 Tidaler = Tidal()
