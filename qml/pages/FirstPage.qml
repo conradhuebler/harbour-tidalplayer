@@ -24,6 +24,12 @@ Page {
 
         // PullDownMenu and PushUpMenu must be declared in SilicaFlickable, SilicaListView or SilicaGridView
         PullDownMenu {
+
+            MenuItem {
+                text: qsTr("Saved Playlists")
+                onClicked: pageStack.push(Qt.resolvedUrl("SavedPlaylistsPage.qml"))
+            }
+
             MenuItem {
                 text: qsTr("Settings")
                 onClicked: {

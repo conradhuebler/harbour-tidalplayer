@@ -69,10 +69,13 @@ class PlaylistManager:
 
     def PlayPosition(self, position):
         """Spielt einen Track an einer bestimmten Position"""
-        if 0 <= position < len(self.playlist):
-            self.current_index = position
-            self._notify_current_track()
-            #self._notify_playlist_state()
+        try:
+            position = int(position)  # Konvertiere zu Integer
+            if 0 <= position < len(self.playlist):
+                self.current_index = position
+                self._notify_current_track()
+        except (ValueError, TypeError):
+            print(f"Invalid position value: {position}")
 
     def RestartTrack(self):
         """Startet den aktuellen Track neu"""

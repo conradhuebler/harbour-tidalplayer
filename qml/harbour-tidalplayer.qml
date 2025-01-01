@@ -60,12 +60,33 @@ ApplicationWindow
                 tidalApi.playTrackId(track)
             }
         }
+
     }
 
     TidalCache
     {
         id: cacheManager
     }
+
+    PlaylistStorage {
+        id: playlistStorage
+
+        property string currentPlaylistName: ""
+
+        onPlaylistLoaded: {
+            // Wenn eine Playlist geladen wird
+            currentPlaylistName = name;
+            playlistManager.clearPlayList();
+            trackIds.forEach(function(trackId) {
+                playlistManager.appendTrack(trackId);
+            });
+            // Setze die gespeicherte Position
+            if (position >= 0) {
+                playlistManager.playPosition(position);
+            }
+        }
+    }
+
 
     MediaController
     {

@@ -293,6 +293,7 @@ id: root
                 bio: result.bio,
                 timestamp: Date.now(),
             }
+            console.log("Adding to cache ...")
 
             saveArtistToCache(artistData)
             return artistData

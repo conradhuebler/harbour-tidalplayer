@@ -369,7 +369,6 @@ function processWimpLinks(text) {
 
         // Neues Signal für Alben
         onAlbumofArtist: {
-
             albumsView.model.append({
                 title: album_info.title,
                 cover: album_info.image,
@@ -378,7 +377,6 @@ function processWimpLinks(text) {
         }
 
          onSimilarArtist: {
-
             simartistView.model.append({
                 name: artist_info.name,
                 cover: artist_info.image,

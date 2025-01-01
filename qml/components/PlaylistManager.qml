@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import io.thp.pyotherside 1.5
 
+
 Item {
     id: root
 
@@ -214,7 +215,7 @@ Item {
         playlistPython.playTrack(id)
         currentTrackIndex()
     }
-
+/*
     function playPosition(id) {
         console.log(id)
         playlistPython.canNext = false
@@ -222,47 +223,103 @@ Item {
         playlistPython.playPosition(id)
         currentTrackIndex()
     }
-
+*/
     function insertTrack(id) {
         console.log("PlaylistManager.insertTrack", id)
         playlistPython.insertTrack(id)
         currentTrackIndex()
     }
-
+/*
     function nextTrack() {
         console.log("Next track called", mediaController.playbackState)
         playlistPython.nextTrack()
         currentTrackIndex()
     }
-
+*/
     function nextTrackClicked() {
         console.log("Next track clicked")
         mediaController.blockAutoNext = true
         playlistPython.nextTrack()
         currentTrackIndex()
         mediaController.blockAutoNext = false
+        if (playlistStorage.currentPlaylistName) {
+            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        }
     }
 
     function restartTrack(id) {
         playlistPython.restartTrack()
         currentTrackIndex()
     }
-
+/*
     function previousTrack() {
         playlistPython.canNext = false
         playlistPython.previousTrack()
         currentTrackIndex()
     }
-
+*/
     function previousTrackClicked() {
         playlistPython.canNext = false
         mediaController.blockAutoNext = true
         playlistPython.previousTrack()
         currentTrackIndex()
+         if (playlistStorage.currentPlaylistName) {
+            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        }
     }
 
     function generateList() {
         console.log("Playlist changed from main.qml")
         playlistPython.generateList()
+    }
+
+    // Neue Funktionen zum Speichern/Laden
+    function saveCurrentPlaylist(name) {
+        var trackIds = [];
+        for(var i = 0; i < size; i++) {
+            trackIds.push(requestPlaylistItem(i));
+        }
+        playlistStorage.savePlaylist(name, trackIds, currentIndex);
+        playlistStorage.currentPlaylistName = name;
+    }
+
+    function loadSavedPlaylist(name) {
+        playlistStorage.loadPlaylist(name);
+    }
+
+    // Überschreibe die Navigation-Funktionen
+    function nextTrack() {
+        console.log("Next track called", mediaController.playbackState)
+        playlistPython.nextTrack()
+        currentTrackIndex()
+        // Speichere Fortschritt
+        if (playlistStorage.currentPlaylistName) {
+            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        }
+    }
+
+    function previousTrack() {
+        playlistPython.canNext = false
+        playlistPython.previousTrack()
+        currentTrackIndex()
+        // Speichere Fortschritt
+        if (playlistStorage.currentPlaylistName) {
+            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        }
+    }
+
+    function playPosition(position) {
+        playlistPython.canNext = false
+        mediaController.blockAutoNext = true
+        playlistPython.playPosition(position)
+        currentTrackIndex()
+        // Speichere Fortschritt
+        if (playlistStorage.currentPlaylistName) {
+            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, position);
+        }
+    }
+
+    function getSavedPlaylists() {
+     return playlistStorage.getPlaylistInfo();
     }
 }

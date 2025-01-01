@@ -10,8 +10,22 @@ Page {
     property int albumId: -1
     property var albumData: null
     property bool isHeaderCollapsed: false
+    //property alias model: listModel
 
     allowedOrientations: Orientation.All
+
+    function saveAlbumAsPlaylist(name) {
+        var trackIds = []
+        // Wir nutzen die Tracks aus dem Album-Cache
+        if (albumData) {
+            var tracks = tidalApi.getAlbumTracks(albumId)
+            for(var i = 0; i < trackList.model.count; i++) {
+                var track = trackList.model.get(i)
+                trackIds.push(track.trackid)
+            }
+            playlistStorage.savePlaylist(name, trackIds, 0)
+        }
+    }
 
     SilicaFlickable {
         id: flickable
@@ -32,6 +46,24 @@ Page {
         }
 
         PullDownMenu {
+
+        MenuItem {
+                text: qsTr("Save as Playlist")
+                onClicked: {
+                    if (albumData) {
+                        var dialog = pageStack.push(Qt.resolvedUrl("../dialogs/saveplaylist.qml"), {
+                            "suggestedName": albumData.title
+                        })
+                        dialog.accepted.connect(function() {
+                            if (dialog.playlistName.length > 0) {
+                                saveAlbumAsPlaylist(dialog.playlistName)
+                            }
+                        })
+                    }
+                }
+                enabled: albumData !== null
+            }
+
             MenuItem {
                 text: minPlayerPanel.open ? "Hide player" : "Show player"
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open

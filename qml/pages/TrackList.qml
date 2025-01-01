@@ -9,7 +9,8 @@ Item {
     property string playlistId: ""
     property int albumId: -1
     property string type: "current"  // "playlist" oder "current" oder "album" oder "tracklist"
-
+    property int currentIndex: playlistManager.currentIndex
+    property alias model: listModel
     Timer {
         id: updateTimer
         interval: 100  // 100ms Verzögerung
@@ -20,20 +21,20 @@ Item {
                 var id = playlistManager.requestPlaylistItem(i)
                 var track = cacheManager.getTrackInfo(id)
                 if (track) {
-                listModel.append({
-                    "title": track.title,
-                    "artist": track.artist,
-                    "album": track.album,
-                    "id": track.id,
-                    "duration": track.duration,
-                    "image": track.image,
-                    "index": track.index
-                })
+                    listModel.append({
+                        "title": track.title,
+                        "artist": track.artist,
+                        "album": track.album,
+                        "id": track.id,
+                        "trackid": track.id,
+                        "duration": track.duration,
+                        "image": track.image,
+                        "index": i
+                    })
                 } else {
                     console.log("No track data for index:", i)
                 }
             }
-            //highlight_index = playlistManager.current_track
         }
     }
 
@@ -70,6 +71,16 @@ Item {
             width: parent.width
             contentHeight: contentRow.height + Theme.paddingMedium
 
+            // Highlight für aktuellen Track
+            highlighted: type === "current" && model.index === root.currentIndex
+
+            Rectangle {
+                visible: type === "current" && model.index === root.currentIndex
+                anchors.fill: parent
+                color: Theme.rgba(Theme.highlightBackgroundColor, 0.2)
+                z: -1
+            }
+
             Row {
                 id: contentRow
                 anchors {
@@ -78,6 +89,17 @@ Item {
                     margins: Theme.horizontalPageMargin
                 }
                 spacing: Theme.paddingMedium
+
+                // Optionaler Indikator für aktuellen Track
+                Label {
+                    visible: type === "current" && model.index === root.currentIndex
+                    text: "▶"  // oder ein anderes Symbol
+                    color: Theme.highlightColor
+                    font.pixelSize: Theme.fontSizeMedium
+                    width: visible ? implicitWidth : 0
+                    verticalAlignment: Text.AlignVCenter
+                    height: coverImage.height
+                }
 
                 Image {
                     id: coverImage
@@ -101,9 +123,15 @@ Item {
                     Label {
                         width: parent.width
                         text: model.title
-                        color: listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
+                        color: {
+                            if (type === "current" && model.index === root.currentIndex) {
+                                return Theme.highlightColor
+                            }
+                            return listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
+                        }
                         font.pixelSize: Theme.fontSizeMedium
                         truncationMode: TruncationMode.Fade
+                        font.bold: type === "current" && model.index === root.currentIndex
                     }
 
                     Row {
@@ -112,7 +140,12 @@ Item {
 
                         Label {
                             text: model.artist
-                            color: listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                            color: {
+                                if (type === "current" && model.index === root.currentIndex) {
+                                    return Theme.secondaryHighlightColor
+                                }
+                                return listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                            }
                             font.pixelSize: Theme.fontSizeSmall
                         }
 
@@ -127,10 +160,23 @@ Item {
                                 ? Format.formatDuration(model.duration, Formatter.DurationLong)
                                 : Format.formatDuration(model.duration, Formatter.DurationShort)
                             text: dur
-                            color: listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                            color: {
+                                if (type === "current" && model.index === root.currentIndex) {
+                                    return Theme.secondaryHighlightColor
+                                }
+                                return listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                            }
                             font.pixelSize: Theme.fontSizeSmall
                         }
                     }
+                }
+            }
+
+            onClicked: {
+                if (type === "current") {
+                    playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
+                } else {
+                    playlistManager.playTrack(model.trackid)
                 }
             }
 
@@ -138,7 +184,11 @@ Item {
                 MenuItem {
                     text: qsTr("Play Now")
                     onClicked: {
-                        playlistManager.playTrack(model.trackid)
+                        if (type === "current") {
+                            playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
+                        } else {
+                            playlistManager.playTrack(model.trackid)
+                        }
                     }
                 }
                 MenuItem {
@@ -146,15 +196,14 @@ Item {
                     onClicked: {
                         playlistManager.appendTrack(model.trackid)
                     }
+                    visible: type !== "current"
                 }
-            }
-
-            onClicked: {
-                if (type === "current") {
-                     playlistManager.playPosition(model.index)
-
-                } else {
-                   playlistManager.playTrack(model.trackid)
+                MenuItem {
+                    text: qsTr("Remove from Queue")
+                    onClicked: {
+                        // TODO: Implementiere Remove-Funktion
+                    }
+                    visible: type === "current"
                 }
             }
         }
@@ -172,14 +221,10 @@ Item {
 
     Component.onCompleted: {
         if (type === "playlist") {
-            // Playlist-Tracks laden
             tidalApi.getPlaylistTracks(playlistId)
-        } else if (type == "album")
-        {
+        } else if (type == "album") {
             tidalApi.getAlbumTracks(albumId)
-        }
-        else {
-            // Aktuelle Playlist laden
+        } else {
             playlistManager.generateList()
         }
     }
@@ -212,7 +257,7 @@ Item {
             }
         }
 
-       onTopTracksofArtist: {
+        onTopTracksofArtist: {
             if (type === "tracklist") {
                 listModel.append({
                     "title": track_info.title,
@@ -234,7 +279,7 @@ Item {
                     "title": title,
                     "artist": artist,
                     "album": album,
-                    "trackid": trackid,
+                    "trackid": id,
                     "duration": duration,
                     "image": image,
                     "index": index
@@ -242,8 +287,14 @@ Item {
             }
         }
 
+        onCurrentTrack: {
+            if (type === "current") {
+                tracks.positionViewAtIndex(position, ListView.Center)
+            }
+        }
+
         onListChanged: {
-        console.log("update playlist")
+            console.log("update playlist")
             if (type === "current") {
                 console.log("update current playlist")
                 listModel.clear()
