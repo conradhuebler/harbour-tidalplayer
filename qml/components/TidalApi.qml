@@ -38,6 +38,10 @@ Item {
     signal cacheTrack(var track_info)
     signal cacheAlbum(var album_info)
     signal cacheArtist(var artist_info)
+    signal albumofArtist(var album_info)
+    signal topTracksofArtist(var track_info)
+    signal similarArtist(var artist_info)
+    signal noSimilarArtists()
 
     signal playlistTrackAdded(var track_info)
     signal albumTrackAdded(var track_info)
@@ -117,6 +121,21 @@ Item {
                 tidalApi.cacheAlbum(album_info)
             })
 
+            setHandler('TopTrackofArtist', function(track_info) {
+                tidalApi.topTracksofArtist(track_info)
+            })
+
+            setHandler('AlbumofArtist', function(album_info) {
+                tidalApi.albumofArtist(album_info)
+            })
+
+            setHandler('SimilarArtist', function(artist_info) {
+                tidalApi.similarArtist(artist_info)
+            })
+
+            setHandler('noSimilarArtists', function() {
+                tidalApi.noSimilarArtists()
+            })
 
             // Search Handler
             setHandler('addTrack', function(id, title, album, artist, image, duration) {
@@ -374,7 +393,17 @@ Item {
         pythonTidal.call('tidal.Tidaler.get_favorite_tracks', [])
     }
 
+    function getAlbumsofArtist(artistid) {
+        pythonTidal.call('tidal.Tidaler.getAlbumsofArtist', [artistid])
+    }
 
+    function getTopTracksofArtist(artistid) {
+        pythonTidal.call('tidal.Tidaler.getTopTracksofArtist', [artistid])
+    }
+
+    function getSimiliarArtist(artistid) {
+        pythonTidal.call('tidal.Tidaler.getSimiliarArtist', [artistid])
+    }
 }
 
 

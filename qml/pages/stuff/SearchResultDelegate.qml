@@ -56,12 +56,35 @@ ListItem {
         MenuItem {
             text: qsTr("Play Album")
             visible: itemData.type === 1 // typeTrack
-            onClicked: playlistManager.playAlbumFromTrack(itemData.id)
+            onClicked: playlistManager.playAlbumFromTrack(itemData.trackid)
         }
 
         MenuItem {
             text: qsTr("Queue")
-            onClicked: playlistManager.appendTrack(itemData.id)
+            onClicked: playlistManager.appendTrack(itemData.trackid)
+        }
+
+        MenuItem {
+            text: qsTr("Album Info")
+            onClicked:
+            {
+                pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"),
+                {
+                    "albumId" :itemData.albumid
+                })
+            }
+        }
+
+        MenuItem {
+            text: qsTr("Artist Info")
+            onClicked:
+            {
+                console.log(itemData.trackid)
+                pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"),
+                {
+                    "artistId" :itemData.artistid
+                })
+            }
         }
 
         MenuItem {
@@ -69,7 +92,7 @@ ListItem {
             onClicked: delegate.remorseAction(qsTr("Deleting"), function() {
                 listModel.remove(model.index)
             })
-        }
+        }   
     }
 
     onClicked: handleItemClick(itemData)
@@ -109,10 +132,10 @@ ListItem {
     function handlePlay(item) {
         switch(item.type) {
             case 1: // Track
-                playlistManager.playTrack(item.id)
+                playlistManager.playTrack(item.trackid)
                 break
             case 2: // Album
-                playlistManager.playAlbum(item.id)
+                playlistManager.playAlbum(item.albumid)
                 break
             case 4: // Playlist
                 tidalApi.playPlaylist(item.uid)
@@ -128,16 +151,21 @@ ListItem {
                 {
                     "albumId": item.albumid
                 })
+                console.log(item.albumid)
+
                 break
             case 2: // Album
                 pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"),
                 {
-                    "albumId" :item.id
+                    "albumId" :item.albumid
                 })
+
                 break
             case 3: // Artist
-                pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"))
-                tidalApi.getArtistInfo(item.id)
+                pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"),
+                {
+                    "artistId" :item.artistid
+                })
                 break
         }
     }

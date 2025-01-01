@@ -35,7 +35,7 @@ Item {
                 id: searchField
                 width: parent.width
                 placeholderText: qsTr("Type and Search")
-                text: ""
+                text: "Corvus Corax"
                 label: qsTr("Please wait for login ...")
                 enabled: tidalApi.loginTrue
 
@@ -150,7 +150,9 @@ Item {
             name: track.title,
             artist: track.artist,
             album: track.album,
-            id: track.id,
+            trackid: track.trackid,
+            albumid: track.albumid,
+            artistid: track.artistid,
             type: typeTrack,
             image: track.image,
             duration: track.duration,
@@ -159,9 +161,11 @@ Item {
     }
 
     function createAlbumItem(album) {
+        console.log(album.title, album.albumid)
         return {
             name: album.title,
-            id: album.id,
+            albumid: album.albumid,
+            artistid: album.artistid,
             type: typeAlbum,
             image: album.image,
             duration: album.duration
@@ -171,7 +175,8 @@ Item {
     function createArtistItem(artist) {
         return {
             name: artist.name,
-            id: artist.id,
+            artistid: artist.artistid,
+            albumid:artist.albumid,
             type: typeArtist,
             image: artist.image
         }

@@ -8,7 +8,7 @@ Item {
     property string title: ""
     property string playlistId: ""
     property int albumId: -1
-    property string type: "current"  // "playlist" oder "current" oder "album"
+    property string type: "current"  // "playlist" oder "current" oder "album" oder "tracklist"
 
     Timer {
         id: updateTimer
@@ -138,13 +138,13 @@ Item {
                 MenuItem {
                     text: qsTr("Play Now")
                     onClicked: {
-                        playlistManager.playTrack(model.id)
+                        playlistManager.playTrack(model.trackid)
                     }
                 }
                 MenuItem {
                     text: qsTr("Add to Queue")
                     onClicked: {
-                        playlistManager.appendTrack(model.id)
+                        playlistManager.appendTrack(model.trackid)
                     }
                 }
             }
@@ -154,7 +154,7 @@ Item {
                      playlistManager.playPosition(model.index)
 
                 } else {
-                   playlistManager.playTrack(model.id)
+                   playlistManager.playTrack(model.trackid)
                 }
             }
         }
@@ -192,7 +192,7 @@ Item {
                     "title": track_info.title,
                     "artist": track_info.artist,
                     "album": track_info.album,
-                    "id": track_info.id,
+                    "trackid": track_info.trackid,
                     "duration": track_info.duration,
                     "image": track_info.image
                 })
@@ -205,7 +205,20 @@ Item {
                     "title": track_info.title,
                     "artist": track_info.artist,
                     "album": track_info.album,
-                    "id": track_info.id,
+                    "trackid": track_info.trackid,
+                    "duration": track_info.duration,
+                    "image": track_info.image
+                })
+            }
+        }
+
+       onTopTracksofArtist: {
+            if (type === "tracklist") {
+                listModel.append({
+                    "title": track_info.title,
+                    "artist": track_info.artist,
+                    "album": track_info.album,
+                    "trackid": track_info.trackid,
                     "duration": track_info.duration,
                     "image": track_info.image
                 })
@@ -221,7 +234,7 @@ Item {
                     "title": title,
                     "artist": artist,
                     "album": album,
-                    "id": id,
+                    "trackid": trackid,
                     "duration": duration,
                     "image": image,
                     "index": index

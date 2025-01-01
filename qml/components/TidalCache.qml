@@ -19,10 +19,13 @@ id: root
         target: tidalApi
 
         // Bestehende Connections
+        /*
         onTrackChanged: {
             // id, title, album, artist, image, duration
             saveTrackToCache({
-                id: id,
+                trackid: trackid,
+                albumid: albumid,
+                artistid: artistid,
                 title: title,
                 album: album,
                 artist: artist,
@@ -35,9 +38,10 @@ id: root
         onAlbumChanged: {
             // id, title, artist, image
             saveAlbumToCache({
-                id: id,
+                albumid: albumid,
                 title: title,
                 artist: artist,
+                artistid: artistid,
                 image: image,
                 timestamp: Date.now()
             })
@@ -46,25 +50,27 @@ id: root
         onArtistChanged: {
             // id, name, img
             saveArtistToCache({
-                id: id,
+                artistid: artistid,
                 name: name,
                 image: img,
                 timestamp: Date.now()
             })
         }
-
+        */
         // Neue Connections für Suchergebnisse
 
         onCacheTrack: {
             //track_info
             saveTrackToCache({
-                id: track_info.id,
+                trackid: track_info.trackid,
                 title: track_info.title,
-                album: track_info.album,
                 artist: track_info.artist,
-                image: track_info.image,
-                duration: track_info.duration,
+                artistid:track_info.artistid,
+                album: track_info.album,
                 albumid: track_info.albumid,
+                duration: track_info.duration,
+                image: track_info.image,
+                track_num : track_info.track_num,
                 timestamp: Date.now(),
                 fromSearch: true  // Optional: markiert Einträge aus der Suche
             })
@@ -73,10 +79,10 @@ id: root
         onCacheArtist: {
             //artist_info
             saveArtistToCache({
-                id: artist_info.id,
+                artistid: artist_info.artistid,
                 name: artist_info.name,
-                bio: artist_info.bio,
                 image: artist_info.image,
+                bio: artist_info.bio,
                 timestamp: Date.now(),
                 fromSearch: true  // Optional: markiert Einträge aus der Suche
             })
@@ -85,19 +91,25 @@ id: root
         onCacheAlbum: {
             //album_info
             saveAlbumToCache({
-                id: album_info.id,
+                albumid: album_info.albumid,
                 title: album_info.title,
                 artist: album_info.artist,
+                artistid: album_info.artistid,
                 image: album_info.image,
                 duration: album_info.duration,
+                num_tracks : album_info.num_tracks,
+                year : album_info.year,
                 timestamp: Date.now(),
                 fromSearch: true  // Optional: markiert Einträge aus der Suche
             })
         }
+        /*
         onTrackAdded: {
             // id, title, album, artist, image, duration
             saveTrackToCache({
-                id: id,
+                trackid: trackid,
+                albumid: albumid,
+                artistid: artistid,
                 title: title,
                 album: album,
                 artist: artist,
@@ -111,7 +123,8 @@ id: root
         onAlbumAdded: {
             // id, title, artist, image, duration
             saveAlbumToCache({
-                id: id,
+                albumid: albumid,
+                artistid: artistid,
                 title: title,
                 artist: artist,
                 image: image,
@@ -130,7 +143,7 @@ id: root
                 timestamp: Date.now(),
                 fromSearch: true
             })
-        }
+        }*/
     }
 
     // Optional: Erweiterte Such-spezifische Funktionen
@@ -150,7 +163,7 @@ id: root
     function addSearchTrack(id) {
         if (!searchResults.tracks.includes(id)) {
             searchResults.tracks.push(id)
-        }d, title, artist, image, duration
+        }
     }
 
     function addSearchAlbum(id) {
@@ -207,7 +220,9 @@ id: root
         var result = tidalApi.getTrackInfo(id)
         if (result) {
             var trackData = {
-                id: id,
+                trackid: id,
+                albumid: result.albumid,
+                artistid: result.artistid,
                 title: result.title,
                 artist: result.artist,
                 album: result.album,
@@ -222,9 +237,73 @@ id: root
         return null
     }
 
+    function getAlbumInfo(id) {
+        // Erst im Cache nachsehen
+        var cachedTrack = getAlbum(id)
+        if (cachedTrack) {
+            if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
+                return cachedTrack
+            } else {
+                console.log("Cache entry too old, refreshing...")
+            }
+        }
+
+        // Wenn nicht im Cache oder zu alt, von Python holen
+
+        var result = tidalApi.getAlbumInfo(id)
+        if (result) {
+            var trackData = {
+                albumid: id,
+                title: result.title,
+                artist: result.artist,
+                artistid: result.artistid,
+                image : result.image,
+                duration: result.duration,
+                num_tracks : result.num_tracks,
+                year : result.year,
+                timestamp: Date.now()
+            }
+
+            saveAlbumToCache(trackData)
+            return trackData
+        }
+
+        return null
+    }
+
+        function getArtistInfo(id) {
+        // Erst im Cache nachsehen
+        var cachedTrack = getArtist(id)
+        if (cachedTrack) {
+            if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
+                return cachedTrack
+            } else {
+                console.log("Cache entry too old, refreshing...")
+            }
+        }
+
+        // Wenn nicht im Cache oder zu alt, von Python holen
+
+        var result = tidalApi.getArtistInfo(id)
+        if (result) {
+            var trackData = {
+                artistid: id,
+                name: result.name,
+                image : result.image,
+                bio : result.bio,
+                timestamp: Date.now()
+            }
+
+            saveAlbumToCache(trackData)
+            return trackData
+        }
+
+        return null
+    }
+
     // Datenbank initialisieren
     function initDatabase() {
-        db = LocalStorage.openDatabaseSync("TidalCache", "1.1", "Cache for Tidal data", 1000000)
+        db = LocalStorage.openDatabaseSync("TidalCache", "1.2", "Cache for Tidal data", 1000000)
         db.transaction(function(tx) {
             // Tracks Tabelle
             tx.executeSql('CREATE TABLE IF NOT EXISTS tracks(id TEXT PRIMARY KEY, data TEXT, timestamp INTEGER)')
@@ -268,6 +347,7 @@ id: root
             for(i = 0; i < rs.rows.length; i++) {
                 try {
                     artistCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
+                    //console.log(artistCache[rs.rows.item(i).id].artistid, artistCache[rs.rows.item(i).id].name)
                 } catch(e) {
                     console.error("Error parsing artist data:", e)
                 }
@@ -278,26 +358,26 @@ id: root
 
     // Cache-Speicherfunktionen
     function saveTrackToCache(trackData) {
-        trackCache[trackData.id] = trackData
+        trackCache[trackData.trackid] = trackData
         db.transaction(function(tx) {
             tx.executeSql('INSERT OR REPLACE INTO tracks(id, data, timestamp) VALUES(?, ?, ?)',
-                [trackData.id, JSON.stringify(trackData), trackData.timestamp])
+                [trackData.trackid, JSON.stringify(trackData), trackData.timestamp])
         })
     }
 
     function saveAlbumToCache(albumData) {
-        albumCache[albumData.id] = albumData
+        albumCache[albumData.albumid] = albumData
         db.transaction(function(tx) {
             tx.executeSql('INSERT OR REPLACE INTO albums(id, data, timestamp) VALUES(?, ?, ?)',
-                [albumData.id, JSON.stringify(albumData), albumData.timestamp])
+                [albumData.albumid, JSON.stringify(albumData), albumData.timestamp])
         })
     }
 
     function saveArtistToCache(artistData) {
-        artistCache[artistData.id] = artistData
+        artistCache[artistData.artistidid] = artistData
         db.transaction(function(tx) {
             tx.executeSql('INSERT OR REPLACE INTO artists(id, data, timestamp) VALUES(?, ?, ?)',
-                [artistData.id, JSON.stringify(artistData), artistData.timestamp])
+                [artistData.artistid, JSON.stringify(artistData), artistData.timestamp])
         })
     }
 

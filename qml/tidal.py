@@ -9,10 +9,18 @@ import json
 import tidalapi
 import pyotherside
 
+from requests.exceptions import HTTPError
+
+
 class Tidal:
     def __init__(self):
         self.session = None
         self.config = None
+        self.top_tracks = 20
+        self.album_search = 20
+        self.track_search = 20
+        self.artist_search = 20
+
         pyotherside.send('loadingStarted')
 
     def initialize(self, quality="HIGH"):
@@ -30,6 +38,12 @@ class Tidal:
 
         self.config = tidalapi.Config(quality=selected_quality, video_quality=tidalapi.VideoQuality.low)
         self.session = tidalapi.Session(self.config)
+
+    def setconfig(self, top_tracks, album_search, track_search, artist_search):
+        self.top_tracks = top_tracks
+        self.album_search = album_search
+        self.track_search = track_search
+        self.artist_search = artist_search
 
     def login(self, token_type, access_token, refresh_token, expiry_time):
         if access_token == token_type:
@@ -63,10 +77,12 @@ class Tidal:
     def handle_track(self, track):
         try:
             return {
-                "id": str(track.id),
+                "trackid": str(track.id),
                 "title": str(track.name),
                 "artist": str(track.artist.name),
+                "artistid": str(track.artist.id),
                 "album": str(track.album.name),
+                "albumid": int(track.album.id),
                 "duration": int(track.duration),
                 "image": track.album.image(320) if hasattr(track.album, 'image') else "",
                 "track_num" : track.track_num,
@@ -80,7 +96,7 @@ class Tidal:
     def handle_artist(self, artist):
         try:
             return {
-                "id": str(artist.id),
+                "artistid": str(artist.id),
                 "name": str(artist.name),
                 "image": artist.image(320) if hasattr(artist, 'image') else "",
                 "type": "artist",
@@ -90,14 +106,29 @@ class Tidal:
             print(f"Error handling artist: {e}")
             return None
 
+        except HTTPError as e:
+            if e.response.status_code == 404:
+                return {
+                    "artistid": str(artist.id),
+                    "name": str(artist.name),
+                    "image": artist.image(320) if hasattr(artist, 'image') else "",
+                    "type": "artist",
+                    "bio" : ""
+                }
+            else:
+                return f"Error fetching biography: {str(e)}"
+
     def handle_album(self, album):
         try:
             return {
-                "id": str(album.id),
+                "albumid": int(album.id),
                 "title": str(album.name),
                 "artist": str(album.artist.name),
+                "artistid" : str(album.artist.id),
                 "image": album.image(320) if hasattr(album, 'image') else "",
                 "duration": int(album.duration) if hasattr(album, 'duration') else 0,
+                "num_tracks": int(album.num_tracks),
+                "year": int(album.year),
                 "type": "album"
             }
         except AttributeError as e:
@@ -129,7 +160,7 @@ class Tidal:
 
     def genericSearch(self, text):
         pyotherside.send('loadingStarted')
-        result = self.session.search(text)
+        result = self.session.search(text,limit=self.top_tracks)
         search_results = {
             "tracks": [],
             "artists": [],
@@ -282,7 +313,7 @@ class Tidal:
             track_info = self.handle_track(track)
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTracktoPL", track_info['id'])
+                pyotherside.send("addTracktoPL", track_info['trackid'])
         pyotherside.send("fillFinished")
 
     def playAlbumfromTrack(self, id):
@@ -290,7 +321,7 @@ class Tidal:
             track_info = self.handle_track(track)
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTracktoPL", track_info['id'])
+                pyotherside.send("addTracktoPL", track_info['trackid'])
         pyotherside.send("fillFinished")
 
     def getTopTracks(self, id, max):
@@ -300,7 +331,7 @@ class Tidal:
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("addTrack",
-                    track_info['id'],
+                    track_info['trackid'],
                     track_info['title'],
                     track_info['album'],
                     track_info['artist'],
@@ -343,7 +374,7 @@ class Tidal:
             track_info = self.handle_track(track)
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTracktoPL", track_info['id'])
+                pyotherside.send("addTracktoPL", track_info['trackid'])
 
             #if i == 0:
             #    pyotherside.send("fillStarted")
@@ -360,6 +391,50 @@ class Tidal:
                 i = self.handle_track(ti)
                 pyotherside.send("cacheTrack", i)
                 pyotherside.send('playlistTrackAdded',i)
+        finally:
+            pyotherside.send('loadingFinished')
+
+    def getAlbumsofArtist(self, id):
+        pyotherside.send('loadingStarted')
+        albums = self.session.artist(int(id)).get_albums()
+        for ti in albums:
+            i = self.handle_album(ti)
+            pyotherside.send("cacheAlbum", i)
+            pyotherside.send("AlbumofArtist", i)
+
+        pyotherside.send('loadingFinished')
+
+    def getTopTracksofArtist(self, id):
+        pyotherside.send('loadingStarted')
+        tracks = self.session.artist(int(id)).get_top_tracks(self.top_tracks)
+        for ti in tracks:
+            i = self.handle_track(ti)
+            pyotherside.send("cacheTrack", i)
+            pyotherside.send("TopTrackofArtist", i)
+
+        pyotherside.send('loadingFinished')
+
+    def getSimiliarArtist(self, id):
+        pyotherside.send('loadingStarted')
+        try:
+            artists = self.session.artist(int(id)).get_similar()
+            if artists:  # Wenn Artists zurückgegeben wurden
+                for ti in artists:
+                    i = self.handle_artist(ti)
+                    pyotherside.send("cacheArtist", i)
+                    pyotherside.send("SimilarArtist", i)
+            else:
+                pyotherside.send("noSimilarArtists")  # Signal wenn keine ähnlichen Künstler gefunden
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                print(f"Keine ähnlichen Künstler gefunden für ID: {id}")
+                pyotherside.send("noSimilarArtists")
+            else:
+                print(f"HTTP Fehler beim Abrufen ähnlicher Künstler: {e}")
+                pyotherside.send("apiError", str(e))
+        except Exception as e:
+            print(f"Allgemeiner Fehler beim Abrufen ähnlicher Künstler: {e}")
+            pyotherside.send("apiError", str(e))
         finally:
             pyotherside.send('loadingFinished')
 

@@ -1,5 +1,6 @@
 import pyotherside
 
+
 class PlaylistManager:
     def __init__(self):
         self.current_index = -1
@@ -108,5 +109,6 @@ class PlaylistManager:
         self.current_index = -1
         self.playlist = []
         self._notify_playlist_state()
+
 
 PL = PlaylistManager()

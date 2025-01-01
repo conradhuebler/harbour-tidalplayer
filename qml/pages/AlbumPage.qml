@@ -84,14 +84,45 @@ Page {
                         spacing: Theme.paddingSmall
                         anchors.verticalCenter: parent.verticalCenter
 
-                        Label {
-                            id: artistName
-                            width: parent.width
-                            text: albumData ? albumData.artist : ""
-                            truncationMode: TruncationMode.Fade
-                            color: Theme.highlightColor
-                            font.pixelSize: Theme.fontSizeLarge
-                        }
+BackgroundItem {
+    width: parent.width
+    height: artistRow.height + Theme.paddingMedium * 2
+
+    Rectangle {
+        anchors.fill: parent
+        color: Theme.rgba(Theme.highlightBackgroundColor, parent.pressed ? 0.3 : 0.1)
+        radius: Theme.paddingSmall
+    }
+
+    Row {
+        id: artistRow
+        anchors.centerIn: parent
+        spacing: Theme.paddingMedium
+
+        Image {
+            id: artistIcon
+            source: "image://theme/icon-s-person"
+            width: Theme.iconSizeSmall
+            height: width
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Label {
+            id: artistName
+            text: albumData ? albumData.artist : ""
+            truncationMode: TruncationMode.Fade
+            color: parent.parent.pressed ? Theme.highlightColor : Theme.primaryColor
+            font.pixelSize: Theme.fontSizeLarge
+        }
+    }
+
+    onClicked: {
+        if (albumData && albumData.artistid) {
+            pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
+                          { artistId: albumData.artistid })
+        }
+    }
+}
 
                         Label {
                             width: parent.width
@@ -102,7 +133,7 @@ Page {
 
                         Label {
                             width: parent.width
-                            text: albumData ? qsTr("Released: ") + albumData.releaseDate : ""
+                            text: albumData ? qsTr("Released: ") + albumData.year : ""
                             color: Theme.secondaryColor
                             font.pixelSize: Theme.fontSizeSmall
                             opacity: isHeaderCollapsed ? 0.0 : 1.0
@@ -112,7 +143,7 @@ Page {
 
                         Label {
                             width: parent.width
-                            text: albumData ? qsTr("Tracks: ") + albumData.numberOfTracks : ""
+                            text: albumData ? qsTr("Tracks: ") + albumData.num_tracks : ""
                             color: Theme.secondaryColor
                             font.pixelSize: Theme.fontSizeSmall
                             opacity: isHeaderCollapsed ? 0.0 : 1.0
@@ -172,7 +203,7 @@ Page {
             }
 
             Label {
-                text: albumData ? qsTr("%n tracks", "", albumData.numberOfTracks) : ""
+                text: albumData ? qsTr("%n tracks", "", albumData.num_tracks) : ""
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeExtraSmall
                 anchors.verticalCenter: parent.verticalCenter
