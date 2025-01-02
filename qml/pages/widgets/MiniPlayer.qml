@@ -243,7 +243,7 @@ DockedPanel {
 
     Connections {
         target: playlistManager
-        onPlayListFinished: {
+        onPlaylistFinished: {
             mediaTitle.text = ""
             bgImage.source = ""
             minPlayerPanel.hide(100)

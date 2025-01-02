@@ -22,7 +22,7 @@ Item {
     signal clearList()
     signal currentTrack(int position)
 
-    signal listFinished()
+    signal playlistFinished()
     signal listChanged()
 
     Python {
@@ -38,7 +38,7 @@ Item {
         property string playlist_image
         property int playlist_duration
         property int playlist_track_id
-
+        property bool initialised : false
 
         Component.onCompleted: {
             addImportPath(Qt.resolvedUrl('.'))
@@ -89,68 +89,81 @@ Item {
             setHandler('playlistFinished', function() {
                 console.log("Playlist Finished")
                 canNext = false
+                root.playlistFinished()
             })
 
             setHandler('playlistUnFinished', function() {
                 console.log("Playlist unfinished")
                 canNext = true
             })
-            importModule('playlistmanager', function() {})
+            importModule('playlistmanager', function() {
+                console.log("Playlistmanager module imported successfully")
+                initialised = true
+            })
         }
 
         // Python-Funktionen
         function appendTrack(id) {
-            call('playlistmanager.PL.AppendTrack', [id], {})
+            if(initialised)  call('playlistmanager.PL.AppendTrack', [id], {})
         }
 
         function currentTrackIndex() {
-            call("playlistmanager.PL.PlaylistIndex", [], function(index){
+           if(initialised)  call("playlistmanager.PL.PlaylistIndex", [], function(index){
                 current_track = index
             })
 
         }
 
         function getSize() {
+        if(initialised) {
             root.size = playlistPython.call_sync("playlistmanager.PL.size", [])
             console.log("Playlist size:", playlistManager.size)
             return playlistManager.size
+            }else
+                return 0
         }
 
         function requestPlaylistItem(index) {
             console.log("request item", index)
-
+            if(initialised) {
             call("playlistmanager.PL.TidalId", [index], function(id){
             console.log("got id for track", id);
                 var track = cacheManager.getTrackInfo(id)
                 console.log("after function", id, index, track);
                 root.trackInformation(id, index, track[1], track[2], track[3], track[4], track[5])
             })
+            }
         }
 
 
         function playPosition(id) {
             canNext = false
-            call('playlistmanager.PL.PlayPosition', [id], {})
+            if(initialised) call('playlistmanager.PL.PlayPosition', [id], {})
         }
 
         function insertTrack(id) {
-            call('playlistmanager.PL.InsertTrack', [id], {})
+            if(initialised) call('playlistmanager.PL.InsertTrack', [id], {})
         }
 
         function nextTrack() {
-            call_sync('playlistmanager.PL.NextTrack', {})
+            if(initialised) call_sync('playlistmanager.PL.NextTrack', {})
         }
 
         function previousTrack() {
-            call('playlistmanager.PL.PreviousTrack', {})
+            if(initialised) call('playlistmanager.PL.PreviousTrack', {})
         }
 
         function restartTrack() {
-            call('playlistmanager.PL.RestartTrack', {})
+            if(initialised) call('playlistmanager.PL.RestartTrack', {})
         }
 
         function clearPlayList() {
+        if(initialised) {
+            console.log("Clear list invoked")
             call('playlistmanager.PL.clearList', {})
+            if(playlistStorage.playlistTitle !== "_current")
+                playlistStorage.loadCurrentPlaylistState()
+            }
         }
 
 /* new functions are here */
@@ -215,27 +228,13 @@ Item {
         playlistPython.playTrack(id)
         currentTrackIndex()
     }
-/*
-    function playPosition(id) {
-        console.log(id)
-        playlistPython.canNext = false
-        mediaController.blockAutoNext = true
-        playlistPython.playPosition(id)
-        currentTrackIndex()
-    }
-*/
+
     function insertTrack(id) {
         console.log("PlaylistManager.insertTrack", id)
         playlistPython.insertTrack(id)
         currentTrackIndex()
     }
-/*
-    function nextTrack() {
-        console.log("Next track called", mediaController.playbackState)
-        playlistPython.nextTrack()
-        currentTrackIndex()
-    }
-*/
+
     function nextTrackClicked() {
         console.log("Next track clicked")
         mediaController.blockAutoNext = true
@@ -251,13 +250,7 @@ Item {
         playlistPython.restartTrack()
         currentTrackIndex()
     }
-/*
-    function previousTrack() {
-        playlistPython.canNext = false
-        playlistPython.previousTrack()
-        currentTrackIndex()
-    }
-*/
+
     function previousTrackClicked() {
         playlistPython.canNext = false
         mediaController.blockAutoNext = true
@@ -320,6 +313,6 @@ Item {
     }
 
     function getSavedPlaylists() {
-     return playlistStorage.getPlaylistInfo();
+        return playlistStorage.getPlaylistInfo();
     }
 }

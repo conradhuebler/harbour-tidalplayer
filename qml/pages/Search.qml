@@ -81,6 +81,13 @@ Item {
                 SearchFilterSwitch {
                     id: searchPlaylists
                     icon: "image://theme/icon-m-media-playlists"
+                    enabled: true
+                    checked: true
+                }
+
+                 SearchFilterSwitch {
+                    id: searchVideo
+                    icon: "image://theme/icon-m-video"
                     enabled: false
                     checked: false
                 }
@@ -125,6 +132,31 @@ Item {
             listModel.clear()
             addSearchResultsToModel(search_results)
         }
+
+        onFoundTrack:
+        {
+            listModel.append(createTrackItem(track_info))
+        }
+
+        onFoundAlbum:
+        {
+            listModel.append(createAlbumItem(album_info))
+        }
+
+        onFoundArtist:
+        {
+            listModel.append(createArtistItem(artist_info))
+        }
+        onFoundPlaylist:
+        {
+            listModel.append(createPlaylistItem(playlist_info))
+        }
+
+        onFoundVideo:
+        {
+            listModel.append(createVideoItem(video_info))
+        }
+
     }
 
     // Hilfsfunktionen
@@ -161,7 +193,6 @@ Item {
     }
 
     function createAlbumItem(album) {
-        console.log(album.title, album.albumid)
         return {
             name: album.title,
             albumid: album.albumid,
@@ -179,6 +210,29 @@ Item {
             albumid:artist.albumid,
             type: typeArtist,
             image: artist.image
+        }
+    }
+
+    function createPlaylistItem(playlist) {
+        console.log("Found playlist", playlist.title, playlist.playlistid)
+
+        return {
+            name: playlist.title,
+            playlistid: str(playlist.playlistid),
+            type: typePlaylist,
+            image: playlist.image,
+            duration: playlist.duration
+
+        }
+    }
+
+    function createVideoItem(video) {
+    console.log("Found video", video.title)
+        return {
+            name: video.title,
+            videoid:video.videoid,
+            type: typeVideo,
+            image: video.image
         }
     }
 }

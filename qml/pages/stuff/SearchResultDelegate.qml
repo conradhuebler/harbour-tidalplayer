@@ -8,6 +8,25 @@ ListItem {
 
     contentHeight: contentRow.height + 2 * Theme.paddingMedium
 
+    visible: {
+        switch(itemData.type) {
+            case 2:
+                return searchAlbum.checked
+            case 3:
+                return searchArtists.checked
+            case 1:
+                return searchTracks.checked
+            case 4:
+                return searchPlaylists.checked
+            case 5:
+                return searchVideo.checked
+            default:
+                return false
+        }
+    }
+    // Optional: Höhe auf 0 setzen wenn nicht sichtbar
+    height: visible ? Theme.itemSizeMedium : 0
+
     Row {
         id: contentRow
         anchors {
@@ -26,7 +45,7 @@ ListItem {
         }
 
         Column {
-            width: parent.width - thumbnail.width - parent.spacing
+            width: parent.width - 2*thumbnail.width - parent.spacing
             spacing: Theme.paddingSmall
 
             Label {
@@ -44,6 +63,24 @@ ListItem {
                 visible: itemData.type === 1 // typeTrack
                 truncationMode: TruncationMode.Fade
             }
+        }
+
+        Image {
+            id: mediaType
+            width: Theme.iconSizeMedium
+            height: Theme.iconSizeMedium
+            source: {
+                switch(itemData.type) {
+                case 1: return "image://theme/icon-m-media-songs"
+                case 3: return "image://theme/icon-m-media-artists"
+                case 2: return "image://theme/icon-m-media-albums"
+                case 4: return "image://theme/icon-m-media-playlists"
+                case 5: return "image://theme/icon-m-video"
+                default: return ""
+                }
+            }
+
+            fillMode: Image.PreserveAspectFit
         }
     }
 
@@ -138,7 +175,7 @@ ListItem {
                 playlistManager.playAlbum(item.albumid)
                 break
             case 4: // Playlist
-                tidalApi.playPlaylist(item.uid)
+                tidalApi.playPlaylist(item.playlistid)
                 break
         }
     }
@@ -151,7 +188,6 @@ ListItem {
                 {
                     "albumId": item.albumid
                 })
-                console.log(item.albumid)
 
                 break
             case 2: // Album
@@ -165,6 +201,14 @@ ListItem {
                 pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"),
                 {
                     "artistId" :item.artistid
+                })
+                break
+            case 4: // Playlist
+            console.log("Playlist", item.playlistid, item.name)
+                pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"),
+                {
+                    "playlistId" :item.playlistid,
+                    "playlistTitle" : item.name
                 })
                 break
         }

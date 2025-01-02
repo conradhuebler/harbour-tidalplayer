@@ -3,6 +3,7 @@ import QtQuick.LocalStorage 2.0
 
 Item {
     id: root
+    property string playlistTitle: "_current"
 
     // Signale für Playlist-Events
     signal playlistSaved(string name, var trackIds)
@@ -50,6 +51,7 @@ Item {
 
     // Lade Playlist mit Position
     function loadPlaylist(name) {
+    playlistTitle = name
         var db = getDatabase();
         var result;
 

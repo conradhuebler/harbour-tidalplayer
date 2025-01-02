@@ -139,6 +139,25 @@ class Tidal:
             print(f"Error handling album: {e}")
             return None
 
+    def handle_video(self, video):
+        try:
+            return {
+                "videoid": str(video.id),
+                "title": str(video.name),
+                "artist": str(video.artist.name),
+                "artistid": str(video.artist.id),
+                "album": str(video.album.name),
+                "albumid": int(video.album.id),
+                "duration": int(video.duration),
+                "image": video.album.image(320) if hasattr(video.album, 'image') else "",
+                "track_num" : video.track_num,
+                "type": "video",
+                "albumid": video.album.id
+            }
+        except AttributeError as e:
+            print(f"Error handling video: {e}")
+            return None
+
     def send_object(self, signal_name, data):
         """Helper-Funktion zum Senden von Objekten"""
         try:
@@ -150,8 +169,8 @@ class Tidal:
         """Handler für Playlist-Informationen"""
         try:
             return {
-                "id": str(playlist.id),
-                "name": str(playlist.name),
+                "playlistid": str(playlist.id),
+                "title": str(playlist.name),
                 "image": playlist.image(320) if hasattr(playlist, 'image') else "",
                 "duration": int(playlist.duration) if hasattr(playlist, 'duration') else 0,
                 "num_tracks": playlist.num_tracks if hasattr(playlist, 'num_tracks') else 0,
@@ -164,12 +183,13 @@ class Tidal:
 
     def genericSearch(self, text):
         pyotherside.send('loadingStarted')
-        result = self.session.search(text,limit=self.top_tracks)
+        result = self.session.search(text)
         search_results = {
             "tracks": [],
             "artists": [],
             "albums": [],
-            "playlists": []
+            "playlists": [],
+            "videos" : []
         }
 
         # Tracks verarbeiten
@@ -177,27 +197,35 @@ class Tidal:
             if track_info := self.handle_track(track):
                 search_results["tracks"].append(track_info)
                 self.send_object("cacheTrack", track_info)
+                self.send_object("foundTrack", track_info)
 
         # Artists verarbeiten
         for artist in result["artists"]:
             if artist_info := self.handle_artist(artist):
                 search_results["artists"].append(artist_info)
                 self.send_object("cacheArtist", artist_info)
+                self.send_object("foundArtist", artist_info)
 
         # Albums verarbeiten
         for album in result["albums"]:
             if album_info := self.handle_album(album):
                 search_results["albums"].append(album_info)
                 self.send_object("cacheAlbum", album_info)
+                self.send_object("foundAlbum", album_info)
 
         # Playlists verarbeiten
         for playlist in result["playlists"]:
             if playlist_info := self.handle_playlist(playlist):
                 search_results["playlists"].append(playlist_info)
-                self.send_object("playlist_data", playlist_info)
+                self.send_object("foundPlaylist", playlist_info)
+
+        for video in result["videos"]:
+            if video_info := self.handle_video(video):
+                search_results["videos"].append(video_info)
+                self.send_object("foundVideo", video_info)
 
         # Gesamtergebnis senden
-        self.send_object("search_results", search_results)
+        #self.send_object("search_results", search_results)
         pyotherside.send('loadingFinished')
 
     def getAlbumInfo(self, id):

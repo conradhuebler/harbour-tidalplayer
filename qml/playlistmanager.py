@@ -5,7 +5,7 @@ class PlaylistManager:
     def __init__(self):
         self.current_index = -1
         self.playlist = []
-        self._notify_playlist_state()
+        #self._notify_playlist_state()
 
     def _notify_playlist_state(self):
         """Benachrichtigt über den aktuellen Playlist-Status"""

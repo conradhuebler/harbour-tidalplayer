@@ -419,6 +419,7 @@ Item {
         }
 
         onFavTracks: {
+        console.log("Found favourite tracks", track_info.title)
             topTitleModel.append({
                 "title": track_info.title,
                 "image": track_info.image,

@@ -20,7 +20,7 @@ Page {
             bottomMargin: minPlayerPanel.margin
         }
 
-        contentHeight: column.height
+        //contentHeight: column.height
 
         // PullDownMenu and PushUpMenu must be declared in SilicaFlickable, SilicaListView or SilicaGridView
         PullDownMenu {

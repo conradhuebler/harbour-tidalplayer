@@ -182,7 +182,7 @@ CoverBackground {
 
     Connections {
         target: playlistManager
-        onPlayListFinished: {
+        onPlaylistFinished: {
             titleLabel.text = qsTr("Tidal Player")
             artist_albumLabel.text = qsTr("No track playing")
             coverImage.source = ""

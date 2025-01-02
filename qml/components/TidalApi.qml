@@ -42,6 +42,12 @@ Item {
     signal topTracksofArtist(var track_info)
     signal similarArtist(var artist_info)
 
+    signal foundTrack(var track_info)
+    signal foundPlaylist(var playlist_info)
+    signal foundAlbum(var album_info)
+    signal foundArtist(var artist_info)
+    signal foundVideo(var video_info)
+
     signal favTracks(var track_info)
     signal favAlbums(var album_info)
     signal favArtists(var artist_info)
@@ -142,6 +148,29 @@ Item {
                 tidalApi.noSimilarArtists()
             })
 
+            setHandler('foundTrack', function(track_info) {
+                tidalApi.foundTrack(track_info)
+            })
+
+            setHandler('foundAlbum', function(album_info) {
+                tidalApi.foundAlbum(album_info)
+            })
+
+            setHandler('foundArtist', function(artist_info) {
+                tidalApi.foundArtist(artist_info)
+            })
+
+
+            setHandler('foundPlaylist', function(playlist_info) {
+                tidalApi.foundPlaylist(playlist_info)
+            })
+
+
+            setHandler('foundVideo', function(video_info) {
+                tidalApi.foundVideo(video_info)
+            })
+
+
             setHandler('FavAlbums', function(album_info) {
                 tidalApi.favAlbums(album_info)
             })
@@ -152,6 +181,10 @@ Item {
 
             setHandler('FavArtist', function(artist_info) {
                 tidalApi.favArtists(artist_info)
+            })
+
+            setHandler('foundPlaylist', function(playlist_info) {
+                tidalApi.foundPlaylist(playlist_info)
             })
 
             // Search Handler
