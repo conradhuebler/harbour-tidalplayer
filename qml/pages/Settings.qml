@@ -6,17 +6,6 @@ Page {
     id: page
     allowedOrientations: Orientation.All
 
-    ConfigurationValue {
-        id: mail
-        key: "/mail"
-    }
-
-    ConfigurationValue {
-        id: audioQuality
-        key: "/audioQuality"
-        defaultValue: "HIGH"  // Standardwert
-    }
-
     SilicaFlickable {
         anchors.fill: parent
         contentHeight: column.height
@@ -55,7 +44,7 @@ Page {
             }
 
             TextSwitch {
-                visible: loginTrue
+                visible: tidalApi.loginTrue
                 text: qsTr("Stay logged in")
                 description: qsTr("Keep your session active")
                 // Verbinde dies mit deiner Konfiguration
@@ -69,7 +58,7 @@ Page {
                     margins: Theme.horizontalPageMargin
                 }
                 text: qsTr("Login with Tidal")
-                visible: !loginTrue
+                visible: !tidalApi.loginTrue
                 onClicked: {
                     pageStack.push(Qt.resolvedUrl("../dialogs/OAuth.qml"))
                 }
@@ -93,11 +82,20 @@ Page {
 
             SectionHeader {
                 text: qsTr("Playback")
-                visible: loginTrue
+                visible: tidalApi.loginTrue
+            }
+
+            TextSwitch {
+                id: resumePlayback
+                visible: tidalApi.loginTrue
+                text: qsTr("Resume playback on startup")
+                description: qsTr("Resume playback after starting the app")
+                // Verbinde dies mit deiner Konfiguration
+                checked: false
             }
 
             ComboBox {
-                visible: loginTrue
+                visible: tidalApi.loginTrue
                 label: qsTr("Audio Quality")
                     currentIndex: 1 // Default auf HIGH
                     description: qsTr("Select streaming quality")

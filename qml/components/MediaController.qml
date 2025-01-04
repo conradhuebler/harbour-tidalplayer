@@ -48,6 +48,8 @@ Item {
     // MPRIS Player
     MprisPlayer {
         id: mprisPlayer
+
+        // Bereits vorhandene Eigenschaften
         canControl: true
         canGoNext: true
         canGoPrevious: true
@@ -58,12 +60,67 @@ Item {
         serviceName: "tidalplayer"
         identity: "Tidal Music Player"
 
+        // Zusätzliche wichtige Eigenschaften
+        canQuit: true
+        canSetFullscreen: false
+        canRaise: true
+        hasTrackList: true
+        loopStatus: Mpris.None
+        shuffle: false
+        volume: mediaPlayer.volume
+        position: mediaPlayer.position * 1000 // MPRIS verwendet Mikrosekunden
+
+        // Aktualisierte Metadaten-Funktion
         function updateTrack(track, artist, album) {
-            var metadata = mprisPlayer.metadata
+            var metadata = {}
+
+            // Pflichtfelder
             metadata[Mpris.metadataToString(Mpris.Title)] = track
-            metadata[Mpris.metadataToString(Mpris.Artist)] = artist
+            metadata[Mpris.metadataToString(Mpris.Artist)] = [artist] // Array von Künstlern
             metadata[Mpris.metadataToString(Mpris.Album)] = album
+
+            // Zusätzliche wichtige Metadaten
+            metadata[Mpris.metadataToString(Mpris.Length)] = current_track_duration * 1000000 // Mikrosekunden
+            metadata[Mpris.metadataToString(Mpris.TrackNumber)] = playlistManager.currentIndex + 1
+
+            if (current_track_image !== "") {
+                metadata[Mpris.metadataToString(Mpris.ArtUrl)] = current_track_image
+            }
+
+            // Eindeutige ID für den Track
+            metadata[Mpris.metadataToString(Mpris.TrackId)] = "/org/mpris/MediaPlayer2/track/" +
+                playlistManager.currentIndex
+
             mprisPlayer.metadata = metadata
+        }
+
+        // Zusätzliche MPRIS-Signalhandler
+        onRaiseRequested: {
+            // App in den Vordergrund bringen
+            window.raise()
+        }
+
+        onQuitRequested: {
+            // App beenden
+            Qt.quit()
+        }
+
+        onVolumeRequested: {
+            // Lautstärke ändern
+            mediaPlayer.volume = volume
+        }
+
+        onSeekRequested: {
+            // Position ändern (offset ist in Mikrosekunden)
+            var newPos = mediaPlayer.position + (offset / 1000000)
+            if (newPos < 0) newPos = 0
+            if (newPos > mediaPlayer.duration) newPos = mediaPlayer.duration
+            mediaPlayer.seek(newPos)
+        }
+
+        onSetPositionRequested: {
+            // Absolute Position setzen (position ist in Mikrosekunden)
+            mediaPlayer.seek(position / 1000000)
         }
     }
 
@@ -185,8 +242,6 @@ Item {
         console.log("only this function is allowed to start playback", url)
         mediaPlayer.source = url
         mediaPlayer.play()
-        console.log("track time", mediaPlayer.duration)
-        console.log("track time", mediaPlayer.metaData.albumArtist)
         mediaPlayer.blockAutoNext = false
     }
 

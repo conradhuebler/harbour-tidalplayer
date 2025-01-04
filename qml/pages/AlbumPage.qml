@@ -116,45 +116,45 @@ Page {
                         spacing: Theme.paddingSmall
                         anchors.verticalCenter: parent.verticalCenter
 
-BackgroundItem {
-    width: parent.width
-    height: artistRow.height + Theme.paddingMedium * 2
+                        BackgroundItem {
+                            width: parent.width
+                            height: artistRow.height + Theme.paddingMedium * 2
 
-    Rectangle {
-        anchors.fill: parent
-        color: Theme.rgba(Theme.highlightBackgroundColor, parent.pressed ? 0.3 : 0.1)
-        radius: Theme.paddingSmall
-    }
+                            Rectangle {
+                                anchors.fill: parent
+                                color: Theme.rgba(Theme.highlightBackgroundColor, parent.pressed ? 0.3 : 0.1)
+                                radius: Theme.paddingSmall
+                            }
 
-    Row {
-        id: artistRow
-        anchors.centerIn: parent
-        spacing: Theme.paddingMedium
+                            Row {
+                                id: artistRow
+                                anchors.centerIn: parent
+                                spacing: Theme.paddingMedium
 
-        Image {
-            id: artistIcon
-            source: "image://theme/icon-s-person"
-            width: Theme.iconSizeSmall
-            height: width
-            anchors.verticalCenter: parent.verticalCenter
-        }
+                                Image {
+                                    id: artistIcon
+                                    source: "image://theme/icon-s-person"
+                                    width: Theme.iconSizeSmall
+                                    height: width
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
 
-        Label {
-            id: artistName
-            text: albumData ? albumData.artist : ""
-            truncationMode: TruncationMode.Fade
-            color: parent.parent.pressed ? Theme.highlightColor : Theme.primaryColor
-            font.pixelSize: Theme.fontSizeLarge
-        }
-    }
+                                Label {
+                                    id: artistName
+                                    text: albumData ? albumData.artist : ""
+                                    truncationMode: TruncationMode.Fade
+                                    color: parent.parent.pressed ? Theme.highlightColor : Theme.primaryColor
+                                    font.pixelSize: Theme.fontSizeLarge
+                                }
+                            }
 
-    onClicked: {
-        if (albumData && albumData.artistid) {
-            pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
-                          { artistId: albumData.artistid })
-        }
-    }
-}
+                            onClicked: {
+                                if (albumData && albumData.artistid) {
+                                    pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
+                                                  { artistId: albumData.artistid })
+                                }
+                            }
+                        }
 
                         Label {
                             width: parent.width

@@ -7,6 +7,8 @@ Item {
     // Wichtige Login/Auth Signale
     signal authUrl(string url)
     signal oAuthSuccess(string type, string token, string rtoken, string date)
+    signal oAuthRefresh(string token)
+
     signal loginSuccess()
     signal loginFailed()
 
@@ -111,6 +113,12 @@ Item {
                 tidalApi.oAuthSuccess(type, token, rtoken, date)
             })
 
+            setHandler('oauth_refresh', function(token) {
+                console.log("Got new token from session")
+                console.log(token)
+                tidalApi.oAuthRefresh(token)
+            })
+
             // Debug Handler
             setHandler('printConsole', function(string) {
                 console.log("tidalApi::printConsole " + string)
@@ -141,6 +149,8 @@ Item {
             })
 
             setHandler('SimilarArtist', function(artist_info) {
+                //cacheManager.saveArtistToCache(artist_info)
+                tidalApi.cacheArtist(artist_info)
                 tidalApi.similarArtist(artist_info)
             })
 

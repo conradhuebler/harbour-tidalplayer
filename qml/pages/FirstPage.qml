@@ -70,7 +70,7 @@ Page {
         SlideshowView {
                   clip: true
                   id: swipeView
-                  height: parent.height - miniPlayerPanel.height
+                  height: parent.height // - miniPlayerPanel.height
                   itemWidth: width
                   itemHeight: height
                   orientation: Qt.Horizontal

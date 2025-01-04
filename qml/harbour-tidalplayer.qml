@@ -15,6 +15,7 @@ ApplicationWindow
 {
     id: applicationWindow
     //property alias firstPage: firstpage  // Property für FirstPage
+
     property bool loginTrue : false
     property var locale: Qt.locale()
     property date currentDate: new Date()
@@ -116,10 +117,7 @@ ApplicationWindow
             id: authManager
         }
 
-        Component.onCompleted: {
-            authManager.checkAndLogin()
-            mprisPlayer.setCanControl(true)
-        }
+
 
     BusyIndicator {
         size: BusyIndicatorSize.Large
@@ -131,6 +129,9 @@ ApplicationWindow
         target: tidalApi
         onOAuthSuccess: {
             authManager.updateTokens(type, token, rtoken, date)
+        }
+        onOAuthRefresh: {
+            authManager.refreshTokens(token)
         }
         onLoginFailed: {
             authManager.clearTokens()
@@ -148,7 +149,8 @@ ApplicationWindow
     }
 
 
-    Connections{
+    Connections
+    {
         target: mprisPlayer
         onPlayRequested :
         {
@@ -187,4 +189,11 @@ ApplicationWindow
             playlistManager.previousTrackClicked()
         }
     }
+
+    Component.onCompleted:
+    {
+            authManager.checkAndLogin()
+            mprisPlayer.setCanControl(true)
+    }
+
 }

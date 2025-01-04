@@ -52,13 +52,25 @@ class Tidal:
         if access_token == token_type:
             pyotherside.send("oauth_login_failed")
         else:
-            self.session.load_oauth_session(token_type, access_token)
-            if self.session.check_login() == True:
-                pyotherside.send("oauth_login_success")
             if access_token == refresh_token:
+                pyotherside.send("printConsole", "Getting new token")
                 self.session.token_refresh(refresh_token)
-                #self.session.load_oauth_session(token_type, refresh_token)
-                pyotherside.send("oauth_updated", self.session.token_type, self.session.access_token, self.session.refresh_token,  self.session.expiry_time)
+                self.session.load_oauth_session(token_type, self.session.access_token)
+
+                if self.session.check_login() == True:
+                    pyotherside.send("printConsole", "New token", self.session.access_token)
+                    pyotherside.send("oauth_refresh", self.session.access_token)
+                    pyotherside.send("oauth_login_success")
+                    pyotherside.send("printConsole", "Login success")
+
+            else:
+                pyotherside.send("printConsole", "Login with old token")
+                self.session.load_oauth_session(token_type, access_token)
+                if self.session.check_login() == True:
+                    pyotherside.send("oauth_login_success")
+                    pyotherside.send("printConsole", "Login success")
+
+
 
     def request_oauth(self):
         pyotherside.send("printConsole", "Start new session")
@@ -184,44 +196,37 @@ class Tidal:
     def genericSearch(self, text):
         pyotherside.send('loadingStarted')
         result = self.session.search(text)
-        search_results = {
-            "tracks": [],
-            "artists": [],
-            "albums": [],
-            "playlists": [],
-            "videos" : []
-        }
 
         # Tracks verarbeiten
         for track in result["tracks"]:
             if track_info := self.handle_track(track):
-                search_results["tracks"].append(track_info)
+                #search_results["tracks"].append(track_info)
                 self.send_object("cacheTrack", track_info)
                 self.send_object("foundTrack", track_info)
 
         # Artists verarbeiten
         for artist in result["artists"]:
             if artist_info := self.handle_artist(artist):
-                search_results["artists"].append(artist_info)
+                #search_results["artists"].append(artist_info)
                 self.send_object("cacheArtist", artist_info)
                 self.send_object("foundArtist", artist_info)
 
         # Albums verarbeiten
         for album in result["albums"]:
             if album_info := self.handle_album(album):
-                search_results["albums"].append(album_info)
+                #search_results["albums"].append(album_info)
                 self.send_object("cacheAlbum", album_info)
                 self.send_object("foundAlbum", album_info)
 
         # Playlists verarbeiten
         for playlist in result["playlists"]:
             if playlist_info := self.handle_playlist(playlist):
-                search_results["playlists"].append(playlist_info)
+                #search_results["playlists"].append(playlist_info)
                 self.send_object("foundPlaylist", playlist_info)
 
         for video in result["videos"]:
             if video_info := self.handle_video(video):
-                search_results["videos"].append(video_info)
+                #search_results["videos"].append(video_info)
                 self.send_object("foundVideo", video_info)
 
         # Gesamtergebnis senden
@@ -234,18 +239,6 @@ class Tidal:
             album_info = self.handle_album(album)
             if album_info:
                 self.send_object("cacheAlbum", album_info)
-
-                # Album tracks auch gleich mitschicken
-                tracks = []
-                for track in album.tracks():
-                    if track_info := self.handle_track(track):
-                        tracks.append(track_info)
-
-                self.send_object("album_tracks", {
-                    "album_id": id,
-                    "tracks": tracks
-                })
-
                 return album_info
             return None
         except Exception as e:
@@ -258,18 +251,6 @@ class Tidal:
             artist_info = self.handle_artist(artist)
             if artist_info:
                 self.send_object("cacheArtist", artist_info)
-
-                # Top Tracks gleich mitschicken
-                top_tracks = []
-                for track in artist.get_top_tracks(20):
-                    if track_info := self.handle_track(track):
-                        top_tracks.append(track_info)
-
-                self.send_object("artist_top_tracks", {
-                    "artist_id": id,
-                    "tracks": top_tracks
-                })
-
                 return artist_info
             return None
         except Exception as e:
@@ -453,7 +434,7 @@ class Tidal:
             if artists:  # Wenn Artists zurückgegeben wurden
                 for ti in artists:
                     i = self.handle_artist(ti)
-                    pyotherside.send("cacheArtist", i)
+                    #pyotherside.send("cacheArtist", i)
                     pyotherside.send("SimilarArtist", i)
             else:
                 pyotherside.send("noSimilarArtists")  # Signal wenn keine ähnlichen Künstler gefunden

@@ -27,7 +27,7 @@ Item {
             SilicaListView {
                 id: topArtistsView
                 width: parent.width
-                height: Theme.itemSizeLarge * 2.5
+                height: Theme.itemSizeLarge * 3
                 orientation: ListView.Horizontal
                 clip: true
                 spacing: Theme.paddingMedium
@@ -72,7 +72,7 @@ Item {
                     }
 
                     onClicked: pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
-                                            { artistId: model.artistId })
+                                            { artistid: model.artistid })
                 }
 
                 // Horizontaler Scroll-Indikator für Top Artists
@@ -107,7 +107,7 @@ Item {
             SilicaListView {
                 id: topAlbumsView
                 width: parent.width
-                height: Theme.itemSizeLarge * 2.5
+                height: Theme.itemSizeLarge * 3
                 orientation: ListView.Horizontal
                 clip: true
                 spacing: Theme.paddingMedium
@@ -187,7 +187,7 @@ Item {
             SilicaListView {
                 id: topTitleView
                 width: parent.width
-                height: Theme.itemSizeLarge * 2.5
+                height: Theme.itemSizeLarge * 3
                 orientation: ListView.Horizontal
                 clip: true
                 spacing: Theme.paddingMedium
@@ -231,8 +231,9 @@ Item {
                         }
                     }
 
-                    //onClicked: pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
-                    //                        { trackId: model.artistId })
+                    onClicked: {
+                                    playlistManager.playTrack(model.trackid)
+                    }
                 }
 
                 // Horizontaler Scroll-Indikator für Top Artists
@@ -267,7 +268,7 @@ Item {
             SilicaListView {
                 id: playlistsView
                 width: parent.width
-                height: Theme.itemSizeLarge * 2.5
+                height: Theme.itemSizeLarge * 3
                 orientation: ListView.Horizontal
                 clip: true
                 spacing: Theme.paddingMedium
@@ -406,7 +407,7 @@ Item {
             topArtistsModel.append({
                 "name": artist_info.name,
                 "image": artist_info.image,
-                "artistId": artist_info.artistid
+                "artistid": artist_info.artistid
             })
         }
 
@@ -423,7 +424,7 @@ Item {
             topTitleModel.append({
                 "title": track_info.title,
                 "image": track_info.image,
-                "trackId": track_info.trackid
+                "trackid": track_info.trackid
             })
         }
 

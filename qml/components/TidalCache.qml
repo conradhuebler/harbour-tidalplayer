@@ -17,46 +17,6 @@ id: root
     // Verbindungen zu den Python-Signalen
  Connections {
         target: tidalApi
-
-        // Bestehende Connections
-        /*
-        onTrackChanged: {
-            // id, title, album, artist, image, duration
-            saveTrackToCache({
-                trackid: trackid,
-                albumid: albumid,
-                artistid: artistid,
-                title: title,
-                album: album,
-                artist: artist,
-                image: image,
-                duration: duration,
-                timestamp: Date.now()
-            })
-        }
-
-        onAlbumChanged: {
-            // id, title, artist, image
-            saveAlbumToCache({
-                albumid: albumid,
-                title: title,
-                artist: artist,
-                artistid: artistid,
-                image: image,
-                timestamp: Date.now()
-            })
-        }
-
-        onArtistChanged: {
-            // id, name, img
-            saveArtistToCache({
-                artistid: artistid,
-                name: name,
-                image: img,
-                timestamp: Date.now()
-            })
-        }
-        */
         // Neue Connections für Suchergebnisse
 
         onCacheTrack: {
@@ -103,47 +63,6 @@ id: root
                 fromSearch: true  // Optional: markiert Einträge aus der Suche
             })
         }
-        /*
-        onTrackAdded: {
-            // id, title, album, artist, image, duration
-            saveTrackToCache({
-                trackid: trackid,
-                albumid: albumid,
-                artistid: artistid,
-                title: title,
-                album: album,
-                artist: artist,
-                image: image,
-                duration: duration,
-                timestamp: Date.now(),
-                fromSearch: true  // Optional: markiert Einträge aus der Suche
-            })
-        }
-
-        onAlbumAdded: {
-            // id, title, artist, image, duration
-            saveAlbumToCache({
-                albumid: albumid,
-                artistid: artistid,
-                title: title,
-                artist: artist,
-                image: image,
-                duration: duration,
-                timestamp: Date.now(),
-                fromSearch: true
-            })
-        }
-
-        onArtistAdded: {
-            // id, name, image
-            saveArtistToCache({
-                id: id,
-                name: name,
-                image: image,
-                timestamp: Date.now(),
-                fromSearch: true
-            })
-        }*/
     }
 
     // Optional: Erweiterte Such-spezifische Funktionen
@@ -375,7 +294,7 @@ id: root
     }
 
     function saveArtistToCache(artistData) {
-        artistCache[artistData.artistidid] = artistData
+        artistCache[artistData.artistid] = artistData
         db.transaction(function(tx) {
             tx.executeSql('INSERT OR REPLACE INTO artists(id, data, timestamp) VALUES(?, ?, ?)',
                 [artistData.artistid, JSON.stringify(artistData), artistData.timestamp])

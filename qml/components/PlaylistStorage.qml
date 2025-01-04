@@ -4,7 +4,14 @@ import QtQuick.LocalStorage 2.0
 Item {
     id: root
     property string playlistTitle: "_current"
-
+    Timer {
+        id: updateTimer
+        interval: 1000  // 100ms Verzögerung
+        repeat: false
+        onTriggered: {
+            saveCurrentPlaylistState()
+        }
+    }
     // Signale für Playlist-Events
     signal playlistSaved(string name, var trackIds)
     signal playlistLoaded(string name, var trackIds, int position)
@@ -37,6 +44,7 @@ Item {
 
     // Speichere Playlist mit Position
     function savePlaylist(name, trackIds, position) {
+    console.log("Save datanbase", name, trackIds, position)
         var db = getDatabase();
         var tracksJson = JSON.stringify(trackIds);
 
@@ -116,34 +124,47 @@ Item {
     // In PlaylistManager.qml oder wo der PlaylistStorage verwendet wird
     function saveCurrentPlaylistState() {
         var trackIds = []
+        if(playlistManager.size === 0)
+            return
         for(var i = 0; i < playlistManager.size; i++) {
             var id = playlistManager.requestPlaylistItem(i)
             trackIds.push(id)
+            console.log(id)
         }
         // Speichere als spezielle Playlist "_current"
         playlistStorage.savePlaylist("_current", trackIds, playlistManager.currentIndex)
     }
 
+    function clearCurrentPlaylist() {            //playlistStorage.loadCurrentPlaylistState()
+
+        // Speichere als spezielle Playlist "_current"
+        playlistStorage.savePlaylist("_current", "", playlistManager.currentIndex)
+    }
+
+
     // Beim Laden
     function loadCurrentPlaylistState() {
         var currentPlaylist = playlistStorage.loadPlaylist("_current")
+        console.log("Loading current playlist ", currentPlaylist)
         if (currentPlaylist && currentPlaylist.tracks.length > 0) {
             playlistManager.clearPlayList()
             for (var i = 0; i < currentPlaylist.tracks.length; i++) {
-                playlistManager.appendTrack(currentPlaylist.tracks[i])
+                playlistManager.appendTrackSilent(currentPlaylist.tracks[i])
             }
             // Position wiederherstellen
-            if (currentPlaylist.position >= 0) {
-                playlistManager.playPosition(currentPlaylist.position)
-            }
+            playlistManager.currentIndex = currentPlaylist.position
+
+            //if (currentPlaylist.position >= 0) {
+            //    playlistManager.playPosition(currentPlaylist.position)
+            //}
         }
     }
     Component.onCompleted: {
         initDatabase();
-        loadCurrentPlaylistState()
     }
     // Bei App-Beendigung
     Component.onDestruction: {
+        console.log("Save current playlist")
         saveCurrentPlaylistState()
     }
 
@@ -151,10 +172,20 @@ Item {
     Connections {
         target: playlistManager
         onListChanged: {
-            saveCurrentPlaylistState()
+            //saveCurrentPlaylistState()
+            if(updateTimer.running)
+                updateTimer.restart()
+            else
+                updateTimer.start()
         }
         onCurrentIndexChanged: {
-            saveCurrentPlaylistState()
+            //saveCurrentPlaylistState()
+            updatePosition(playlistTitle, playlistManager.currentIndex)
+        }
+        onClearList:
+        {
+            if(playlistTitle === "_current")
+                clearCurrentPlaylist()
         }
     }
 }

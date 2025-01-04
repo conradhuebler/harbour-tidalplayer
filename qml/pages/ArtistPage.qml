@@ -6,51 +6,41 @@ import "widgets"
 
 Page {
     id: artistPage
-    property int artistId : -1
+    property int artistid: -1
     property var artistData: null
     property bool isHeaderCollapsed: false
 
-function processWimpLinks(text) {
-    if (!text) return ""
-
-    // Text in Teile zerlegen
-    var parts = text.split("[wimpLink")
-    var result = parts[0] // Start mit dem ersten Teil ohne Link
-
-    // Durch alle weiteren Teile gehen
-    for (var i = 1; i < parts.length; i++) {
-        var part = parts[i]
-        try {
-            // Artist Link
-            if (part.indexOf('artistId="') >= 0) {
-                var idMatch = part.match(/artistId="(\d+)"/)
-                var textMatch = part.match(/](.*?)\[/)
-                if (idMatch && textMatch) {
-                    result += '<a href="artist:' + idMatch[1] + '" style="color: ' + Theme.highlightColor + '">' + textMatch[1] + '</a>'
-                    result += part.split("[/wimpLink]")[1] || ""
+    function processWimpLinks(text) {
+        if (!text) return ""
+        var parts = text.split("[wimpLink")
+        var result = parts[0]
+        for (var i = 1; i < parts.length; i++) {
+            var part = parts[i]
+            try {
+                if (part.indexOf('artistId="') >= 0) {
+                    var idMatch = part.match(/artistId="(\d+)"/)
+                    var textMatch = part.match(/](.*?)\[/)
+                    if (idMatch && textMatch) {
+                        result += '<a href="artist:' + idMatch[1] + '" style="color: ' + Theme.highlightColor + '">' + textMatch[1] + '</a>'
+                        result += part.split("[/wimpLink]")[1] || ""
+                    }
+                } else if (part.indexOf('albumId="') >= 0) {
+                    var idMatch = part.match(/albumId="(\d+)"/)
+                    var textMatch = part.match(/](.*?)\[/)
+                    if (idMatch && textMatch) {
+                        result += '<a href="album:' + idMatch[1] + '" style="color: ' + Theme.highlightColor + '">' + textMatch[1] + '</a>'
+                        result += part.split("[/wimpLink]")[1] || ""
+                    }
+                } else {
+                    result += "[wimpLink" + part
                 }
-            }
-            // Album Link
-            else if (part.indexOf('albumId="') >= 0) {
-                var idMatch = part.match(/albumId="(\d+)"/)
-                var textMatch = part.match(/](.*?)\[/)
-                if (idMatch && textMatch) {
-                    result += '<a href="album:' + idMatch[1] + '" style="color: ' + Theme.highlightColor + '">' + textMatch[1] + '</a>'
-                    result += part.split("[/wimpLink]")[1] || ""
-                }
-            }
-            else {
-                // Falls kein Match, original Text behalten
+            } catch (e) {
+                console.log("Fehler beim Verarbeiten eines Links:", e)
                 result += "[wimpLink" + part
             }
-        } catch (e) {
-            console.log("Fehler beim Verarbeiten eines Links:", e)
-            // Bei Fehler original Text behalten
-            result += "[wimpLink" + part
         }
+        return result
     }
-    return result
-}
 
     allowedOrientations: Orientation.All
 
@@ -60,7 +50,8 @@ function processWimpLinks(text) {
             fill: parent
             bottomMargin: minPlayerPanel.margin
         }
-        contentHeight: mainColumn.height
+        contentHeight: mainColumn.height + Theme.paddingLarge
+        height: parent.height + miniPlayerPanel.height
 
         PullDownMenu {
             MenuItem {
@@ -79,11 +70,10 @@ function processWimpLinks(text) {
                 title: qsTr("Artist Info")
             }
 
-            // Artist Info Section
             Item {
                 id: artistInfoContainer
                 width: parent.width
-                height: isHeaderCollapsed ? Theme.itemSizeLarge : width * 0.4
+                height: width * 0.4
                 clip: true
 
                 Behavior on height {
@@ -94,7 +84,7 @@ function processWimpLinks(text) {
                     width: parent.width
                     height: parent.height
                     spacing: Theme.paddingMedium
-                    anchors.margins: Theme.paddingMedium
+                    x: Theme.paddingMedium
 
                     Image {
                         id: coverImage
@@ -113,7 +103,7 @@ function processWimpLinks(text) {
                         width: parent.width - coverImage.width - parent.spacing - Theme.paddingLarge * 2
                         height: parent.height
                         spacing: Theme.paddingSmall
-                        anchors.verticalCenter: parent.verticalCenter
+                        y: (parent.height - height) / 2
 
                         Label {
                             id: artistName
@@ -138,7 +128,7 @@ function processWimpLinks(text) {
                                     id: bioText
                                     width: parent.width
                                     wrapMode: Text.WordWrap
-                                    textFormat: Text.RichText  // Wichtig für HTML-Links
+                                    textFormat: Text.RichText
                                     color: Theme.secondaryColor
                                     font.pixelSize: Theme.fontSizeSmall
 
@@ -157,88 +147,62 @@ function processWimpLinks(text) {
                                 }
                             }
 
-                            // Scrollbar für die Biografie
                             VerticalScrollDecorator {
                                 flickable: bioFlickable
                             }
                         }
                     }
-
                 }
             }
 
-            // Albums Section
             SectionHeader {
                 text: qsTr("Albums")
             }
 
-        // Ersetze den ScrollDecorator mit diesem angepassten horizontalen Scroll-Indikator
-                   SilicaListView {
-            id: albumsView
-            width: parent.width
-            height: Theme.itemSizeLarge * 2.5  // Höhe vergrößert
-            orientation: ListView.Horizontal
-            clip: true
-            spacing: Theme.paddingMedium  // Abstand zwischen den Items
+            SilicaListView {
+                id: albumsView
+                width: parent.width
+                height: Theme.itemSizeLarge * 3
+                orientation: ListView.Horizontal
+                clip: true
+                spacing: Theme.paddingMedium
 
-            model: ListModel {}
+                model: ListModel {}
 
-            delegate: BackgroundItem {
-                width: Theme.itemSizeLarge * 2  // Breite vergrößert
-                height: albumsView.height
+                delegate: BackgroundItem {
+                    width: Theme.itemSizeLarge * 2
+                    height: albumsView.height
 
-                Column {
-                    anchors {
-                        fill: parent
-                        margins: Theme.paddingSmall
-                    }
-                    spacing: Theme.paddingMedium  // Mehr Abstand zwischen Bild und Text
-
-                    Image {
+                    Column {
                         width: parent.width
-                        height: width  // Quadratisches Cover
-                        source: model.cover
-                        fillMode: Image.PreserveAspectCrop
+                        height: parent.height
+                        spacing: Theme.paddingMedium
+                        x: Theme.paddingSmall
+                        y: Theme.paddingSmall
+
+                        Image {
+                            width: parent.width - 2 * Theme.paddingSmall
+                            height: width
+                            source: model.cover
+                            fillMode: Image.PreserveAspectCrop
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: model.title
+                            truncationMode: TruncationMode.Fade
+                            font.pixelSize: Theme.fontSizeSmall
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                        }
                     }
 
-                    Label {
-                        width: parent.width
-                        text: model.title
-                        truncationMode: TruncationMode.Fade
-                        font.pixelSize: Theme.fontSizeSmall  // Größere Schrift
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.Wrap  // Text kann umbrechen
-                        maximumLineCount: 2  // Maximal zwei Zeilen
-                    }
+                    onClicked: pageStack.push(Qt.resolvedUrl("AlbumPage.qml"),
+                                            { albumId: model.albumId })
                 }
-
-                onClicked: pageStack.push(Qt.resolvedUrl("AlbumPage.qml"),
-                                        { albumId: model.albumId })
             }
 
-            // Horizontaler Scroll-Indikator
-            Rectangle {
-                visible: albumsView.contentWidth > albumsView.width
-                height: 2
-                color: Theme.highlightColor
-                opacity: 0.4
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    bottom: parent.bottom
-                }
-
-                Rectangle {
-                    height: parent.height
-                    color: Theme.highlightColor
-                    width: Math.max(parent.width * (albumsView.width / albumsView.contentWidth), Theme.paddingLarge)
-                    x: (parent.width - width) * (albumsView.contentX / (albumsView.contentWidth - albumsView.width))
-                    visible: albumsView.contentWidth > albumsView.width
-                }
-            }
-        }
-
-            // Top Tracks Section
             SectionHeader {
                 text: qsTr("Popular Tracks")
             }
@@ -246,78 +210,56 @@ function processWimpLinks(text) {
             TrackList {
                 id: topTracks
                 width: parent.width
-                height: artistPage.height - y - (minPlayerPanel.open ? minPlayerPanel.height : 0)
+                height: Theme.itemSizeLarge * 6
                 type: "tracklist"
             }
 
-            // Similiar Artists Section
             SectionHeader {
-                id:similarArtistsSection
-                text: qsTr("Similiar Artists")
+                id: similarArtistsSection
+                text: qsTr("Similar Artists")
             }
 
-        // Ersetze den ScrollDecorator mit diesem angepassten horizontalen Scroll-Indikator
             SilicaListView {
-            id: simartistView
-            width: parent.width
-            height: Theme.itemSizeLarge * 2.5  // Höhe vergrößert
-            orientation: ListView.Horizontal
-            clip: true
-            spacing: Theme.paddingMedium  // Abstand zwischen den Items
+                id: simartistView
+                width: parent.width
+                height: Theme.itemSizeLarge * 2.5
+                orientation: ListView.Horizontal
+                clip: true
+                spacing: Theme.paddingMedium
 
-            model: ListModel {}
+                model: ListModel {}
 
-            delegate: BackgroundItem {
-                width: Theme.itemSizeLarge * 2  // Breite vergrößert
-                height: simartistView.height
+                delegate: BackgroundItem {
+                    width: Theme.itemSizeLarge * 2
+                    height: simartistView.height
 
-                Column {
-                    anchors {
-                        fill: parent
-                        margins: Theme.paddingSmall
-                    }
-                    spacing: Theme.paddingMedium  // Mehr Abstand zwischen Bild und Text
-
-                    Image {
+                    Column {
                         width: parent.width
-                        height: width  // Quadratisches Cover
-                        source: model.cover
-                        fillMode: Image.PreserveAspectCrop
+                        height: parent.height
+                        spacing: Theme.paddingMedium
+                        x: Theme.paddingSmall
+                        y: Theme.paddingSmall
+
+                        Image {
+                            width: parent.width - 2 * Theme.paddingSmall
+                            height: width
+                            source: model.cover
+                            fillMode: Image.PreserveAspectCrop
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: model.name
+                            truncationMode: TruncationMode.Fade
+                            font.pixelSize: Theme.fontSizeSmall
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                        }
                     }
 
-                    Label {
-                        width: parent.width
-                        text: model.name
-                        truncationMode: TruncationMode.Fade
-                        font.pixelSize: Theme.fontSizeSmall  // Größere Schrift
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.Wrap  // Text kann umbrechen
-                        maximumLineCount: 2  // Maximal zwei Zeilen
-                    }
-                }
-
-                onClicked: pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
-                                        { artistId: model.artistId })
-            }
-    }
-            // Horizontaler Scroll-Indikator
-            Rectangle {
-                visible: simartistView.contentWidth > simartistView.width
-                height: 2
-                color: Theme.highlightColor
-                opacity: 0.4
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    bottom: parent.bottom
-                }
-
-                Rectangle {
-                    height: parent.height
-                    color: Theme.highlightColor
-                    width: Math.max(parent.width * (simartistView.width / simartistView.contentWidth), Theme.paddingLarge)
-                    x: (parent.width - width) * (simartistView.contentX / (simartistView.contentWidth - simartistView.width))
-                    visible: simartistView.contentWidth > simartistView.width
+                    onClicked: pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
+                                            { artistid: model.artistid })
                 }
             }
         }
@@ -334,19 +276,19 @@ function processWimpLinks(text) {
     }
 
     Component.onCompleted: {
-        if (artistId > 0) {
-            artistData = cacheManager.getArtistInfo(artistId)
+        if (artistid > 0) {
+            artistData = cacheManager.getArtistInfo(artistid)
             if (!artistData) {
-                console.log("Artist nicht im Cache gefunden:", artistId)
+                console.log("Artist nicht im Cache gefunden:", artistid)
             }
             header.title = artistData.name
             artistName.text = artistData.name
             coverImage.source = artistData.image
             if (artistData.bio) {
-            console.log("Verarbeite Bio...")
-            var processedBio = processWimpLinks(artistData.bio)
-            bioText.text = processedBio
-        }
+                console.log("Verarbeite Bio...")
+                var processedBio = processWimpLinks(artistData.bio)
+                bioText.text = processedBio
+            }
             tidalApi.getAlbumsofArtist(artistData.artistid)
             tidalApi.getTopTracksofArtist(artistData.artistid)
             tidalApi.getSimiliarArtist(artistData.artistid)
@@ -364,10 +306,10 @@ function processWimpLinks(text) {
         }
 
         onTrackAdded: {
-            topTracks.addTrack(title, artist, album, id, duration)
+            topTracks
+            .addTrack(title, artist, album, id, duration)
         }
 
-        // Neues Signal für Alben
         onAlbumofArtist: {
             albumsView.model.append({
                 title: album_info.title,
@@ -376,19 +318,17 @@ function processWimpLinks(text) {
             })
         }
 
-         onSimilarArtist: {
+        onSimilarArtist: {
             simartistView.model.append({
                 name: artist_info.name,
                 cover: artist_info.image,
-                artistId: artist_info.artistid
+                artistid: artist_info.artistid
             })
         }
 
-    onNoSimilarArtists: {
-        // Optional: Section Header ausblenden
-        similarArtistsSection.visible = false
-        simartistView.visible = false
-    }
-
+        onNoSimilarArtists: {
+            similarArtistsSection.visible = false
+            simartistView.visible = false
+        }
     }
 }

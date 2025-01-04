@@ -5,6 +5,16 @@ import io.thp.pyotherside 1.5
 Item {
     id: root
 
+    Timer {
+        id: updateTimer
+        interval: 1000  // 100ms Verzögerung
+        repeat: false
+        onTriggered: {
+
+                playlistStorage.loadCurrentPlaylistState()
+        }
+    }
+
     //property var currentPlaylist: []
     property int currentIndex: -1
     property bool canNext: size > 0 && currentIndex < size - 1
@@ -99,12 +109,17 @@ Item {
             importModule('playlistmanager', function() {
                 console.log("Playlistmanager module imported successfully")
                 initialised = true
+                updateTimer.start()
             })
         }
 
         // Python-Funktionen
         function appendTrack(id) {
             if(initialised)  call('playlistmanager.PL.AppendTrack', [id], {})
+        }
+
+        function appendTrackSilent(id) {
+            if(initialised)  call('playlistmanager.PL.AppendTrackSilent', [id], {})
         }
 
         function currentTrackIndex() {
@@ -174,7 +189,9 @@ Item {
         }
 
         function generateList() {
+        console.log("Generate current database")
             getSize()
+            console.log("current size", root.size)
             root.listChanged()
         }
     }
@@ -315,4 +332,5 @@ Item {
     function getSavedPlaylists() {
         return playlistStorage.getPlaylistInfo();
     }
+
 }

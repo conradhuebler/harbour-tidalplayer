@@ -25,8 +25,10 @@ ListItem {
         }
     }
     // Optional: Höhe auf 0 setzen wenn nicht sichtbar
-    height: visible ? Theme.itemSizeMedium : 0
-
+    height: {
+        if(!visible)
+        return 0
+    }
     Row {
         id: contentRow
         anchors {
@@ -200,7 +202,7 @@ ListItem {
             case 3: // Artist
                 pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"),
                 {
-                    "artistId" :item.artistid
+                    "artistid" :item.artistid
                 })
                 break
             case 4: // Playlist

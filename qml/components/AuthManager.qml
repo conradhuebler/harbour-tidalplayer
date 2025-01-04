@@ -6,7 +6,6 @@ Item {
     id: root
 
     // Properties
-    property bool isLoggedIn: false
     property date currentDate: new Date()
 
     // Configuration Storage
@@ -42,9 +41,11 @@ Item {
         defaultValue: "HIGH"  // Standardwert
     }
 
+
+
     // Funktionen zum Token-Management
     function updateTokens(type, token, rtoken, expiry) {
-        console.log("Update tokes")
+        console.log("Update tokens")
         var currentUnixTime = Math.floor(new Date().getTime() / 1000)
         var oneWeekLater = currentUnixTime + 604800
 
@@ -52,7 +53,15 @@ Item {
         access_token.value = token
         refresh_token.value = rtoken
         expiry_time.value = oneWeekLater
-        isLoggedIn = true
+    }
+
+    function refreshTokens(token) {
+        console.log("Update tokens", token)
+        var currentUnixTime = Math.floor(new Date().getTime() / 1000)
+        var oneWeekLater = currentUnixTime + 604800
+
+        access_token.value = token
+        expiry_time.value = oneWeekLater
     }
 
     function checkAndLogin() {

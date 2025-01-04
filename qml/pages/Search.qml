@@ -20,8 +20,8 @@ Item {
             fill: parent
             bottomMargin: minPlayerPanel.margin
         }
-        clip: miniPlayerPanel.expanded
-        contentHeight: parent.height
+        clip: true //miniPlayerPanel.expanded
+        contentHeight: parent.height - miniPlayerPanel.height
         anchors.bottom: miniPlayerPanel.top
 
         // Header-Bereich
@@ -104,7 +104,8 @@ Item {
                 bottom: parent.bottom
                 margins: Theme.horizontalPageMargin
             }
-
+            clip: true
+            height: parent.height - miniPlayerPanel.height
             model: ListModel { id: listModel }
 
             delegate: SearchResultDelegate {
@@ -113,10 +114,6 @@ Item {
             }
 
             VerticalScrollDecorator {}
-        }
-
-        TrackPage {
-            id: trackPage
         }
     }
 
@@ -215,7 +212,6 @@ Item {
 
     function createPlaylistItem(playlist) {
         console.log("Found playlist", playlist.title, playlist.playlistid)
-
         return {
             name: playlist.title,
             playlistid: str(playlist.playlistid),
@@ -227,7 +223,7 @@ Item {
     }
 
     function createVideoItem(video) {
-    console.log("Found video", video.title)
+        console.log("Found video", video.title)
         return {
             name: video.title,
             videoid:video.videoid,

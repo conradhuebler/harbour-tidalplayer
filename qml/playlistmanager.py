@@ -33,6 +33,10 @@ class PlaylistManager:
             self._notify_playlist_state()
             #pyotherside.send("listChanged")
 
+    def AppendTrackSilent(self, track_id):
+        """Fügt einen Track am Ende der Playlist hinzu"""
+        if track_id:
+            self.playlist.append(track_id)
 
     def InsertTrack(self, track_id):
         """Fügt einen Track nach dem aktuellen Track ein"""
