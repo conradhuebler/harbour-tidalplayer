@@ -2,6 +2,7 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtMultimedia 5.6
 import Sailfish.Media 1.0
+import Nemo.Configuration 1.0
 
 import "widgets"
 import "stuff"
@@ -43,6 +44,22 @@ Page {
                 onClicked: {
                     playlistManager.clearPlayList()
                 }
+            }
+
+            MenuItem {
+                text: qsTr("Sleep Timer")
+                onClicked: {
+                    var dialog = pageStack.push(Qt.resolvedUrl("../dialogs/SleepTimerDialog.qml"))
+                    dialog.accepted.connect(function() {
+                        applicationWindow.startSleepTimer(dialog.selectedMinutes)
+                    })
+                }
+            }
+
+            MenuItem {
+                visible: applicationWindow.remainingMinutes > 0
+                text: qsTr("Cancel Sleep Timer")
+                onClicked: applicationWindow.cancelSleepTimer()
             }
 
             MenuItem {

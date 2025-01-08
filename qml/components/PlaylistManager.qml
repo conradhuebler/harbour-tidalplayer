@@ -212,6 +212,12 @@ Item {
         canNext = true
     }
 
+    function appendTrackSilent(id) {
+        console.log("PlaylistManager.appendTrackSilent", id)
+        playlistPython.appendTrack(id)
+        canNext = true
+    }
+
     function currentTrackIndex() {
         playlistPython.currentTrackIndex()
     }

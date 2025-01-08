@@ -26,7 +26,7 @@ Page {
             TextField {
                 id: emailField
                 width: parent.width
-                text: mail.value || ""
+                text: applicationWindow.settings.mail || ""
                 label: qsTr("Email address")
                 placeholderText: qsTr("Enter your email")
                 EnterKey.enabled: text.length > 0
@@ -91,7 +91,10 @@ Page {
                 text: qsTr("Resume playback on startup")
                 description: qsTr("Resume playback after starting the app")
                 // Verbinde dies mit deiner Konfiguration
-                checked: false
+                checked: applicationWindow.settings.resume_playback
+                onClicked: {
+                    applicationWindow.settings.resume_playback = resumePlayback.checked
+                }
             }
 
             ComboBox {
@@ -107,7 +110,7 @@ Page {
                     }
                     onCurrentIndexChanged: {
                            var qualities = ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
-                           audioQuality.value = qualities[currentIndex]
+                           applicationWindow.settings.audio_quailty = qualities[currentIndex]
                        }
             }
         }

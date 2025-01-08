@@ -59,7 +59,7 @@ Item {
 
     // Lade Playlist mit Position
     function loadPlaylist(name) {
-    playlistTitle = name
+        playlistTitle = name
         var db = getDatabase();
         var result;
 
@@ -82,7 +82,7 @@ Item {
         var db = getDatabase();
 
         db.transaction(function(tx) {
-            tx.executeSql('UPDATE playlists SET position = ?, last_played = CURRENT_TIMESTAMP WHERE name = ?',
+            tx.executeSql('UPDATE playlresultists SET position = ?, last_played = CURRENT_TIMESTAMP WHERE name = ?',
                          [position, name]);
         });
     }
@@ -129,7 +129,6 @@ Item {
         for(var i = 0; i < playlistManager.size; i++) {
             var id = playlistManager.requestPlaylistItem(i)
             trackIds.push(id)
-            console.log(id)
         }
         // Speichere als spezielle Playlist "_current"
         playlistStorage.savePlaylist("_current", trackIds, playlistManager.currentIndex)
@@ -144,20 +143,39 @@ Item {
 
     // Beim Laden
     function loadCurrentPlaylistState() {
-        var currentPlaylist = playlistStorage.loadPlaylist("_current")
+
+        playlistTitle = "_current"
+        var db = getDatabase();
+        var currentPlaylist;
+        var trackIds;
+        var position;
+        db.transaction(function(tx) {
+            currentPlaylist = tx.executeSql('SELECT tracks, position FROM playlists WHERE name = ?', [playlistTitle]);
+            if (currentPlaylist.rows.length > 0) {
+                trackIds = JSON.parse(currentPlaylist.rows.item(0).tracks);
+                position = currentPlaylist.rows.item(0).position;
+
+                // Aktualisiere last_played
+                tx.executeSql('UPDATE playlists SET last_played = CURRENT_TIMESTAMP WHERE name = ?', [playlistTitle]);
+            }
+        });
+
         console.log("Loading current playlist ", currentPlaylist)
-        if (currentPlaylist && currentPlaylist.tracks.length > 0) {
+        console.log("Loading current playlist ", trackIds)
+        console.log("Loading current playlist ", position)
+
+
+        if (currentPlaylist && trackIds.length > 0) {
             playlistManager.clearPlayList()
-            for (var i = 0; i < currentPlaylist.tracks.length; i++) {
-                playlistManager.appendTrackSilent(currentPlaylist.tracks[i])
+            for (var i = 0; i < trackIds.length; i++) {
+                playlistManager.appendTrackSilent(trackIds[i])
             }
             // Position wiederherstellen
-            playlistManager.currentIndex = currentPlaylist.position
-
-            //if (currentPlaylist.position >= 0) {
-            //    playlistManager.playPosition(currentPlaylist.position)
-            //}
+            playlistManager.currentIndex = position
+            if(applicationWindow.settings.resume_playback)
+                playlistManager.playPosition(position);
         }
+
     }
     Component.onCompleted: {
         initDatabase();

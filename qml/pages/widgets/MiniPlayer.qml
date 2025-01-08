@@ -185,6 +185,13 @@ DockedPanel {
                             }
                         }
                     }
+                    Label {
+                        visible: applicationWindow.remainingMinutes > 0
+                        text: visible ? qsTr("Sleep in: %1")
+                            .arg(Format.formatDuration(applicationWindow.remainingMinutes * 60, Formatter.DurationLong)) : ""
+                        color: Theme.secondaryColor
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                    }
 
         }
     }
