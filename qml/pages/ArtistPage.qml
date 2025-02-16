@@ -276,10 +276,10 @@ Page {
     }
 
     Component.onCompleted: {
-        if (artistid > 0) {
-            artistData = cacheManager.getArtistInfo(artistid)
+        if (artistId > 0) {
+            artistData = cacheManager.getArtistInfo(artistId)
             if (!artistData) {
-                console.log("Artist nicht im Cache gefunden:", artistid)
+                console.log("Artist nicht im Cache gefunden:", artistId)
             }
             header.title = artistData.name
             artistName.text = artistData.name
