@@ -109,6 +109,7 @@ Item {
             for (var i = 0; i < result.rows.length; i++) {
                 var item = result.rows.item(i);
                 var tracks = JSON.parse(item.tracks);
+                if (tracks == undefined) return playlists;
                 playlists.push({
                     name: item.name,
                     position: item.position,
@@ -164,6 +165,7 @@ Item {
         console.log("Loading current playlist ", trackIds)
         console.log("Loading current playlist ", position)
 
+        if (trackIds === undefined) return;
 
         if (currentPlaylist && trackIds.length > 0) {
             playlistManager.clearPlayList()
