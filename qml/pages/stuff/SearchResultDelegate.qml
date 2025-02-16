@@ -202,7 +202,7 @@ ListItem {
             case 3: // Artist
                 pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"),
                 {
-                    "artistid" :item.artistid
+                    "artistId" :item.artistid
                 })
                 break
             case 4: // Playlist

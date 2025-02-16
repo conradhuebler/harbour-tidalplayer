@@ -72,7 +72,7 @@ Item {
                     }
 
                     onClicked: pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
-                                            { artistid: model.artistid })
+                                            { artistId: model.artistid })
                 }
 
                 // Horizontaler Scroll-Indikator für Top Artists

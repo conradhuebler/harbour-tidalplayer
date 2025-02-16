@@ -6,7 +6,7 @@ import "widgets"
 
 Page {
     id: artistPage
-    property int artistid: -1
+    property int artistId: -1
     property var artistData: null
     property bool isHeaderCollapsed: false
 
@@ -259,7 +259,7 @@ Page {
                     }
 
                     onClicked: pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
-                                            { artistid: model.artistid })
+                                            { artistId: model.artistid })
                 }
             }
         }
