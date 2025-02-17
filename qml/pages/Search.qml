@@ -214,7 +214,7 @@ Item {
         console.log("Found playlist", playlist.title, playlist.playlistid)
         return {
             name: playlist.title,
-            playlistid: str(playlist.playlistid),
+            playlistid: playlist.playlistid,
             type: typePlaylist,
             image: playlist.image,
             duration: playlist.duration
