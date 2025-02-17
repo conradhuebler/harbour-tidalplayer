@@ -214,6 +214,7 @@ Item {
 
     function appendTrackSilent(id) {
         console.log("PlaylistManager.appendTrackSilent", id)
+        // why not silent ?
         playlistPython.appendTrack(id)
         canNext = true
     }
