@@ -44,7 +44,7 @@ Item {
 
     // Speichere Playlist mit Position
     function savePlaylist(name, trackIds, position) {
-    console.log("Save datanbase", name, trackIds, position)
+    console.log("Save database", name, trackIds, position)
         var db = getDatabase();
         var tracksJson = JSON.stringify(trackIds);
 
@@ -82,7 +82,7 @@ Item {
         var db = getDatabase();
 
         db.transaction(function(tx) {
-            tx.executeSql('UPDATE playlresultists SET position = ?, last_played = CURRENT_TIMESTAMP WHERE name = ?',
+            tx.executeSql('UPDATE playlists SET position = ?, last_played = CURRENT_TIMESTAMP WHERE name = ?',
                          [position, name]);
         });
     }
