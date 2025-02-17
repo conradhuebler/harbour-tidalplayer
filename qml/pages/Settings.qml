@@ -110,7 +110,7 @@ Page {
                     }
                     onCurrentIndexChanged: {
                            var qualities = ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
-                           applicationWindow.settings.audio_quailty = qualities[currentIndex]
+                           applicationWindow.settings.audio_quality = qualities[currentIndex]
                        }
             }
         }
