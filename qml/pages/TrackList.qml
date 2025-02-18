@@ -203,6 +203,13 @@ Item {
                     onClicked: {
                         var currentTrackId = playlistManager.requestPlaylistItem(model.index)
                         playlistManager.removeTrack(currentTrackId)
+                        if (type === "current" && currentIndex === model.index)
+                        {  // intention: if user removes the currently played song
+                           // then move next if possible, else stop playing
+                           // after deletion the index will point to next track
+                           currentTrackId = playlistManager.requestPlaylistItem(model.index)
+                           playlistManager.restartTrack(currentTrackId)
+                        }
                     }
                     visible: type === "current"
                 }
