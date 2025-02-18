@@ -40,6 +40,8 @@ Requires:
   - python3-future
   - python3-dateutil
   - python3-six
+  - python3-devel
+
 # All installed files
 Files:
 #  - '%{_bindir}'

@@ -2,103 +2,333 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtMultimedia 5.6
 import Sailfish.Media 1.0
-
 import "widgets"
-
 
 Page {
     id: artistPage
-    property int track_id
+    property int artistId: -1
+    property var artistData: null
+    property bool isHeaderCollapsed: false
 
-    // The effective value will be restricted by ApplicationWindow.allowedOrientations
+    function processWimpLinks(text) {
+        if (!text) return ""
+        var parts = text.split("[wimpLink")
+        var result = parts[0]
+        for (var i = 1; i < parts.length; i++) {
+            var part = parts[i]
+            try {
+                if (part.indexOf('artistId="') >= 0) {
+                    var idMatch = part.match(/artistId="(\d+)"/)
+                    var textMatch = part.match(/](.*?)\[/)
+                    if (idMatch && textMatch) {
+                        result += '<a href="artist:' + idMatch[1] + '" style="color: ' + Theme.highlightColor + '">' + textMatch[1] + '</a>'
+                        result += part.split("[/wimpLink]")[1] || ""
+                    }
+                } else if (part.indexOf('albumId="') >= 0) {
+                    var idMatch = part.match(/albumId="(\d+)"/)
+                    var textMatch = part.match(/](.*?)\[/)
+                    if (idMatch && textMatch) {
+                        result += '<a href="album:' + idMatch[1] + '" style="color: ' + Theme.highlightColor + '">' + textMatch[1] + '</a>'
+                        result += part.split("[/wimpLink]")[1] || ""
+                    }
+                } else {
+                    result += "[wimpLink" + part
+                }
+            } catch (e) {
+                console.log("Fehler beim Verarbeiten eines Links:", e)
+                result += "[wimpLink" + part
+            }
+        }
+        return result
+    }
+
     allowedOrientations: Orientation.All
 
-    // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
-
-        width: parent.width
+        id: flickable
         anchors {
             fill: parent
             bottomMargin: minPlayerPanel.margin
         }
+        contentHeight: mainColumn.height + Theme.paddingLarge
+        height: parent.height + miniPlayerPanel.height
+
         PullDownMenu {
-            MenuItem {
-                text: qsTr("Show Playlist")
-                onClicked:
-                {
-                    onClicked: pageStack.push(Qt.resolvedUrl("PlaylistPage.qml"))
-                }
-            }
             MenuItem {
                 text: minPlayerPanel.open ? "Hide player" : "Show player"
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
-                anchors.horizontalCenter: parent.horizontalCenter
             }
         }
+
         Column {
-            id: infoCoulumn
+            id: mainColumn
+            width: parent.width
+            spacing: Theme.paddingMedium
+
             PageHeader {
                 id: header
-                title:  qsTr("Artist Info")
+                title: qsTr("Artist Info")
             }
-            spacing: 10 // Abstand zwischen den Elementen in der Column
-            width: parent.width // Die Column nimmt die volle Breite des Eltern-Elements (Item) ein
 
-            Image {
-                id: coverImage
-                anchors {
-                    top: header.bottom
-                    horizontalCenter: albumPage.isPortrait ? parent.horizontalCenter : undefined
+            Item {
+                id: artistInfoContainer
+                width: parent.width
+                height: width * 0.4
+                clip: true
+
+                Behavior on height {
+                    NumberAnimation { duration: 200 }
                 }
 
-                sourceSize.width: {
-                    var maxImageWidth = Screen.width
-                    var leftMargin = Theme.horizontalPageMargin
-                    var rightMargin = artistPage.isPortrait ? Theme.horizontalPageMargin : 0
-                    return (maxImageWidth - leftMargin - rightMargin)*3/2
-                }
+                Row {
+                    width: parent.width
+                    height: parent.height
+                    spacing: Theme.paddingMedium
+                    x: Theme.paddingMedium
 
-                fillMode: Image.PreserveAspectFit
-            }
-            Label
-            {
-                id: artistName
-                anchors {
-                    top : coverImage.bottom
+                    Image {
+                        id: coverImage
+                        width: parent.height
+                        height: width
+                        fillMode: Image.PreserveAspectFit
+
+                        Rectangle {
+                            color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                            anchors.fill: parent
+                            visible: coverImage.status !== Image.Ready
+                        }
+                    }
+
+                    Column {
+                        width: parent.width - coverImage.width - parent.spacing - Theme.paddingLarge * 2
+                        height: parent.height
+                        spacing: Theme.paddingSmall
+                        y: (parent.height - height) / 2
+
+                        Label {
+                            id: artistName
+                            width: parent.width
+                            truncationMode: TruncationMode.Fade
+                            color: Theme.highlightColor
+                            font.pixelSize: Theme.fontSizeLarge
+                        }
+
+                        Item {
+                            width: parent.width
+                            height: parent.height - artistName.height - parent.spacing
+                            clip: true
+
+                            Flickable {
+                                id: bioFlickable
+                                anchors.fill: parent
+                                contentHeight: bioText.height
+                                clip: true
+
+                                Label {
+                                    id: bioText
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                    textFormat: Text.RichText
+                                    color: Theme.secondaryColor
+                                    font.pixelSize: Theme.fontSizeSmall
+
+                                    onLinkActivated: {
+                                        var parts = link.split(":")
+                                        if (parts.length === 2) {
+                                            if (parts[0] === "artist") {
+                                                pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
+                                                             { artistId: parseInt(parts[1]) })
+                                            } else if (parts[0] === "album") {
+                                                pageStack.push(Qt.resolvedUrl("AlbumPage.qml"),
+                                                             { albumId: parseInt(parts[1]) })
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            VerticalScrollDecorator {
+                                flickable: bioFlickable
+                            }
+                        }
+                    }
                 }
-                truncationMode: TruncationMode.Fade
-                color: Theme.highlightColor
             }
-        }
+
+            SectionHeader {
+                text: qsTr("Albums")
+            }
+
+            SilicaListView {
+                id: albumsView
+                width: parent.width
+                height: Theme.itemSizeLarge * 3
+                orientation: ListView.Horizontal
+                clip: true
+                spacing: Theme.paddingMedium
+
+                model: ListModel {}
+
+                delegate: BackgroundItem {
+                    width: Theme.itemSizeLarge * 2
+                    height: albumsView.height
+
+                    Column {
+                        width: parent.width
+                        height: parent.height
+                        spacing: Theme.paddingMedium
+                        x: Theme.paddingSmall
+                        y: Theme.paddingSmall
+
+                        Image {
+                            width: parent.width - 2 * Theme.paddingSmall
+                            height: width
+                            source: model.cover
+                            fillMode: Image.PreserveAspectCrop
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: model.title
+                            truncationMode: TruncationMode.Fade
+                            font.pixelSize: Theme.fontSizeSmall
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                        }
+                    }
+
+                    onClicked: pageStack.push(Qt.resolvedUrl("AlbumPage.qml"),
+                                            { albumId: model.albumId })
+                }
+            }
+
+            SectionHeader {
+                text: qsTr("Popular Tracks")
+            }
+
             TrackList {
                 id: topTracks
-                title :  "Popular Tracks"
-                anchors {
-                     top: infoCoulumn.bottom// Anker oben an den unteren Rand der Column
-                     topMargin: 650 // Abstand zwischen der Column und dem ListView
-                     left: parent.left // Anker links am linken Rand des Eltern-Elements (Page)
-                     right: parent.right // Anker rechts am rechten Rand des Eltern-Elements (Page)
-                     leftMargin: Theme.horizontalPageMargin
-                     rightMargin: Theme.horizontalPageMargin
-                     //bottom: parent.bottom// Anker unten am unteren Rand des Eltern-Elements (Page)
-                 }
-                height: 600
+                width: parent.width
+                height: Theme.itemSizeLarge * 6
+                type: "tracklist"
             }
 
+            SectionHeader {
+                id: similarArtistsSection
+                text: qsTr("Similar Artists")
+            }
+
+            SilicaListView {
+                id: simartistView
+                width: parent.width
+                height: Theme.itemSizeLarge * 2.5
+                orientation: ListView.Horizontal
+                clip: true
+                spacing: Theme.paddingMedium
+
+                model: ListModel {}
+
+                delegate: BackgroundItem {
+                    width: Theme.itemSizeLarge * 2
+                    height: simartistView.height
+
+                    Column {
+                        width: parent.width
+                        height: parent.height
+                        spacing: Theme.paddingMedium
+                        x: Theme.paddingSmall
+                        y: Theme.paddingSmall
+
+                        Image {
+                            width: parent.width - 2 * Theme.paddingSmall
+                            height: width
+                            source: model.cover
+                            fillMode: Image.PreserveAspectCrop
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: model.name
+                            truncationMode: TruncationMode.Fade
+                            font.pixelSize: Theme.fontSizeSmall
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                        }
+                    }
+
+                    onClicked: pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
+                                            { artistId: model.artistid })
+                }
+            }
         }
+
+        VerticalScrollDecorator {}
+
+        onContentYChanged: {
+            if (contentY > Theme.paddingLarge) {
+                isHeaderCollapsed = true
+            } else {
+                isHeaderCollapsed = false
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        if (artistId > 0) {
+            artistData = cacheManager.getArtistInfo(artistId)
+            if (!artistData) {
+                console.log("Artist nicht im Cache gefunden:", artistId)
+            }
+            header.title = artistData.name
+            artistName.text = artistData.name
+            coverImage.source = artistData.image
+            if (artistData.bio) {
+                console.log("Verarbeite Bio...")
+                var processedBio = processWimpLinks(artistData.bio)
+                bioText.text = processedBio
+            }
+            tidalApi.getAlbumsofArtist(artistData.artistid)
+            tidalApi.getTopTracksofArtist(artistData.artistid)
+            tidalApi.getSimiliarArtist(artistData.artistid)
+        }
+    }
 
     Connections {
-        target: pythonApi
+        target: tidalApi
 
-        onArtistChanged:
-        {
+        onArtistChanged: {
             header.title = name
+            artistName.text = name
             coverImage.source = img
-        }
-        onTrackAdded:
-        {
-            topTracks.addTrack(title, artist, album, id, duration)
+            bioText.text = ""
         }
 
+        onTrackAdded: {
+            topTracks
+            .addTrack(title, artist, album, id, duration)
+        }
+
+        onAlbumofArtist: {
+            albumsView.model.append({
+                title: album_info.title,
+                cover: album_info.image,
+                albumId: album_info.albumid
+            })
+        }
+
+        onSimilarArtist: {
+            simartistView.model.append({
+                name: artist_info.name,
+                cover: artist_info.image,
+                artistid: artist_info.artistid
+            })
+        }
+
+        onNoSimilarArtists: {
+            similarArtistsSection.visible = false
+            simartistView.visible = false
+        }
     }
 }

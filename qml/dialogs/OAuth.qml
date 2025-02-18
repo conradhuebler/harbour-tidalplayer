@@ -1,6 +1,5 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-
 import io.thp.pyotherside 1.5
 import Sailfish.WebView 1.0
 import Sailfish.WebEngine 1.0
@@ -12,51 +11,44 @@ Dialog {
     allowedOrientations: Orientation.All
     canAccept: false
 
+    ConfigurationValue {
+        id: mail
+        key: "/mail"
+    }
+
+
     WebView {
-            width: parent.width
-            anchors.horizontalCenter: parent.horizontalCenter
+        width: parent.width
+        anchors.horizontalCenter: parent.horizontalCenter
+        id: webView
+        anchors.fill: parent
 
-            id: webView
+        url: "http://www.sailfishos.org"
+        httpUserAgent: "Mozilla/5.0 (Mobile; rv:78.0) Gecko/78.0 Firefox/78.0"
 
-            anchors.fill: parent
+        popupProvider: PopupProvider { }
+    }
 
-               url: "http://www.sailfishos.org"
-               //privateMode: true
-               httpUserAgent: "Mozilla/5.0 (Mobile; rv:78.0) Gecko/78.0"
-                   + " Firefox/78.0"
-
-               popupProvider: PopupProvider {
-                    // Disable the Save Password dialog
-                    //passwordManagerPopup: null
-               }
+    Connections {
+        target: tidalApi
+        onAuthUrl: {
+            console.log(url)
+            Clipboard.text = mail.value
+            webView.url = "https://" + url
         }
 
-        Connections {
-            target: pythonApi
-            onAuthUrl:
-            {
-                console.log(url)
-                webView.load("https://" + url)
-            }
-
-            onLoginSuccess:
-            {
-                accountSettings.canAccept = true
-                accountSettings.accept()
-                loginTrue = true
-
-                pythonApi.logIn()
-            }
-
-            onLoginFailed:
-            {
-                mainLabel.text = "Failed";
-                loginTrue = false
-            }
+        onLoginSuccess: {
+            accountSettings.canAccept = true
+            accountSettings.accept()
+            authManager.checkAndLogin()
         }
 
-     Component.onCompleted: {
-      pythonApi.getOAuth()
-     }
+        onLoginFailed: {
+            mainLabel.text = "Failed"
+        }
+    }
+
+    Component.onCompleted: {
+        tidalApi.getOAuth()
+    }
 }
-

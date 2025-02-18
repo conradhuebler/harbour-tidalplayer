@@ -4,59 +4,117 @@ import Nemo.Configuration 1.0
 
 Page {
     id: page
-
-    // The effective value will be restricted by ApplicationWindow.allowedOrientations
     allowedOrientations: Orientation.All
 
-    SilicaListView {
-        id: listView
-        //model: 20
+    SilicaFlickable {
         anchors.fill: parent
-        header: PageHeader {
-            title: qsTr("Settings")
-        }
-        delegate: BackgroundItem {
-            id: delegate
+        contentHeight: column.height
 
-
-        }
-        //VerticalScrollDecorator {}
-
-     width: parent.width
-
-     spacing: Theme.paddingLarge
-
-        Button {
-            id:loginButton
-            text: "Tidal Login via OAuth"
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.verticalCenter: parent.verticalCenter
+        Column {
+            id: column
             width: parent.width
-            visible: !loginTrue
-            onClicked: {
-                var dialog = pageStack.push(Qt.resolvedUrl("../dialogs/OAuth.qml"))
+            spacing: Theme.paddingLarge
+
+            PageHeader {
+                title: qsTr("Settings")
+            }
+
+            SectionHeader {
+                text: qsTr("Account")
+            }
+
+            TextField {
+                id: emailField
+                width: parent.width
+                text: applicationWindow.settings.mail || ""
+                label: qsTr("Email address")
+                placeholderText: qsTr("Enter your email")
+                EnterKey.enabled: text.length > 0
+                EnterKey.iconSource: "image://theme/icon-m-enter-next"
+                EnterKey.onClicked: focus = false
+
+                onTextChanged: {
+                    mail.value = text
+                }
+            }
+
+            Item {
+                width: parent.width
+                height: Theme.paddingLarge
+            }
+
+            TextSwitch {
+                visible: tidalApi.loginTrue
+                text: qsTr("Stay logged in")
+                description: qsTr("Keep your session active")
+                // Verbinde dies mit deiner Konfiguration
+                checked: false
+            }
+
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
+                text: qsTr("Login with Tidal")
+                visible: !tidalApi.loginTrue
+                onClicked: {
+                    pageStack.push(Qt.resolvedUrl("../dialogs/OAuth.qml"))
+                }
+            }
+
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
+                text: qsTr("Logout")
+                visible: loginTrue
+                onClicked: {
+                    authManager.clearTokens()
+                    token_type.value = "clear"
+                    access_token.value = "clear"
+                    loginTrue = false
+                }
+            }
+
+            SectionHeader {
+                text: qsTr("Playback")
+                visible: tidalApi.loginTrue
+            }
+
+            TextSwitch {
+                id: resumePlayback
+                visible: tidalApi.loginTrue
+                text: qsTr("Resume playback on startup")
+                description: qsTr("Resume playback after starting the app")
+                // Verbinde dies mit deiner Konfiguration
+                checked: applicationWindow.settings.resume_playback
+                onClicked: {
+                    applicationWindow.settings.resume_playback = resumePlayback.checked
+                }
+            }
+
+            ComboBox {
+                visible: tidalApi.loginTrue
+                label: qsTr("Audio Quality")
+                    currentIndex: 1 // Default auf HIGH
+                    description: qsTr("Select streaming quality")
+                    menu: ContextMenu {
+                        MenuItem { text: qsTr("Low (96 kbps)") }
+                        MenuItem { text: qsTr("High (320 kbps)") }
+                        MenuItem { text: qsTr("Lossless (FLAC)") }
+                        MenuItem { text: qsTr("Master (MQA)") }
+                    }
+                    onCurrentIndexChanged: {
+                           var qualities = ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
+                           applicationWindow.settings.audio_quality = qualities[currentIndex]
+                       }
             }
         }
 
-        Button {
-            id:logoutButton
-
-            text: "Remove Session"
-            anchors.horizontalCenter: loginButton.horizontalCenter
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width
-            visible: loginTrue
-
-            onClicked: {
-                token_type.value = "clear"
-                access_token.value = "clear"
-                loginTrue = false
-            }
-        }
-
-
-
+        VerticalScrollDecorator {}
     }
-
-
 }

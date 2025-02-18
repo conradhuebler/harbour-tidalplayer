@@ -2,36 +2,64 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtMultimedia 5.6
 import Sailfish.Media 1.0
+import Nemo.Configuration 1.0
 
 import "widgets"
-
+import "stuff"
 
 Page {
-    id: searchPage
+    id: firstPage
 
     // The effective value will be restricted by ApplicationWindow.allowedOrientations
     allowedOrientations: Orientation.All
-
+    property int currentIndex : 0
     // To enable PullDownMenu, place our content in a SilicaFlickable
     SilicaFlickable {
+        id: flickable
         anchors {
             fill: parent
             bottomMargin: minPlayerPanel.margin
         }
 
+        //contentHeight: column.height
+
         // PullDownMenu and PushUpMenu must be declared in SilicaFlickable, SilicaListView or SilicaGridView
         PullDownMenu {
+
             MenuItem {
-                text: qsTr("Settings")
-                onClicked: pageStack.push(Qt.resolvedUrl("Settings.qml"))
+                text: qsTr("Saved Playlists")
+                onClicked: pageStack.push(Qt.resolvedUrl("SavedPlaylistsPage.qml"))
             }
 
             MenuItem {
-                text: qsTr("Show Playlist")
-                onClicked:
-                {
-                    onClicked: pageStack.push(Qt.resolvedUrl("PlaylistPage.qml"))
+                text: qsTr("Settings")
+                onClicked: {
+                    minPlayerPanel.open = false
+                    pageStack.push(Qt.resolvedUrl("Settings.qml"))
                 }
+            }
+
+            MenuItem {
+                text: qsTr("Clear Playlist")
+                onClicked: {
+                    playlistManager.clearPlayList()
+                }
+            }
+
+            MenuItem {
+                text: qsTr("Sleep Timer")
+                onClicked: {
+                    var dialog = pageStack.push(Qt.resolvedUrl("../dialogs/SleepTimerDialog.qml"))
+                    dialog.accepted.connect(function() {
+                        applicationWindow.startSleepTimer(dialog.selectedMinutes)
+                    })
+                }
+            }
+
+            MenuItem {
+                visible: applicationWindow.remainingMinutes > 0
+                text: qsTr("Cancel Sleep Timer")
+                onClicked: applicationWindow.cancelSleepTimer()
             }
 
             MenuItem {
@@ -40,337 +68,56 @@ Page {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
-            MenuItem {
-                text: qsTr("Show Personal Page")
-                onClicked: pageStack.push(Qt.resolvedUrl("Personal.qml"))
-            }
-
-        }
-        PushUpMenu {
-            MenuItem {
-                text: "Clear"
-                onClicked: listModel.clear()
-            }
         }
 
+        TabHeader {
+            id: mainPageHeader
+            listView: swipeView
+            indicatorOnTop: false
 
-        Column
-        {
-
-           // width: parent.width
-            //height: header.height + mainColumn.height + Theme.paddingLarge
-
-            PageHeader {
-                title:  qsTr("Look for anything in Tidal")
-            }
-                id: header
-                width: searchPage.width
-                spacing: Theme.paddingSmall
-                TextField {
-                    id: searchString
-                    width: parent.width
-                    placeholderText: "Type and Search"
-                    text: ""
-                    label: "Please wait for login ..."
-                    EnterKey.enabled: text.length > 0
-                    EnterKey.iconSource: "image://theme/icon-m-search"
-
-                    EnterKey.onClicked: {
-                        listModel.clear()
-                        pythonApi.genericSearch(searchString.text)
-                        focus = false
-                    }
-
-                }
-
-                Row {
-                    //width: parent.width
-                    anchors {
-                        leftMargin: Theme.horizontalPageMargin
-                        rightMargin: Theme.horizontalPageMargin
-                        bottom: searchString
-                    }
-                    Switch {
-                        id: searchAlbum
-                        anchors {
-                            leftMargin: Theme.horizontalPageMargin
-                            rightMargin: Theme.horizontalPageMargin
-                        }
-                        icon.source: "image://theme/icon-m-media-albums"
-                        checked: true
-                        onCheckedChanged: pythonApi.albums = checked
-                    }
-                    Switch {
-                        id: searchArtists
-                        anchors {
-                            leftMargin: Theme.horizontalPageMargin
-                            rightMargin: Theme.horizontalPageMargin
-                        }
-                        icon.source: "image://theme/icon-m-media-artists"
-                        checked: true
-                        onCheckedChanged: pythonApi.artists = checked
-
-                    }
-                    Switch {
-                        id: searchTracks
-
-                        anchors {
-                            leftMargin: Theme.horizontalPageMargin
-                            rightMargin: Theme.horizontalPageMargin
-                        }
-                        icon.source: "image://theme/icon-m-media-songs"
-                        checked: true
-                        onCheckedChanged: pythonApi.tracks = checked
-
-                    }
-                    Switch {
-                        id: searchPlaylists
-
-                        anchors {
-                            leftMargin: Theme.horizontalPageMargin
-                            rightMargin: Theme.horizontalPageMargin
-                        }
-                        icon.source: "image://theme/icon-m-media-playlists"
-                        checked: false
-                        enabled: false
-                        //onCheckedChanged: pythonApi.playlists = checked
-
-                    }
-                }
-
-                Connections {
-                    target: pythonApi
-                    onLoginSuccess:
-                    {
-                        searchString.label = "Find"
-                        searchString.enabled = loginTrue
-                    }
-                    onLoginFailed:
-                    {
-                        searchString.label = "Please go to the settings and login via OAuth"
-                        searchString.enabled = loginTrue
-                    }
-                }
-
-        }
-
-        SilicaListView {
             anchors {
-                 top: header.bottom// Anker oben an den unteren Rand der Column
-                 topMargin: 120 // Abstand zwischen der Column und dem ListView
-                 left: parent.left // Anker links am linken Rand des Eltern-Elements (Page)
-                 right: parent.right // Anker rechts am rechten Rand des Eltern-Elements (Page)
-                 leftMargin: Theme.horizontalPageMargin
-                 rightMargin: Theme.horizontalPageMargin
-                 bottom: parent.bottom// Anker unten am unteren Rand des Eltern-Elements (Page)
-             }
-            // Tell SilicaFlickable the height of its content.
-//            contentHeight: column.height
-
-            // Place our content in a Column.  The PageHeader is always placed at the top
-            // of the page, followed by our content.
-            //header : Column {
-            //}
-
-            model: ListModel { id: listModel }
-
-            delegate: ListItem {
-
-                id: listEntry
-
-                Row {
-                    anchors {
-                        left: parent.left
-                        leftMargin: Theme.horizontalPageMargin
-                        right: parent.right
-                        rightMargin: Theme.horizontalPageMargin
-                        verticalCenter: parent.verticalCenter
-                    }
-
-                    Image {
-                        id: mediaType
-                        source: {
-                            if(model.image === "")
-                            {
-                            if(listModel.get(model.index).type === 1)
-                                "image://theme/icon-m-media-songs"
-                            else if(listModel.get(model.index).type === 3)
-                                "image://theme/icon-m-media-artists"
-                            else if (listModel.get(model.index).type === 2)
-                                "image://theme/icon-m-media-albums"
-                            else if (listModel.get(model.index).type === 4)
-                                "image://theme/icon-m-media-playlists"
-                            else if (listModel.get(model.index).type === 5)
-                                "image://theme/icon-m-video"
-                            }
-                            else
-                                model.image
-                        }
-                        fillMode: Image.PreserveAspectFit
-
-                        //width: 32
-                    }
-
-                    Column {
-                    Label {
-                        property string dur: {
-                            if ((model.duration) > 3599) Format.formatDuration(model.duration, Formatter.DurationLong)
-                            else return Format.formatDuration(model.duration, Formatter.DurationShort)
-                        }
-                        id: trackName
-                        color: listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
-                        text:
-                        {
-                            if(listModel.get(model.index).type === 1)
-                                model.name + " (" + dur +")"
-                            else if(listModel.get(model.index).type === 3)
-                                model.name
-                            else if (listModel.get(model.index).type === 2)
-                                model.name + " (" + dur +")"
-                            else if (listModel.get(model.index).type === 4)
-                                model.name + " (" + dur +")"
-
-                        }
-                        x: Theme.horizontalPageMargin
-                        truncationMode: elide
-                        font.pixelSize: Theme.fontSizeSmall
-                    }
-
-                    Label {
-                        id: artistName
-                        color: listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
-                        text: model.artist + " ( " + model.album + " )"
-                        visible: listModel.get(model.index).type === 1
-                        x: Theme.horizontalPageMargin
-                        truncationMode: elide
-                        font.pixelSize: Theme.fontSizeSmall
-                    }
-                    }
-
-                }
-                menu: ContextMenu {
-
-                    MenuItem {
-                        text: "Play"
-                        onClicked: {
-                            console.log(listModel.get(model.index).type)
-                            if(listModel.get(model.index).type === 1)
-                               playlistManager.playTrack(listModel.get(model.index).id)
-                            else if(listModel.get(model.index).type === 2)
-                               playlistManager.playAlbum(listModel.get(model.index).id)
-                            else if(listModel.get(model.index).type === 4)
-                               pythonApi.playPlaylist(listModel.get(model.index).uid)
-
-                        }
-
-                    }
-
-
-                    MenuItem {
-                        text: "Play Album"
-                        visible: listModel.get(model.index).type === 1
-                        onClicked: {
-                            playlistManager.playAlbumFromTrack(listModel.get(model.index).id)
-                        }
-
-                    }
-
-                    MenuItem {
-                        text: "Queue"
-                        onClicked: {
-                            playlistManager.appendTrack(listModel.get(model.index).id)
-                        }
-
-                    }
-
-                    MenuItem {
-                        text: "Remove"
-                        onClicked: {
-                            listEntry.remorseAction("Deleting", function() {
-                                listModel.remove(model.index)
-                            })
-                        }
-                    }
-                }
-
-                onClicked:
-                {
-                    if(listModel.get(model.index).type === 1)
-                    {
-                        pageStack.push(Qt.resolvedUrl("AlbumPage.qml"))
-                        pythonApi.getTrackInfo(listModel.get(model.index).id)
-                    }else if(listModel.get(model.index).type === 2)
-                    {
-                        pageStack.push(Qt.resolvedUrl("AlbumPage.qml"))
-                        pythonApi.getAlbumInfo(listModel.get(model.index).id)
-                    }else if(listModel.get(model.index).type === 3)
-                    {
-                        pageStack.push(Qt.resolvedUrl("ArtistPage.qml"))
-                        pythonApi.getArtistInfo(listModel.get(model.index).id)
-                    }
-                }
+                left: parent.left
+                right: parent.right
+                top: parent.top
             }
-
-            Connections {
-                target: pythonApi
-
-                onTrackAdded:
-                {
-                    listModel.append(
-                                {   "name": title,
-                                    "artist" : artist,
-                                    "album" : album,
-                                    "id" : id,
-                                    "type" : 1,
-                                    "image" : image,
-                                    "duration" : duration
-                                })
-                }
-
-                onArtistAdded:
-                {
-                    listModel.append(
-                                {   "name": name,
-                                    "id" : id,
-                                    "type" : 3,
-                                    "image" : image
-                                })
-                }
-
-
-                onAlbumAdded:
-                {
-                    listModel.append(
-                                {   "name": title,
-                                    "id" : id,
-                                    "type" : 2,
-                                    "image" : image,
-                                    "duration" : duration
-                                })
-                }
-
-                onPlaylistSearchAdded:
-                {
-                    console.log(id)
-                    listModel.append(
-                                {   "name": name,
-                                    "id" : id,
-                                    "type" : 4,
-                                    "image" : image,
-                                    "duration" : duration,
-                                    "uid" : uid
-                                })
-                }
-
-            }
-            VerticalScrollDecorator {}
+            iconArray: ["image://theme/icon-m-home", "image://theme/icon-m-search", "image://theme/icon-m-media-playlists"]
+            textArray: [qsTr("Personal Page"), qsTr("Search"), qsTr("Playlist")]
         }
 
+        SlideshowView {
+                  clip: true
+                  id: swipeView
+                  height: parent.height // - miniPlayerPanel.height
+                  itemWidth: width
+                  itemHeight: height
+                  orientation: Qt.Horizontal
 
+                  anchors.top: mainPageHeader.bottom
+                  anchors.topMargin: Theme.paddingLarge
+                  anchors.left: parent.left
+                  anchors.right: parent.right
+                  anchors.bottom: miniPlayerPanel.top
+                  property var carouselPages: ["Personal.qml", "Search.qml", "TrackList.qml"]
+                  property int initialPage: 0
+                  model: carouselPages.length
+                  Component.onCompleted: currentIndex = initialPage
 
-        TrackPage {
-            id: trackPage
-        }
+                  delegate: Loader {
+                      width: swipeView.itemWidth
+                      height: swipeView.height
+                      source: swipeView.carouselPages[index]
+                      asynchronous: true
 
+                      onLoaded: {
+                    if (index === 2) { // TrackList
+                        item.title = ""
+                        item.type = "current"
+                        if (playlistManager.size > 0) {
+                            playlistManager.generateList()
+                        }
+                    }
+                }
+                }
+              }
     }
 }

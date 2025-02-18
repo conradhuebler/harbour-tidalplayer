@@ -1,78 +1,68 @@
-name: BUILD on Sailfish OS 4.4.0.58
+name: Build SFOS 4.6
 
 on:
   push:
-    branches:
-      - master
-    tags:
-      - '*'
-  # to prevent secrets leaking,
-  # we don't build on PRs
-  #pull_request:
-  #  branches:
-  #    - master
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: coderus/sailfishos-platform-sdk-aarch64:4.6.0.13
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-    
-      - name: Prepare
-        run: mkdir output
-      
-      - name: Build armv7hl
-        id: build_armv7hl
-        uses: coderus/github-sfos-build@master
-        with:
-          release: 4.4.0.58
-          arch: armv7hl
+    - name: Setup and Check Environment
+      run: |
+        whoami
+        pwd
+        ls -la /home/mersdk
         
-      - name: Build i486
-        id: build_i486
-        uses: coderus/github-sfos-build@master
-        with:
-          release: 4.4.0.58
-          arch: i486
+    - name: Manual Checkout
+      run: |
+        cd /home/mersdk
+        git clone https://github.com/conradhuebler/harbour-tidalplayer.git
+        cd harbour-tidalplayer
+        git submodule update --init --recursive
+        ls -la
+    
+    - name: Build noarch
+      working-directory: /home/mersdk/harbour-tidalplayer
+      env:
+        HOME: /home/mersdk
+      run: |
+        pwd
+        mb2 -t SailfishOS-4.6.0.13-aarch64 build
+        
+    - name: Rename RPM to fixed name
+      run: |
+        cd /home/mersdk/harbour-tidalplayer/RPMS/
+        mv harbour-tidalplayer-*-1.aarch64.rpm "harbour-tidalplayer-master-1.noarch.rpm"
+        ls -la
 
-      - name: Build aarch64
-        id: build_aarch64
-        uses: coderus/github-sfos-build@master
-        with:
-          release: 4.4.0.58
-          arch: aarch64
-      
-      - name: Upload build result
-        uses: actions/upload-artifact@v2
-        with:
-          name: rpm-build-result
-          path: RPMS
-          
-      - name: Create release
-        if: contains(github.ref, 'v')
-        run: |
-          set -x
-          assets=()
-          for asset in RPMS/*.rpm; do
-            assets+=("$asset")
-          done
-          tag_name="${GITHUB_REF##*/}"
-          gh release create "$tag_name" "${assets[@]}" 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                
-      - name: Create prerelease
-        if: contains(github.ref, 'master')
-        run: |
-          set -x
-          assets=()
-          for asset in RPMS/*.rpm; do
-            assets+=("$asset")
-          done
-          tag_name="${GITHUB_REF##*/}"
-          gh release create "$tag_name" -p -n "This is a pre-release for testing purposes only. It may or may not be unstable." "${assets[@]}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install curl
+      run: |
+        sudo zypper --non-interactive install curl
+
+    - name: Upload to Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        cd /home/mersdk/harbour-tidalplayer/RPMS/
+        # Erst altes Asset löschen falls vorhanden
+        ASSET_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets" | \
+          grep -B 2 '"name": "harbour-tidalplayer-master-1.noarch.rpm"' | \
+          grep '"id":' | sed 's/.*"id": \([0-9]*\).*/\1/')
+        if [ ! -z "$ASSET_ID" ]; then
+          curl -X DELETE \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/assets/$ASSET_ID"
+        fi
+        # Neues Asset hochladen
+        curl -X POST \
+          -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Content-Type: application/x-rpm" \
+          --data-binary @"harbour-tidalplayer-master-1.noarch.rpm" \
+          "https://uploads.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets?name=harbour-tidalplayer-master-1.noarch.rpm"

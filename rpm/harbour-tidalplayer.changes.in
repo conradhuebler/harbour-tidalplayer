@@ -8,6 +8,10 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Fr Dec 27 2024 Conrad Hübler <Conrad.Huebler@gmx.net> 0.0.3prev-1
+- restructure some code using Claude Sonnet
+- add icon
+
 * Tue Sep 05 2023 Conrad Hübler <Conrad.Huebler@gmx.net> 0.0.2-1
 - notice not working tidalapi on SFOS
 - drop C++ and old api

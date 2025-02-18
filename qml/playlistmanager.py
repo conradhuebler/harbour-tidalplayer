@@ -1,88 +1,120 @@
-# This Python file uses the following encoding: utf-8
-
-# if __name__ == "__main__":
-#     pass
-
-
 import pyotherside
 
-testlist = [161699365, 5190513]
 
 class PlaylistManager:
     def __init__(self):
-        print("init")
-        self.currentTrackIndex = -1
+        self.current_index = -1
         self.playlist = []
+        #self._notify_playlist_state()
 
-    def AppendTrack(self, id):
-        self.playlist.append(id)
+    def _notify_playlist_state(self):
+        """Benachrichtigt über den aktuellen Playlist-Status"""
+        is_last_track = self.current_index >= len(self.playlist) - 1
         pyotherside.send("playlistSize", len(self.playlist))
-        if self.currentTrackIndex  == len(self.playlist) - 1:
+        pyotherside.send("currentIndex", self.current_index)
+
+        if is_last_track:
             pyotherside.send("playlistFinished")
         else:
             pyotherside.send("playlistUnFinished")
 
-    def InsertTrack(self, id):
-        self.playlist.insert(self.currentTrackIndex + 1, id)
-        pyotherside.send("playlistSize", len(self.playlist))
-        if self.currentTrackIndex  == len(self.playlist) - 1:
-            pyotherside.send("playlistFinished")
-        else:
-            pyotherside.send("playlistUnFinished")
-        pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex], self.currentTrackIndex)
+    def _notify_current_track(self):
+        """Benachrichtigt über den aktuellen Track"""
 
-    def PreviousTrack(self):
-        self.currentTrackIndex =  self.currentTrackIndex - 1
-        pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex])
-        if self.currentTrackIndex  == len(self.playlist) - 1:
-            pyotherside.send("playlistFinished")
-        else:
-            pyotherside.send("playlistUnFinished")
+        if 0 <= self.current_index < len(self.playlist):
+            pyotherside.send("currentTrack",
+                           self.playlist[self.current_index],
+                           self.current_index)
 
-    def RestartTrack(self):
-        pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex])
+    def AppendTrack(self, track_id):
+        """Fügt einen Track am Ende der Playlist hinzu"""
+        if track_id:
+            self.playlist.append(track_id)
+            self._notify_playlist_state()
 
-    def PlayTrack(self, id):
-        self.playlist.insert(self.currentTrackIndex + 1, id)
-        self.currentTrackIndex =  self.currentTrackIndex + 1
-        pyotherside.send("playlistSize", len(self.playlist))
-        pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex], self.currentTrackIndex)
+    def AppendTrackSilent(self, track_id):
+        """Fügt einen Track am Ende der Playlist hinzu"""
+        if track_id:
+            self.playlist.append(track_id)
 
+    def InsertTrack(self, track_id):
+        """Fügt einen Track nach dem aktuellen Track ein"""
+        if track_id:
+            insert_pos = max(0, self.current_index + 1)
+            self.playlist.insert(insert_pos, track_id)
+            self._notify_playlist_state()
+            self._notify_current_track()
+            #pyotherside.send("listChanged")
 
-        if self.currentTrackIndex  == len(self.playlist) - 1:
-            pyotherside.send("playlistFinished")
-        else:
-            pyotherside.send("playlistUnFinished")
-
-    def PlayPosition(self, position):
-        self.currentTrackIndex = position
-        pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex], self.currentTrackIndex)
-
-        if self.currentTrackIndex  == len(self.playlist) - 1:
-            pyotherside.send("playlistFinished")
-        else:
-            pyotherside.send("playlistUnFinished")
+    def PlayTrack(self, track_id):
+        """Spielt einen bestimmten Track sofort"""
+        if track_id:
+            insert_pos = max(0, self.current_index + 1)
+            self.playlist.insert(insert_pos, track_id)
+            self.current_index = insert_pos
+            self._notify_playlist_state()
+            self._notify_current_track()
+            #pyotherside.send("listChanged")
 
     def NextTrack(self):
-        if self.currentTrackIndex == len(self.playlist)  - 1:
-            pyotherside.send("playlistFinished")
-        else:
-            self.currentTrackIndex =  self.currentTrackIndex + 1
-            pyotherside.send("currentTrack", self.playlist[self.currentTrackIndex], self.currentTrackIndex)
-            pyotherside.send("playlistUnFinished")
+        """Wechselt zum nächsten Track"""
+        if self.current_index < len(self.playlist) - 1:
+            self.current_index += 1
+            self._notify_current_track()
+            #self._notify_playlist_state()
+
+    def PreviousTrack(self):
+        """Wechselt zum vorherigen Track"""
+        if self.current_index > 0:
+            self.current_index -= 1
+            self._notify_current_track()
+        #self._notify_playlist_state()
+
+    def PlayPosition(self, position):
+        """Spielt einen Track an einer bestimmten Position"""
+        try:
+            position = int(position)  # Konvertiere zu Integer
+            if 0 <= position < len(self.playlist):
+                self.current_index = position
+                self._notify_current_track()
+        except (ValueError, TypeError):
+            print(f"Invalid position value: {position}")
+
+    def RestartTrack(self):
+        """Startet den aktuellen Track neu"""
+        self._notify_current_track()
 
     def GenerateList(self):
+        """Generiert die komplette Playlist"""
         pyotherside.send("clearList")
-        for i in self.playlist:
-            pyotherside.send("containsTrack", i)
+        for track_id in self.playlist:
+            pyotherside.send("containsTrack", track_id)
 
-    def clear(self):
-        self.currentTrackIndex = -1
-        self.playlist = testlist #[]
-        pyotherside.send("clearList")
+        pyotherside.send("listChanged")
+
+    def size(self):
+        """Gibt die Größe der Playlist zurück"""
+        return len(self.playlist)
+
+    def TidalId(self, index):
+        """Gibt die Tidal-ID für einen Index zurück"""
+        try:
+            index = int(index)
+            if 0 <= index < len(self.playlist):
+                return self.playlist[index]
+        except (ValueError, TypeError):
+            pass
+        return 0
+
+    def PlaylistIndex(self):
+        """Gibt den aktuellen Index zurück"""
+        return self.current_index
 
     def clearList(self):
-        self.currentTrackIndex = -1
+        """Leert die komplette Playlist"""
+        self.current_index = -1
         self.playlist = []
+        self._notify_playlist_state()
+
 
 PL = PlaylistManager()
