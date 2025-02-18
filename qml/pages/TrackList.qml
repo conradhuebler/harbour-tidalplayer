@@ -201,7 +201,8 @@ Item {
                 MenuItem {
                     text: qsTr("Remove from Queue")
                     onClicked: {
-                        // TODO: Implementiere Remove-Funktion
+                        var currentTrackId = playlistManager.requestPlaylistItem(model.index)
+                        playlistManager.removeTrack(currentTrackId)
                     }
                     visible: type === "current"
                 }
