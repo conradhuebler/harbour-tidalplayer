@@ -404,6 +404,10 @@ Item {
         }
 
         onFavArtists: {
+            if (artist_info == undefined) {
+                 console.error("artist_info is undefined. skip append to model")
+                 return;
+            }
             topArtistsModel.append({
                 "name": artist_info.name,
                 "image": artist_info.image,
@@ -412,6 +416,10 @@ Item {
         }
 
         onFavAlbums: {
+            if (album_info == undefined) {
+                 console.error("album_info is undefined. skip append to model")
+                 return;
+            }            
             topAlbumsModel.append({
                 "title": album_info.title,
                 "image": album_info.image,
@@ -420,7 +428,11 @@ Item {
         }
 
         onFavTracks: {
-        console.log("Found favourite tracks", track_info.title)
+            if (track_info == undefined) {
+                 console.error("track_info is undefined. skip append to model")
+                 return;
+            }
+            console.log("Found favourite tracks", track_info.title)
             topTitleModel.append({
                 "title": track_info.title,
                 "image": track_info.image,
