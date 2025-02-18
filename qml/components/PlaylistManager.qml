@@ -126,7 +126,10 @@ Item {
            if(initialised)  call("playlistmanager.PL.PlaylistIndex", [], function(index){
                 current_track = index
             })
+        }
 
+        function removeTrack(id) {
+            if(initialised)  call('playlistmanager.PL.RemoveTrack', [id], {})            
         }
 
         function getSize() {
@@ -219,6 +222,16 @@ Item {
         canNext = true
     }
 
+    // id: trackid
+    function removeTrack(id){
+        console.log("PlaylistManager.removeTrack", id)
+        playlistPython.removeTrack(id)
+        // todo:
+        // update canNext / canPrev
+        // deletion wont stop the current track
+        // player gets disconnected kinda
+    }
+
     function currentTrackIndex() {
         playlistPython.currentTrackIndex()
     }
@@ -227,6 +240,7 @@ Item {
         playlistPython.getSize()
     }
 
+    // the name of this method is misleading, i did expect a track-info not the id
     function requestPlaylistItem(index) {
         var id = playlistPython.call_sync("playlistmanager.PL.TidalId", [index])
         root.tidalId = id
@@ -302,6 +316,10 @@ Item {
 
     function loadSavedPlaylist(name) {
         playlistStorage.loadPlaylist(name);
+    }
+
+    function deleteSavedPlaylist(name) {
+        playlistStorage.deletePlaylist(name);
     }
 
     // Überschreibe die Navigation-Funktionen
