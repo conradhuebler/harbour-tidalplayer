@@ -210,33 +210,32 @@ Item {
                         console.log("removingPrevTrack:",orgIndex)
                         playlistManager.removeTrack(orgTrackId)
                         if (type === "current") {
+                            if (playlistManager.size === 0) {
+                                playlistManager.playlistFinished()
+                                return
+                            }
                             if (removingSelected)
                             {   // intention: if user removes the currently played song
                                 // then move next if possible, else stop playing
                                 if (playingState) {
                                     playlistManager.playPosition(model.index)
-                                }
-                                else
-                                {
-                                    playlistManager.setTrack(orgIndex) // to inform cover
-                                }
+                                } else {
+                                    playlistManager.setTrack(orgIndex) }// to inform cover
                                 return
                             }
                             if (removingPrevTrack ) {
                                 // remove a track before selected
-                                // need to position myself properly
                                 console.log("removePrevTrack:", orgIndex, currentIndex)
+                                var newIndex = Math.max(0, currentIndex - 1)
                                 if (playingState) {
-                                    //todo: check for 0
-                                    playlistManager.playPosition(currentIndex-1)
+                                    playlistManager.playPosition(newIndex)
+                                 } else {
+                                    model.index = newIndex
+                                    currentIndex = newIndex
+                                    playlistManager.setTrack(newIndex)  
                                 }
-                                else
-                                {
-                                    playlistManager.setTrack(currentIndex-1) 
-                                }
-                                return
                             }
-                            // remove a track after me, no action needed
+                            // no action needed for removal after current track
                         }
                     }
                     visible: type === "current"

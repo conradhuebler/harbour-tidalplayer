@@ -31,7 +31,7 @@ Item {
     signal containsTrack(int id)
     signal clearList()
     signal currentTrack(int position)
-    signal selectedTrackChanged(var trackinfo)  // signal that position in playlist has changed (but in pause mode)
+    signal selectedTrackChanged(var trackinfo)  // signal that position in playlist has changed (no playing it)
 
     signal playlistFinished()
     signal listChanged()
