@@ -41,6 +41,7 @@ Item {
     SilicaListView {
         id: tracks
         anchors.fill: parent
+        highlightFollowsCurrentItem: true
 
         header: PageHeader {
             title: root.title
@@ -201,14 +202,40 @@ Item {
                 MenuItem {
                     text: qsTr("Remove from Queue")
                     onClicked: {
-                        var currentTrackId = playlistManager.requestPlaylistItem(model.index)
-                        playlistManager.removeTrack(currentTrackId)
-                        if (type === "current" && currentIndex === model.index)
-                        {  // intention: if user removes the currently played song
-                           // then move next if possible, else stop playing
-                           // after deletion the index will point to next track
-                           currentTrackId = playlistManager.requestPlaylistItem(model.index)
-                           playlistManager.restartTrack(currentTrackId)
+                        var orgIndex = model.index
+                        var playingState = mediaController.isPlaying
+                        var removingPrevTrack = orgIndex < currentIndex
+                        var removingSelected = currentIndex === model.index
+                        console.log("removingPrevTrack:",orgIndex)
+                        playlistManager.removeTrack(orgTrackId)
+                        if (type === "current") {
+                            if (removingSelected)
+                            {   // intention: if user removes the currently played song
+                                // then move next if possible, else stop playing
+                                if (playingState) {
+                                    playlistManager.playPosition(model.index)
+                                }
+                                else
+                                {
+                                    playlistManager.setTrack(orgIndex) // to inform cover
+                                }
+                                return
+                            }
+                            if (removingPrevTrack ) {
+                                // remove a track before selected
+                                // need to position myself properly
+                                console.log("removePrevTrack:", orgIndex, currentIndex)
+                                if (playingState) {
+                                    //todo: check for 0
+                                    playlistManager.playPosition(currentIndex-1)
+                                }
+                                else
+                                {
+                                    playlistManager.setTrack(currentIndex-1) 
+                                }
+                                return
+                            }
+                            // remove a track after me, no action needed
                         }
                     }
                     visible: type === "current"

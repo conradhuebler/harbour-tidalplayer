@@ -31,6 +31,7 @@ Item {
     signal containsTrack(int id)
     signal clearList()
     signal currentTrack(int position)
+    signal selectedTrackChanged(var trackinfo)  // signal that position in playlist has changed (but in pause mode)
 
     signal playlistFinished()
     signal listChanged()
@@ -228,8 +229,6 @@ Item {
         playlistPython.removeTrack(id)
         // todo:
         // update canNext / canPrev
-        // deletion wont stop the current track
-        // player gets disconnected kinda
     }
 
     function currentTrackIndex() {
@@ -265,6 +264,19 @@ Item {
         mediaController.blockAutoNext = true
         playlistPython.playTrack(id)
         currentTrackIndex()
+    }
+
+    function setTrack(index) {
+        console.log("Playlistmanager::settrack", index)
+        var trackId = requestPlaylistItem(index)
+        currentIndex = index
+        console.log("trackId:",trackId)
+        playlistStorage.updatePosition(playlistStorage.currentPlaylistName, index)
+        var track = cacheManager.getTrackInfo(trackId)
+        root.trackInformation(trackId, index, track[1], track[2], track[3], track[4], track[5])
+        root.selectedTrackChanged(track)
+
+        //todo: update in playlistcache ?
     }
 
     function insertTrack(id) {
