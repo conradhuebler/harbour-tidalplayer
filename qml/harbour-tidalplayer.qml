@@ -129,12 +129,12 @@ ApplicationWindow
     PlaylistStorage {
         id: playlistStorage
 
-        property string currentPlaylistName: ""
+        //property string currentPlaylistName: ""
 
         onPlaylistLoaded: {
             // Wenn eine Playlist geladen wird
-            currentPlaylistName = name;
-            playlistManager.clearPlayList();
+            playlistTitle = name;
+            playlistManager.forceClearPlayList();
             trackIds.forEach(function(trackId) {
                 playlistManager.appendTrack(trackId);
             });
