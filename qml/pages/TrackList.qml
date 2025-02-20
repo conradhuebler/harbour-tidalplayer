@@ -203,6 +203,7 @@ Item {
                     text: qsTr("Remove from Queue")
                     onClicked: {
                         var orgIndex = model.index
+                        var orgTrackId = playlistManager.requestPlaylistItem(model.index)
                         var playingState = mediaController.isPlaying
                         var removingPrevTrack = orgIndex < currentIndex
                         var removingSelected = currentIndex === model.index
