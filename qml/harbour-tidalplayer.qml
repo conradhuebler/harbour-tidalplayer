@@ -103,33 +103,8 @@ ApplicationWindow
         sleepTimer.stop()
         remainingMinutes = 0
     }
-    MprisPlayer{
-        id: mprisPlayer
-        canControl: true
 
-        canGoNext: true
-        canGoPrevious: true
-        canPause: true
-        canPlay: true
-        canSeek: true
 
-        serviceName: "tidalplayer"
-        identity: "Tidal Music Player"
-
-        function updateTrack(track, artist, album)
-        {
-                console.debug("Title changed to: " + track)
-                var metadata = mprisPlayer.metadata
-                metadata[Mpris.metadataToString(Mpris.Title)] = track
-                metadata[Mpris.metadataToString(Mpris.Artist)] = artist
-
-                metadata[Mpris.metadataToString(Mpris.Album)] = album
-
-                mprisPlayer.metadata = metadata
-
-        }
-
-    }
 
     TidalApi {
         id: tidalApi
@@ -174,6 +149,85 @@ ApplicationWindow
     MediaController
     {
         id: mediaController
+    }
+
+// MPRIS Player
+    MprisPlayer {
+        id: mprisPlayer
+
+        // Bereits vorhandene Eigenschaften
+        canControl: true
+        canGoNext: true
+        canGoPrevious: true
+        canPause: true
+        canPlay: true
+        canSeek: true
+
+        serviceName: "tidalplayer"
+        identity: "Tidal Music Player"
+
+        // Zusätzliche wichtige Eigenschaften
+        canQuit: true
+        canSetFullscreen: false
+        canRaise: true
+        hasTrackList: true
+        loopStatus: Mpris.None
+        shuffle: false
+        volume: mediaController.volume
+        position: mediaController.position * 1000 // MPRIS verwendet Mikrosekunden
+
+        // Aktualisierte Metadaten-Funktion
+        function updateTrack(track, artist, album) {
+            var metadata = {}
+
+            // Pflichtfelder
+            metadata[Mpris.metadataToString(Mpris.Title)] = track
+            metadata[Mpris.metadataToString(Mpris.Artist)] = [artist] // Array von Künstlern
+            metadata[Mpris.metadataToString(Mpris.Album)] = album
+
+            // Zusätzliche wichtige Metadaten
+            metadata[Mpris.metadataToString(Mpris.Length)] = mediaController.current_track_duration * 1000000 // Mikrosekunden
+            metadata[Mpris.metadataToString(Mpris.TrackNumber)] = playlistManager.currentIndex + 1
+
+            if (mediaController.current_track_image !== "") {
+                metadata[Mpris.metadataToString(Mpris.ArtUrl)] = mediaController.current_track_image
+            }
+
+            // Eindeutige ID für den Track
+            metadata[Mpris.metadataToString(Mpris.TrackId)] = "/org/mpris/MediaPlayer2/track/" +
+                playlistManager.currentIndex
+
+            mprisPlayer.metadata = metadata
+        }
+
+        // Zusätzliche MPRIS-Signalhandler
+        onRaiseRequested: {
+            // App in den Vordergrund bringen
+            window.raise()
+        }
+
+        onQuitRequested: {
+            // App beenden
+            Qt.quit()
+        }
+
+        onVolumeRequested: {
+            // Lautstärke ändern
+            mediaPlayer.volume = volume
+        }
+
+        onSeekRequested: {
+            // Position ändern (offset ist in Mikrosekunden)
+            var newPos = mediaPlayer.position + (offset / 1000000)
+            if (newPos < 0) newPos = 0
+            if (newPos > mediaPlayer.duration) newPos = mediaPlayer.duration
+            mediaPlayer.seek(newPos)
+        }
+
+        onSetPositionRequested: {
+            // Absolute Position setzen (position ist in Mikrosekunden)
+            mediaPlayer.seek(position / 1000000)
+        }
     }
 
     initialPage: Component {
@@ -236,33 +290,28 @@ ApplicationWindow
         target: mprisPlayer
         onPlayRequested :
         {
-            console.log("play requested")
-            mediaPlayer.play()
+            mediaController.play()
         }
 
         onPauseRequested :
         {
-            console.log("pause requested")
-            mediaPlayer.pause()
+            mediaController.pause()
         }
 
         onPlayPauseRequested :
         {
-            console.log("playpause requested")
-
-            if (mediaPlayer.playbackState == 1)
+            if (mediaController.playbackState == 1)
             {
-                mediaPlayer.pause()
+                mediaController.pause()
             }
-            else if(mediaPlayer.playbackState == 2){
-                mediaPlayer.play()
+            else if(mediaController.playbackState == 2){
+                mediaController.play()
             }
         }
 
         onNextRequested :
         {
-            console.log("play next")
-            mediaPlayer.blockAutoNext = true
+            mediaController.blockAutoNext = true
             playlistManager.nextTrackClicked()
         }
 
