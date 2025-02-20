@@ -189,6 +189,14 @@ CoverBackground {
             // prevButton.enabled = playlistManager.canPrev
             // nextButton.enabled = playlistManager.canNext
         }
+        onSelectedTrackChanged: {
+            console.log("hurra playlist")
+            console.log(trackinfo.title)
+            // i need a call back with an trackinfo object
+            titleLabel.text = trackinfo.title
+            artist_albumLabel.text = trackinfo.artist + "\n" + trackinfo.album
+            coverImage.source = trackinfo.image
+        }
     }
 
     Connections {
