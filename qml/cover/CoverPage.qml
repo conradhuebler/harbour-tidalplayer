@@ -186,8 +186,8 @@ CoverBackground {
             titleLabel.text = qsTr("Tidal Player")
             artist_albumLabel.text = qsTr("No track playing")
             coverImage.source = ""
-            prevButton.enabled = playlistManager.canPrev
-            nextButton.enabled = playlistManager.canNext
+            // prevButton.enabled = playlistManager.canPrev
+            // nextButton.enabled = playlistManager.canNext
         }
     }
 

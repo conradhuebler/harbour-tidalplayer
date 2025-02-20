@@ -9,6 +9,7 @@ Page {
 
     property string playlistId
     property string playlistTitle
+    property string type // or alias ?
 
     TrackList {
         anchors.fill: parent

@@ -297,6 +297,10 @@ Item {
                 root.loading = false
             })
 
+            setHandler('apiError', function(error) {
+                console.log("api-error: " + error)
+            })
+
             setHandler('playlistTrackAdded', function(track_info) {
                 root.playlistTrackAdded(track_info)
             })

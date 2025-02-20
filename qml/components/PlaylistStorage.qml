@@ -44,7 +44,7 @@ Item {
 
     // Speichere Playlist mit Position
     function savePlaylist(name, trackIds, position) {
-    console.log("Save datanbase", name, trackIds, position)
+    console.log("Save database", name, trackIds, position)
         var db = getDatabase();
         var tracksJson = JSON.stringify(trackIds);
 
@@ -82,7 +82,7 @@ Item {
         var db = getDatabase();
 
         db.transaction(function(tx) {
-            tx.executeSql('UPDATE playlresultists SET position = ?, last_played = CURRENT_TIMESTAMP WHERE name = ?',
+            tx.executeSql('UPDATE playlists SET position = ?, last_played = CURRENT_TIMESTAMP WHERE name = ?',
                          [position, name]);
         });
     }
@@ -109,6 +109,7 @@ Item {
             for (var i = 0; i < result.rows.length; i++) {
                 var item = result.rows.item(i);
                 var tracks = JSON.parse(item.tracks);
+                if (tracks == undefined) return playlists;
                 playlists.push({
                     name: item.name,
                     position: item.position,
@@ -164,6 +165,7 @@ Item {
         console.log("Loading current playlist ", trackIds)
         console.log("Loading current playlist ", position)
 
+        if (trackIds === undefined) return;
 
         if (currentPlaylist && trackIds.length > 0) {
             playlistManager.clearPlayList()

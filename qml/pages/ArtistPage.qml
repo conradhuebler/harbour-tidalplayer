@@ -6,7 +6,7 @@ import "widgets"
 
 Page {
     id: artistPage
-    property int artistid: -1
+    property int artistId: -1
     property var artistData: null
     property bool isHeaderCollapsed: false
 
@@ -259,7 +259,7 @@ Page {
                     }
 
                     onClicked: pageStack.push(Qt.resolvedUrl("ArtistPage.qml"),
-                                            { artistid: model.artistid })
+                                            { artistId: model.artistid })
                 }
             }
         }
@@ -276,10 +276,11 @@ Page {
     }
 
     Component.onCompleted: {
-        if (artistid > 0) {
-            artistData = cacheManager.getArtistInfo(artistid)
+        if (artistId > 0) {
+            artistData = cacheManager.getArtistInfo(artistId)
             if (!artistData) {
-                console.log("Artist nicht im Cache gefunden:", artistid)
+                console.log("Artist nicht im Cache gefunden:", artistId)
+                //todo: react - retry ?
             }
             header.title = artistData.name
             artistName.text = artistData.name
