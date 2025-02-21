@@ -320,6 +320,10 @@ Page {
         }
 
         onSimilarArtist: {
+            if (artist_info === undefined) {
+                console.log("artist_info is undefined. skip append to model")
+                return
+            }
             simartistView.model.append({
                 name: artist_info.name,
                 cover: artist_info.image,

@@ -18,11 +18,11 @@ Item {
     SilicaFlickable {
         anchors {
             fill: parent
-            bottomMargin: minPlayerPanel.margin
+            bottomMargin: 0 //minPlayerPanel.margin
         }
         clip: true //miniPlayerPanel.expanded
-        contentHeight: parent.height - miniPlayerPanel.height
-        anchors.bottom: miniPlayerPanel.top
+        contentHeight: parent.height
+        // anchors.bottom: miniPlayerPanel.top
 
         // Header-Bereich
         Column {
@@ -102,10 +102,12 @@ Item {
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
-                margins: Theme.horizontalPageMargin
+                leftMargin: Theme.horizontalPageMargin
+                rightMargin: Theme.horizontalPageMargin
             }
             clip: true
-            height: parent.height - miniPlayerPanel.height
+            height: parent.height
+            contentHeight: height
             model: ListModel { id: listModel }
 
             delegate: SearchResultDelegate {

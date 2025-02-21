@@ -21,7 +21,6 @@ Page {
             bottomMargin: minPlayerPanel.margin
         }
 
-        //contentHeight: column.height
 
         // PullDownMenu and PushUpMenu must be declared in SilicaFlickable, SilicaListView or SilicaGridView
         PullDownMenu {
@@ -87,10 +86,16 @@ Page {
         SlideshowView {
                   clip: true
                   id: swipeView
-                  height: parent.height // - miniPlayerPanel.height
+                  height: parent.height - getBottomOffset() // << this limits the overall size
                   itemWidth: width
                   itemHeight: height
                   orientation: Qt.Horizontal
+
+                  function getBottomOffset()
+                  {
+                      if (minPlayerPanel.open) return ( 1.8 * minPlayerPanel.height )
+                      return minPlayerPanel.height * 0.9
+                  }
 
                   anchors.top: mainPageHeader.bottom
                   anchors.topMargin: Theme.paddingLarge
