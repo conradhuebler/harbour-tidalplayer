@@ -246,9 +246,13 @@ Item {
         return id
     }
 
-    function playAlbum(id) {
-        console.log("playalbum", id)
-        clearPlayList()
+    // to minimze sideeffects, clear remains default
+    function playAlbum(id, clearFirst) {
+        var shouldClear = clearFirst === undefined ? true : clearFirst
+        console.log("playalbum", id, shouldClear)
+        if (shouldClear) {
+            clearPlayList()
+        }
         currentTrackIndex()
         tidalApi.playAlbumTracks(id)
     }
