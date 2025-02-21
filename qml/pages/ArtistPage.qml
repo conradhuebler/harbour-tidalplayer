@@ -280,6 +280,7 @@ Page {
             artistData = cacheManager.getArtistInfo(artistId)
             if (!artistData) {
                 console.log("Artist nicht im Cache gefunden:", artistId)
+                //todo: react - retry ?
             }
             header.title = artistData.name
             artistName.text = artistData.name

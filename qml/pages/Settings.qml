@@ -113,6 +113,23 @@ Page {
                            applicationWindow.settings.audio_quality = qualities[currentIndex]
                        }
             }
+            SectionHeader {
+                text: qsTr("Maintenance")
+
+            }
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
+                text: qsTr("Reset Cache")
+                visible: true
+                onClicked: {
+                    cacheManager.clearCache()
+                }
+            }
+
         }
 
         VerticalScrollDecorator {}

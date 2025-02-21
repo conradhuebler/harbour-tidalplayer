@@ -46,6 +46,15 @@ class PlaylistManager:
             self._notify_current_track()
             #pyotherside.send("listChanged")
 
+    def RemoveTrack(self, track_id):
+        """Entfernt einen Track aus der Playlist"""
+        if track_id:
+            try:
+                self.playlist.remove(track_id)
+                self._notify_playlist_state()
+            except ValueError:
+                print(f"Track with id {track_id} not found in the playlist")
+
     def PlayTrack(self, track_id):
         """Spielt einen bestimmten Track sofort"""
         if track_id:
@@ -115,6 +124,5 @@ class PlaylistManager:
         self.current_index = -1
         self.playlist = []
         self._notify_playlist_state()
-
 
 PL = PlaylistManager()

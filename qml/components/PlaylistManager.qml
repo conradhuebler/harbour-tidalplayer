@@ -31,6 +31,7 @@ Item {
     signal containsTrack(int id)
     signal clearList()
     signal currentTrack(int position)
+    signal selectedTrackChanged(var trackinfo)  // signal that position in playlist has changed (no playing it)
 
     signal playlistFinished()
     signal listChanged()
@@ -67,6 +68,8 @@ Item {
             })
 
             setHandler('clearList', function() {
+                console.log("Playlist must be cleared")
+
                 root.clearList()
             })
 
@@ -126,7 +129,10 @@ Item {
            if(initialised)  call("playlistmanager.PL.PlaylistIndex", [], function(index){
                 current_track = index
             })
+        }
 
+        function removeTrack(id) {
+            if(initialised)  call('playlistmanager.PL.RemoveTrack', [id], {})            
         }
 
         function getSize() {
@@ -181,6 +187,11 @@ Item {
             }
         }
 
+        function forceClearPlayList() {
+            console.log("Force Clear list invoked")
+            call('playlistmanager.PL.clearList', {})
+        }
+
 /* new functions are here */
 
         function playTrack(id) {
@@ -201,7 +212,10 @@ Item {
         playlistPython.clearPlayList()
     }
 
-    // Öffentliche Funktionen
+    function forceClearPlayList() {
+        playlistPython.forceClearPlayList()
+    }
+
     function play() {
         playlistPython.playPosition(0)
     }
@@ -219,6 +233,14 @@ Item {
         canNext = true
     }
 
+    // id: trackid
+    function removeTrack(id){
+        console.log("PlaylistManager.removeTrack", id)
+        playlistPython.removeTrack(id)
+        // todo:
+        // update canNext / canPrev
+    }
+
     function currentTrackIndex() {
         playlistPython.currentTrackIndex()
     }
@@ -227,15 +249,20 @@ Item {
         playlistPython.getSize()
     }
 
+    // the name of this method is misleading, i did expect a track-info not the id
     function requestPlaylistItem(index) {
         var id = playlistPython.call_sync("playlistmanager.PL.TidalId", [index])
         root.tidalId = id
         return id
     }
 
-    function playAlbum(id) {
-        console.log("playalbum", id)
-        clearPlayList()
+    // to minimze sideeffects, clear remains default
+    function playAlbum(id, clearFirst) {
+        var shouldClear = clearFirst === undefined ? true : clearFirst
+        console.log("playalbum", id, shouldClear)
+        if (shouldClear) {
+            clearPlayList()
+        }
         currentTrackIndex()
         tidalApi.playAlbumTracks(id)
     }
@@ -253,6 +280,19 @@ Item {
         currentTrackIndex()
     }
 
+    function setTrack(index) {
+        console.log("Playlistmanager::settrack", index)
+        var trackId = requestPlaylistItem(index)
+        currentIndex = index
+        console.log("trackId:",trackId)
+        playlistStorage.updatePosition(playlistStorage.playlistTitle, index)
+        var track = cacheManager.getTrackInfo(trackId)
+        root.trackInformation(trackId, index, track[1], track[2], track[3], track[4], track[5])
+        root.selectedTrackChanged(track)
+
+        //todo: update in playlistcache ?
+    }
+
     function insertTrack(id) {
         console.log("PlaylistManager.insertTrack", id)
         playlistPython.insertTrack(id)
@@ -265,8 +305,8 @@ Item {
         playlistPython.nextTrack()
         currentTrackIndex()
         mediaController.blockAutoNext = false
-        if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, currentIndex);
         }
     }
 
@@ -280,8 +320,8 @@ Item {
         mediaController.blockAutoNext = true
         playlistPython.previousTrack()
         currentTrackIndex()
-         if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+         if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, currentIndex);
         }
     }
 
@@ -297,11 +337,18 @@ Item {
             trackIds.push(requestPlaylistItem(i));
         }
         playlistStorage.savePlaylist(name, trackIds, currentIndex);
-        playlistStorage.currentPlaylistName = name;
+        playlistStorage.playlistTitle = name;
     }
 
     function loadSavedPlaylist(name) {
+        console.log("Load playlist", name)
+        //playlistStorage.playlistTitle = name;
+        //clearPlayList()
         playlistStorage.loadPlaylist(name);
+    }
+
+    function deleteSavedPlaylist(name) {
+        playlistStorage.deletePlaylist(name);
     }
 
     // Überschreibe die Navigation-Funktionen
@@ -310,8 +357,8 @@ Item {
         playlistPython.nextTrack()
         currentTrackIndex()
         // Speichere Fortschritt
-        if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, currentIndex);
         }
     }
 
@@ -320,8 +367,8 @@ Item {
         playlistPython.previousTrack()
         currentTrackIndex()
         // Speichere Fortschritt
-        if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, currentIndex);
         }
     }
 
@@ -331,8 +378,8 @@ Item {
         playlistPython.playPosition(position)
         currentTrackIndex()
         // Speichere Fortschritt
-        if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, position);
+        if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, position);
         }
     }
 

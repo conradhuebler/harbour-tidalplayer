@@ -21,6 +21,10 @@ id: root
 
         onCacheTrack: {
             //track_info
+            if (track_info == undefined) {
+                console.error("track_info is undefined. skipping save")
+                return;
+            }            
             saveTrackToCache({
                 trackid: track_info.trackid,
                 title: track_info.title,
@@ -38,6 +42,10 @@ id: root
 
         onCacheArtist: {
             //artist_info
+            if (artist_info == undefined) {
+                console.error("artist_info is undefined. skipping save")
+                return;
+            }            
             saveArtistToCache({
                 artistid: artist_info.artistid,
                 name: artist_info.name,
@@ -50,6 +58,10 @@ id: root
 
         onCacheAlbum: {
             //album_info
+            if (album_info == undefined) {
+                console.error("album_info is undefined. skipping save")
+                return;
+            } 
             saveAlbumToCache({
                 albumid: album_info.albumid,
                 title: album_info.title,
@@ -380,6 +392,7 @@ id: root
 
     // Cache leeren
     function clearCache() {
+        console.log("clearing cache.")
         db.transaction(function(tx) {
             tx.executeSql('DELETE FROM tracks')
             tx.executeSql('DELETE FROM albums')
