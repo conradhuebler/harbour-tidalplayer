@@ -328,6 +328,13 @@ Item {
             }
         }
 
+        onClearList: {
+            console.log("Playlist must be cleared")
+            if (type === "current") {
+                listModel.clear()
+            }
+        }
+
         onListChanged: {
             console.log("update playlist")
             if (type === "current") {

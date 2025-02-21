@@ -68,6 +68,8 @@ Item {
             })
 
             setHandler('clearList', function() {
+                console.log("Playlist must be cleared")
+
                 root.clearList()
             })
 
@@ -185,6 +187,11 @@ Item {
             }
         }
 
+        function forceClearPlayList() {
+            console.log("Force Clear list invoked")
+            call('playlistmanager.PL.clearList', {})
+        }
+
 /* new functions are here */
 
         function playTrack(id) {
@@ -205,7 +212,10 @@ Item {
         playlistPython.clearPlayList()
     }
 
-    // Öffentliche Funktionen
+    function forceClearPlayList() {
+        playlistPython.forceClearPlayList()
+    }
+
     function play() {
         playlistPython.playPosition(0)
     }
@@ -275,7 +285,7 @@ Item {
         var trackId = requestPlaylistItem(index)
         currentIndex = index
         console.log("trackId:",trackId)
-        playlistStorage.updatePosition(playlistStorage.currentPlaylistName, index)
+        playlistStorage.updatePosition(playlistStorage.playlistTitle, index)
         var track = cacheManager.getTrackInfo(trackId)
         root.trackInformation(trackId, index, track[1], track[2], track[3], track[4], track[5])
         root.selectedTrackChanged(track)
@@ -295,8 +305,8 @@ Item {
         playlistPython.nextTrack()
         currentTrackIndex()
         mediaController.blockAutoNext = false
-        if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, currentIndex);
         }
     }
 
@@ -310,8 +320,8 @@ Item {
         mediaController.blockAutoNext = true
         playlistPython.previousTrack()
         currentTrackIndex()
-         if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+         if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, currentIndex);
         }
     }
 
@@ -327,10 +337,13 @@ Item {
             trackIds.push(requestPlaylistItem(i));
         }
         playlistStorage.savePlaylist(name, trackIds, currentIndex);
-        playlistStorage.currentPlaylistName = name;
+        playlistStorage.playlistTitle = name;
     }
 
     function loadSavedPlaylist(name) {
+        console.log("Load playlist", name)
+        //playlistStorage.playlistTitle = name;
+        //clearPlayList()
         playlistStorage.loadPlaylist(name);
     }
 
@@ -344,8 +357,8 @@ Item {
         playlistPython.nextTrack()
         currentTrackIndex()
         // Speichere Fortschritt
-        if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, currentIndex);
         }
     }
 
@@ -354,8 +367,8 @@ Item {
         playlistPython.previousTrack()
         currentTrackIndex()
         // Speichere Fortschritt
-        if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, currentIndex);
+        if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, currentIndex);
         }
     }
 
@@ -365,8 +378,8 @@ Item {
         playlistPython.playPosition(position)
         currentTrackIndex()
         // Speichere Fortschritt
-        if (playlistStorage.currentPlaylistName) {
-            playlistStorage.updatePosition(playlistStorage.currentPlaylistName, position);
+        if (playlistStorage.playlistTitle) {
+            playlistStorage.updatePosition(playlistStorage.playlistTitle, position);
         }
     }
 

@@ -16,17 +16,6 @@ Page {
         type: "current"
     }
 
-    Connections {
-        target: playlistManager
-        onCurrentTrack: {
-            //pLtrackList.highlight_index = position
-        }
-
-        onClearList: {
-            pLtrackList.clear()
-        }
-    }
-
     Component.onCompleted: {
         console.log("PlaylistPage loaded")
         if (playlistManager.size > 0) {

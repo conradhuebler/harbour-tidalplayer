@@ -125,5 +125,4 @@ class PlaylistManager:
         self.playlist = []
         self._notify_playlist_state()
 
-
 PL = PlaylistManager()

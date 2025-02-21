@@ -18,7 +18,6 @@ Item {
    // MediaPlayer Properties (durchgereicht via alias)
     readonly property alias mediaPlayer: mediaPlayer
     property alias player: mediaPlayer
-    property alias mpris: mprisPlayer
     property alias source: mediaPlayer.source
     property alias position: mediaPlayer.position
     property alias duration: mediaPlayer.duration
@@ -45,84 +44,7 @@ Item {
     property alias videoPlaying: mediaPlayer.videoPlaying
     property string errorMsg: mediaPlayer.errorMsg
 
-    // MPRIS Player
-    MprisPlayer {
-        id: mprisPlayer
 
-        // Bereits vorhandene Eigenschaften
-        canControl: true
-        canGoNext: true
-        canGoPrevious: true
-        canPause: true
-        canPlay: true
-        canSeek: true
-
-        serviceName: "tidalplayer"
-        identity: "Tidal Music Player"
-
-        // Zusätzliche wichtige Eigenschaften
-        canQuit: true
-        canSetFullscreen: false
-        canRaise: true
-        hasTrackList: true
-        loopStatus: Mpris.None
-        shuffle: false
-        volume: mediaPlayer.volume
-        position: mediaPlayer.position * 1000 // MPRIS verwendet Mikrosekunden
-
-        // Aktualisierte Metadaten-Funktion
-        function updateTrack(track, artist, album) {
-            var metadata = {}
-
-            // Pflichtfelder
-            metadata[Mpris.metadataToString(Mpris.Title)] = track
-            metadata[Mpris.metadataToString(Mpris.Artist)] = [artist] // Array von Künstlern
-            metadata[Mpris.metadataToString(Mpris.Album)] = album
-
-            // Zusätzliche wichtige Metadaten
-            metadata[Mpris.metadataToString(Mpris.Length)] = current_track_duration * 1000000 // Mikrosekunden
-            metadata[Mpris.metadataToString(Mpris.TrackNumber)] = playlistManager.currentIndex + 1
-
-            if (current_track_image !== "") {
-                metadata[Mpris.metadataToString(Mpris.ArtUrl)] = current_track_image
-            }
-
-            // Eindeutige ID für den Track
-            metadata[Mpris.metadataToString(Mpris.TrackId)] = "/org/mpris/MediaPlayer2/track/" +
-                playlistManager.currentIndex
-
-            mprisPlayer.metadata = metadata
-        }
-
-        // Zusätzliche MPRIS-Signalhandler
-        onRaiseRequested: {
-            // App in den Vordergrund bringen
-            window.raise()
-        }
-
-        onQuitRequested: {
-            // App beenden
-            Qt.quit()
-        }
-
-        onVolumeRequested: {
-            // Lautstärke ändern
-            mediaPlayer.volume = volume
-        }
-
-        onSeekRequested: {
-            // Position ändern (offset ist in Mikrosekunden)
-            var newPos = mediaPlayer.position + (offset / 1000000)
-            if (newPos < 0) newPos = 0
-            if (newPos > mediaPlayer.duration) newPos = mediaPlayer.duration
-            mediaPlayer.seek(newPos)
-        }
-
-        onSetPositionRequested: {
-            // Absolute Position setzen (position ist in Mikrosekunden)
-            mediaPlayer.seek(position / 1000000)
-        }
-    }
 
     // Media Player
     MediaPlayer {
@@ -182,31 +104,6 @@ Item {
             console.log("Playback state changed: ", playbackState)
             console.log("Next and prev ", playlistManager.canNext, playlistManager.canPrev)
             console.log(errorMsg)
-        }
-    }
-
-    // MPRIS Connections
-    Connections {
-        target: mprisPlayer
-
-        onPlayRequested: mediaPlayer.play()
-        onPauseRequested: mediaPlayer.pause()
-
-        onPlayPauseRequested: {
-            if (mediaPlayer.playbackState == 1) {
-                mediaPlayer.pause()
-            } else if(mediaPlayer.playbackState == 2) {
-                mediaPlayer.play()
-            }
-        }
-
-        onNextRequested: {
-            mediaPlayer.blockAutoNext = true
-            playlistManager.nextTrackClicked()
-        }
-
-        onPreviousRequested: {
-            playlistManager.previousTrackClicked()
         }
     }
 
