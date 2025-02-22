@@ -232,7 +232,7 @@ Item {
                     }
 
                     onClicked: {
-                                    playlistManager.playTrack(model.trackid)
+                        playlistManager.playTrack(model.trackid)
                     }
                 }
 
@@ -288,8 +288,8 @@ Item {
                         fill: parent
                         margins: Theme.paddingSmall
                     }
-                    spacing: Theme.paddingMedium
-
+                    spacing: Theme.paddingMedium                    
+ 
                     Image {
                         id: coverImage
                         width: parent.width
@@ -317,6 +317,7 @@ Item {
                             font.pixelSize: Theme.fontSizeSmall
                             truncationMode: TruncationMode.Fade
                             horizontalAlignment: Text.AlignHCenter
+                            visible: !delegateItem.menuOpen 
                         }
 
                         Label {
@@ -325,19 +326,23 @@ Item {
                             color: Theme.secondaryColor
                             font.pixelSize: Theme.fontSizeExtraSmall
                             horizontalAlignment: Text.AlignHCenter
+                            visible: !delegateItem.menuOpen 
                         }
                     }
                 }
 
                 menu: ContextMenu {
-                    width: delegateItem.width  // Breite an das ListItem anpassen
-
+                    width: delegateItem.width  // same with as item
+                    x: (delegateItem.width - width) / 2 // center menue item
+                    opacity: 1
+                    backgroundColor: Theme.rgba(Theme.secondaryHighlightColor, 1.0)
                     MenuItem {
                         text: qsTr("Play Playlist")
+                        opacity: 1
                         onClicked: {
                             playlistManager.clearPlayList()
-                            tidalApi.playPlaylist(model.id)
-                            playlistManager.nextTrackClicked()
+                            tidalApi.playPlaylist(model.id) //todo: extend tidalApi with playPlaylist
+                            playlistManager.nextTrackClicked() //playPosition and nextTrack wont start song so extension, as mentioned above is needed
                         }
                     }
                 }

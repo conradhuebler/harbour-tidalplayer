@@ -50,8 +50,14 @@ Page {
             fill: parent
             bottomMargin: minPlayerPanel.margin
         }
-        contentHeight: mainColumn.height + Theme.paddingLarge
-        height: parent.height + miniPlayerPanel.height
+        contentHeight: mainColumn.height + Theme.paddingLarge + getBottomOffset()
+        height: parent.height + miniPlayerPanel.height + getBottomOffset()
+
+        function getBottomOffset()
+        {
+            if (minPlayerPanel.open) return ( 1.2 * minPlayerPanel.height )
+            return minPlayerPanel.height * 0.4
+        }
 
         PullDownMenu {
             MenuItem {
@@ -320,6 +326,10 @@ Page {
         }
 
         onSimilarArtist: {
+            if (artist_info === undefined) {
+                console.log("artist_info is undefined. skip append to model")
+                return
+            }
             simartistView.model.append({
                 name: artist_info.name,
                 cover: artist_info.image,
