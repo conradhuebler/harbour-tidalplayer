@@ -31,11 +31,11 @@ Page {
         id: flickable
         anchors {
             fill: parent
-            bottomMargin: minPlayerPanel.margin
+            bottomMargin: miniPlayerPanel.margin
         }
 
-        contentHeight: column.height + Theme.paddingLarge // did not work, maybe obsolete
-        height: parent.height + miniPlayerPanel.height
+        contentHeight: column.height + Theme.paddingLarge
+        height: parent.height
 
         // Überwache das Scrollen des Flickable
         onContentYChanged: {
@@ -252,7 +252,7 @@ Page {
             TrackList {
                 id: trackList
                 width: parent.width
-                height: albumPage.height - y - (minPlayerPanel.open ? minPlayerPanel.height : 0)
+                height: albumPage.height -  y - (minPlayerPanel.open ? minPlayerPanel.height*0.6 : 0)
                 type: "album"
                 albumId: albumPage.albumId
             }

@@ -41,12 +41,14 @@ Item {
     SilicaListView {
         id: tracks
         anchors.fill: parent
+        anchors.bottomMargin: miniPlayerPanel.height * 0.4
         // highlightFollowsCurrentItem: true //introduced by Pawel for removing of tracks
 
         header: PageHeader {
             title: root.title
         }
-        height: parent.height
+        height: parent.height - minPlayerPanel.margin
+        contentHeight: parent.height - minPlayerPanel.margin
         clip: true  // Verhindert Überläufe
 
         PullDownMenu {

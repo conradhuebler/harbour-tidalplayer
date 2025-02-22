@@ -24,8 +24,8 @@ Page {
 
         function getBottomOffset()
         {
-            if (minPlayerPanel.open) return ( 1.2 * minPlayerPanel.height )
-            return minPlayerPanel.height * 0.4
+            if (minPlayerPanel.open) return ( 0.6 * minPlayerPanel.height )
+            return 0
         }
     }
 }
