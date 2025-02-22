@@ -93,8 +93,8 @@ Page {
 
                   function getBottomOffset()
                   {
-                      if (minPlayerPanel.open) return ( 1.8 * minPlayerPanel.height )
-                      return minPlayerPanel.height * 0.9
+                      if (minPlayerPanel.open) return ( 1.2 * minPlayerPanel.height )
+                      return minPlayerPanel.height * 0.4
                   }
 
                   anchors.top: mainPageHeader.bottom

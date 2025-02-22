@@ -34,7 +34,8 @@ Page {
             bottomMargin: minPlayerPanel.margin
         }
 
-        contentHeight: column.height
+        contentHeight: column.height + Theme.paddingLarge // did not work, maybe obsolete
+        height: parent.height + miniPlayerPanel.height
 
         // Überwache das Scrollen des Flickable
         onContentYChanged: {

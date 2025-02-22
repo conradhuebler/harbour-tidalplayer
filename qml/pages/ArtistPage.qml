@@ -50,8 +50,14 @@ Page {
             fill: parent
             bottomMargin: minPlayerPanel.margin
         }
-        contentHeight: mainColumn.height + Theme.paddingLarge
-        height: parent.height + miniPlayerPanel.height
+        contentHeight: mainColumn.height + Theme.paddingLarge + getBottomOffset()
+        height: parent.height + miniPlayerPanel.height + getBottomOffset()
+
+        function getBottomOffset()
+        {
+            if (minPlayerPanel.open) return ( 1.2 * minPlayerPanel.height )
+            return minPlayerPanel.height * 0.4
+        }
 
         PullDownMenu {
             MenuItem {

@@ -41,7 +41,7 @@ Item {
     SilicaListView {
         id: tracks
         anchors.fill: parent
-        highlightFollowsCurrentItem: true
+        // highlightFollowsCurrentItem: true //introduced by Pawel for removing of tracks
 
         header: PageHeader {
             title: root.title
