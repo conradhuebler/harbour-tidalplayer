@@ -9,11 +9,23 @@ Page {
 
     allowedOrientations: Orientation.All  // Optional: Erlaubt alle Orientierungen
 
+
     TrackList {
         id: pLtrackList
-        anchors.fill: parent
+        anchors {
+            fill: parent
+            bottomMargin: getBottomOffset()
+        }
         title: "Current Playlist"
         type: "current"
+        height: parent.height - getBottomOffset()
+
+        function getBottomOffset()
+        {
+            console.log('in getBottomOffset in playlistpage')
+            if (pLtrackList.minPlayerPanel.open) return ( 1.2 * pLtrackList.minPlayerPanel.height )
+            return pLtrackList.minPlayerPanel.height * 0.4
+        }
     }
 
     Component.onCompleted: {

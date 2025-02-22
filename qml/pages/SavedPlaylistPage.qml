@@ -12,9 +12,20 @@ Page {
     property string type // or alias ?
 
     TrackList {
-        anchors.fill: parent
+        id: trackList
+        anchors {
+            fill: parent
+            bottomMargin: getBottomOffset()
+        }
+        height: parent.height - getBottomOffset()
         title: playlistTitle
         type: "playlist"
         playlistId: page.playlistId  // Wenn die TrackList einen playlistId Parameter hat
+
+        function getBottomOffset()
+        {
+            if (minPlayerPanel.open) return ( 1.2 * minPlayerPanel.height )
+            return minPlayerPanel.height * 0.4
+        }
     }
 }
