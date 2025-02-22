@@ -257,14 +257,11 @@ Item {
     }
 
     // to minimze sideeffects, clear remains default
-    function playAlbum(id, clearFirst) {
-        var shouldClear = clearFirst === undefined ? true : clearFirst
-        console.log("playalbum", id, shouldClear)
-        if (shouldClear) {
-            clearPlayList()
-        }
+    function playAlbum(id, startPlay) {
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        console.log("playalbum", id, startPlay)
+        tidalApi.playAlbumTracks(id,shouldPlay) //todo: pass argument or second method?
         currentTrackIndex()
-        tidalApi.playAlbumTracks(id)
     }
 
     function playAlbumFromTrack(id) {

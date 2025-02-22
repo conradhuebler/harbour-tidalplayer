@@ -341,8 +341,7 @@ Item {
                         opacity: 1
                         onClicked: {
                             playlistManager.clearPlayList()
-                            tidalApi.playPlaylist(model.id) //todo: extend tidalApi with playPlaylist
-                            playlistManager.nextTrackClicked() //playPosition and nextTrack wont start song so extension, as mentioned above is needed
+                            tidalApi.playPlaylist(model.id,true) //todo: extend tidalApi with playPlaylist
                         }
                     }
                 }
