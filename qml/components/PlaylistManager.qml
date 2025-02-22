@@ -31,7 +31,7 @@ Item {
     signal containsTrack(int id)
     signal clearList()
     signal currentTrack(int position)
-    signal selectedTrackChanged(var trackinfo)  // signal that position in playlist has changed (but in pause mode)
+    signal selectedTrackChanged(var trackinfo)  // signal that position in playlist has changed (no playing it)
 
     signal playlistFinished()
     signal listChanged()
@@ -256,9 +256,13 @@ Item {
         return id
     }
 
-    function playAlbum(id) {
-        console.log("playalbum", id)
-        clearPlayList()
+    // to minimze sideeffects, clear remains default
+    function playAlbum(id, clearFirst) {
+        var shouldClear = clearFirst === undefined ? true : clearFirst
+        console.log("playalbum", id, shouldClear)
+        if (shouldClear) {
+            clearPlayList()
+        }
         currentTrackIndex()
         tidalApi.playAlbumTracks(id)
     }

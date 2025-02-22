@@ -217,7 +217,7 @@ Page {
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
                     if (albumData) {
-                        playlistManager.playAlbum(albumId)
+                        playlistManager.playAlbum(albumId, false)
                     }
                 }
             }
