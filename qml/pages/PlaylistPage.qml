@@ -26,6 +26,7 @@ Page {
             if (pLtrackList.minPlayerPanel.open) return ( 1.2 * pLtrackList.minPlayerPanel.height )
             return pLtrackList.minPlayerPanel.height * 0.4
         }
+
     }
 
     Component.onCompleted: {
