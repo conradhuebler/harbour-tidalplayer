@@ -194,7 +194,7 @@ id: root
                 year : result.year,
                 timestamp: Date.now()
             }
-
+            console.log("album not in cache, adding to cache ... (i think this causes the nulls, as it should be synchr.) ", result)
             saveAlbumToCache(albumData)
             return albumData
         }
