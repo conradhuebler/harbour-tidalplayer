@@ -302,6 +302,7 @@ class Tidal:
             self.send_object("error", {"message": str(e)})
         return None
 
+#  not sure if this method is used at all
     def playPlaylist(self, id):
         try:
             playlist = self.session.playlist(id)
@@ -335,15 +336,14 @@ class Tidal:
                 pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("albumTrackAdded",track_info)
 
-
-    def playAlbumTracks(self, id):
+    def playAlbumTracks(self, id, autoPlay=False):
         album = self.session.album(int(id))
         for track in album.tracks():
             track_info = self.handle_track(track)
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("addTracktoPL", track_info['trackid'])
-        pyotherside.send("fillFinished")
+        pyotherside.send("fillFinished", autoPlay)
 
     def playAlbumfromTrack(self, id):
         for track in self.session.track(int(id)).album.tracks():
@@ -392,7 +392,7 @@ class Tidal:
             #pyotherside.send("cacheTrack", i.id, i.name, i.album.name, i.artist.name, i.album, i.duration)
         pyotherside.send('loadingFinished')
 
-    def playPlaylist(self, id):
+    def playPlaylist(self, id, autoPlay=False):
         pyotherside.send('loadingStarted')
         playlist = self.session.playlist(id)
         first_track = playlist.tracks()[0]
@@ -403,13 +403,17 @@ class Tidal:
             track_info = self.handle_track(track)
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTracktoPL", track_info['trackid'])
+                pyotherside.send("addTracktoPL", track_info['trackid']) #maybe silent ?
 
             #if i == 0:
-            #    pyotherside.send("fillStarted")
+        
+        # playlist = self.session.playlist(id)
+        #playlist_info = self.handle_playlist(playlist)    
+        # #    pyotherside.send("fillStarted")
 
-        pyotherside.send("fillFinished")
+        pyotherside.send("fillFinished", autoPlay)
         pyotherside.send('loadingFinished')
+        #return playlist_info
 
     def getPlaylistTracks(self, playlist_id):
         pyotherside.send('loadingStarted')
@@ -565,5 +569,44 @@ class Tidal:
             mix_info = self.handle_mix(item)
             self.send_object("customMix", mix_info)
 
+    def getUser(self):
+        return self.session.get_user(self.session.user.id)
+    
+    def setAlbumFavInfo(self,id,status):
+        result = False
+        if status:
+            result = self.getUser().favorites.add_album(id)
+        else:
+            result = self.getUser().favorites.remove_album(id)
+        if result:
+            pyotherside.send('updateFavorite', id, status)
+    
+    def setArtistFavInfo(self,id,status):
+        user = self.session.get_user(self.session.user.id)
+        result = False
+        if status:
+            result = user.favorites.add_artist(id)
+        else:
+            result = user.favorites.remove_artist(id)
+        if result:
+            pyotherside.send('updateFavorite', id, status)
+
+    def setTrackFavInfo(self,id,status):
+        result = False
+        if status:
+            result = self.getUser().favorites.add_track(id)
+        else:
+            result = self.getUser().favorites.remove_track(id)
+        if result:
+            pyotherside.send('updateFavorite', id, status)
+
+    def setPlaylistFavInfo(self,id,status):
+        result = False
+        if status:
+            result = self.getUser().favorites.add_playlist(id)
+        else:
+            result = self.getUser().favorites.remove_playlist(id)
+        if result:
+            pyotherside.send('updateFavorite', id, status)
 
 Tidaler = Tidal()

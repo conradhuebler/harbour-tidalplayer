@@ -9,6 +9,7 @@ Page {
     property int artistId: -1
     property var artistData: null
     property bool isHeaderCollapsed: false
+    property bool isFav: false
 
     function processWimpLinks(text) {
         if (!text) return ""
@@ -102,6 +103,23 @@ Page {
                             color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
                             anchors.fill: parent
                             visible: coverImage.status !== Image.Ready
+                        }
+
+                        IconButton {
+                            id: favButton
+                            width: Theme.iconSizeMedium
+                            height: Theme.iconSizeMedium
+                            anchors {
+                                top: coverImage.top
+                                right: coverImage.right
+                                margins: Theme.paddingSmall
+                            }
+                            icon.source: "image://theme/icon-s-favorite"
+                            highlighted: isFav
+                            onClicked: {
+                               favManager.setArtistFavoriteInfo(artistId,!isFav)
+                            }
+                            z:1 // tobe on top of the image
                         }
                     }
 
@@ -296,9 +314,21 @@ Page {
                 var processedBio = processWimpLinks(artistData.bio)
                 bioText.text = processedBio
             }
+
+            isFav = favManager.isFavorite(artistId)
+
             tidalApi.getAlbumsofArtist(artistData.artistid)
             tidalApi.getTopTracksofArtist(artistData.artistid)
             tidalApi.getSimiliarArtist(artistData.artistid)
+        }
+    }
+
+    Connections {
+        target: favManager
+
+        onUpdateFavorite: {
+            if (id === artistId)
+                isFav = status
         }
     }
 

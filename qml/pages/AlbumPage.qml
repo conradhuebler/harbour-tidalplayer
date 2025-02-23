@@ -10,6 +10,7 @@ Page {
     property int albumId: -1
     property var albumData: null
     property bool isHeaderCollapsed: false
+    property bool isFav: false
     //property alias model: listModel
 
     allowedOrientations: Orientation.All
@@ -109,6 +110,23 @@ Page {
                             anchors.fill: parent
                             visible: coverImage.status !== Image.Ready
                         }
+
+                        IconButton {
+                            id: favButton
+                            width: Theme.iconSizeMedium
+                            height: Theme.iconSizeMedium
+                            anchors {
+                                top: coverImage.top
+                                right: coverImage.right
+                                margins: Theme.paddingSmall
+                            }
+                            icon.source: "image://theme/icon-s-favorite"
+                            highlighted: isFav
+                            onClicked: {
+                               favManager.setAlbumFavoriteInfo(albumId,!isFav)
+                            }
+                            z:1 // tobe on top of the image
+                        }
                     }
 
                     Column {
@@ -205,8 +223,7 @@ Page {
                 onClicked: {
                     if (albumData) {
                         playlistManager.clearPlayList()
-                        playlistManager.playAlbum(albumId)
-                        playlistManager.playTrack(0)
+                        playlistManager.playAlbum(albumId, true) // start playing immediately
                     }
                 }
             }
@@ -218,14 +235,14 @@ Page {
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
                     if (albumData) {
-                        playlistManager.playAlbum(albumId, false)
+                        playlistManager.playAlbum(albumId,false)
                     }
                 }
             }
 
             Label {
                 text: qsTr("Play Album")
-                color: Theme.highlightColor
+                // color: Theme.highlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -267,6 +284,17 @@ Page {
             if (!albumData) {
                 console.log("Album nicht im Cache gefunden:", albumId)
             }
+
+            isFav = favManager.isFavorite(albumId)
+        }
+    }
+
+    Connections {
+        target: favManager
+
+        onUpdateFavorite: {
+            if (id === albumId)
+                isFav = status
         }
     }
 }
