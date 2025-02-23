@@ -57,17 +57,21 @@ Page {
 
             MenuItem {
                 visible: applicationWindow.remainingMinutes > 0
-                text: qsTr("Cancel Sleep Timer")
+                text: qsTr("Cancel Sleep Timer " + applicationWindow.remainingMinutes)
                 onClicked: applicationWindow.cancelSleepTimer()
             }
-
-            MenuItem {
+              MenuItem {
                 text: minPlayerPanel.open ? "Hide player" : "Show player"
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
         }
+    //    PushUpMenu {
+
+
+
+    //    }
 
         TabHeader {
             id: mainPageHeader

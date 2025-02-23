@@ -54,6 +54,18 @@ Item {
     signal favAlbums(var album_info)
     signal favArtists(var artist_info)
 
+    // recent stuff
+    signal recentAlbum(var album_info)
+    signal recentArtist(var artist_info)
+    signal recentPlaylist(var playlist_info)
+    signal recentMix(var mix_info)
+
+    signal foryouAlbum(var album_info)
+    signal foryouArtist(var artist_info)
+    signal foryouPlaylist(var playlist_info)
+    signal foryouMix(var mix_info)
+    signal customMix(var mix_info)
+
     signal noSimilarArtists()
 
     signal playlistTrackAdded(var track_info)
@@ -307,6 +319,51 @@ Item {
 
             setHandler('albumTrackAdded', function(track_info) {
                 root.albumTrackAdded(track_info)
+            })
+
+            setHandler('recentAlbum', function(album_info)
+            {
+                root.recentAlbum(album_info)
+            })
+
+            setHandler('recentArtist', function(artist_info)
+            {
+                root.recentArtist(artist_info)
+            })
+
+            setHandler('recentPlaylist', function(playlist_info)
+            {
+                root.recentPlaylist(playlist_info)
+            })
+
+            setHandler('recentMix', function(mix_info)
+            {
+                root.recentMix(mix_info)
+            })
+
+            setHandler('foryouAlbum', function(album_info)
+            {
+                root.foryouAlbum(album_info)
+            })
+
+            setHandler('foryouArtist', function(artist_info)
+            {
+                root.foryouArtist(artist_info)
+            })
+
+            setHandler('foryouPlaylist', function(playlist_info)
+            {
+                root.foryouPlaylist(playlist_info)
+            })
+
+            setHandler('foryouMix', function(mix_info)
+            {
+                root.foryouMix(mix_info)
+            })
+
+            setHandler('customMix', function(mix_info)
+            {
+                root.customMix(mix_info)
             })
 
             importModule('tidal', function() {

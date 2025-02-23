@@ -1,6 +1,8 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 
+import "personalLists"
+
 Item {
     id: personalPage
     anchors.fill: parent
@@ -18,6 +20,34 @@ Item {
             PageHeader {
                 title: "Personal Collection"
             }
+
+            // Recently Played Section
+            SectionHeader {
+                text: qsTr("Recently played")
+            }
+
+            RecentList {
+                id: recentView
+            }
+
+            // Recently Played Section
+            SectionHeader {
+                text: qsTr("For you")
+            }
+
+            ForYouList {
+                id: forYouView
+            }
+
+            // Custom Mixes
+            //SectionHeader {
+            //    text: qsTr("Custom Mixes")
+            //}
+
+            //CustomMixes {
+            //    id: mixesView
+            //}
+
 
             // Top Artists Section
             SectionHeader {
@@ -397,6 +427,7 @@ Item {
 
     Connections {
         target: tidalApi
+
         onPersonalPlaylistAdded: {
             listModel.append({
                 "title": title,
