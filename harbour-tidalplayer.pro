@@ -16,8 +16,7 @@ CONFIG += sailfishapp_qml  file_copies
 
 SOURCES +=
 
-OTHER_FILES += qml/pages/datadownloader.py \
-        harbour-tidalplayer.desktop \
+OTHER_FILES += harbour-tidalplayer.desktop \
         qml/harbour-tidalplayer.qml \
         qml/cover/CoverPage.qml \
         qml/pages/FirstPage.qml\

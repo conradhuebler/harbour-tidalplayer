@@ -57,7 +57,7 @@ class Tidal:
                 self.session.token_refresh(refresh_token)
                 self.session.load_oauth_session(token_type, self.session.access_token)
 
-                if self.session.check_login() == True:
+                if self.session.check_login() is True:
                     pyotherside.send("printConsole", "New token", self.session.access_token)
                     pyotherside.send("oauth_refresh", self.session.access_token)
                     pyotherside.send("oauth_login_success")
@@ -187,6 +187,22 @@ class Tidal:
                 "duration": int(playlist.duration) if hasattr(playlist, 'duration') else 0,
                 "num_tracks": playlist.num_tracks if hasattr(playlist, 'num_tracks') else 0,
                 "description": playlist.description if hasattr(playlist, 'description') else "",
+                "type": "playlist"
+            }
+        except AttributeError as e:
+            print(f"Error handling playlist: {e}")
+            return None
+
+    def handle_mix(self, mix):
+        """Handler für Playlist-Informationen"""
+        try:
+            return {
+                "playlistid": str(mix.id),
+                "title": str(mix.name),
+                "image": mix.image(320) if hasattr(mix, 'image') else "",
+                "duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
+                "num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
+                "description": mix.description if hasattr(mix, 'description') else "",
                 "type": "playlist"
             }
         except AttributeError as e:
@@ -355,26 +371,10 @@ class Tidal:
         pyotherside.send('loadingStarted')
         playlists = self.session.user.playlists()
         for i in playlists:
-            try:
-                pyotherside.send("addPersonalPlaylist", i.id, i.name, i.image(320), i.num_tracks, i.description, i.duration)
-            except AttributeError:
-                pyotherside.send("addPersonalPlaylist", i.id, i.name, "", i.num_tracks, i.description, i.duration)
-
+            playlist_info = self.handle_playlist(i)
+            self.send_object("addPersonalPlaylist", playlist_info)
         pyotherside.send('loadingFinished')
 
-    def getPersonalPlaylist(self, id):
-        pyotherside.send('loadingStarted')
-        playlist = self.session.playlist(int(id))
-        try:
-            pyotherside.send("setPlaylist", i.id, i.name, i.image(320), i.num_tracks, i.description, i.duration)
-        except AttributeError:
-            pyotherside.send("setPlaylist", i.id, i.name, "", i.num_tracks, i.description, i.duration)
-
-        for ti in playlist.tracks():
-            i = self.handle_track(ti)
-            pyotherside.send("cacheTrack", i)
-            #pyotherside.send("cacheTrack", i.id, i.name, i.album.name, i.artist.name, i.album, i.duration)
-        pyotherside.send('loadingFinished')
 
     def playPlaylist(self, id, autoPlay=False):
         pyotherside.send('loadingStarted')
@@ -479,32 +479,79 @@ class Tidal:
 
     def homepage(self):
         self.home = self.session.home()
-        self.home.categories.extend(self.session.explore().categories)
-        self.home.categories.extend(self.session.videos().categories)
+        #self.home.categories.extend(self.session.explore().categories)
+        #self.home.categories.extend(self.session.videos().categories)
 
-        for category in self.home.categories:
-            print(category.title)
+        for item in self.home.categories[0].items:
+            self.getForYou(item)
 
-        for category in self.home.categories:
-            print(category.title)
-            self.items = []
-            for item in category.items:
-                if isinstance(item, PageItem):
-                    self.items.append("\t" + item.short_header)
-                    self.items.append("\t" + item.short_sub_header[0:50])
-                    # Call item.get() on this one, for example on click
-                elif isinstance(item, PageLink):
-                    self.items.append("\t" + item.title)
-                    # Call item.get() on this one, for example on click
-                elif isinstance(item, Mix):
-                    self.items.append("\t" + item.title)
-                    # You can optionally call item.get() to request the items() first, but it does it for you if you don't
-                else:
-                    self.items.append("\t" + item.name)
-                    # An album could be handled by session.album(item.id) for example,
-                    # to get full details. Usually the relevant info is there already however
-                print()
-            #[print(x) for x in sorted(items)]
+        for item in self.home.categories[1].items:
+            self.getRecently(item)
+
+        #for item in self.home.categories[2].items:
+        #    self.getCustomMixes(item)
+
+    def getRecently(self, item):
+        if isinstance(item, tidalapi.album.Album):
+            album_info = self.handle_album(item)
+
+            if album_info:
+                self.send_object("cacheAlbum", album_info)
+                self.send_object("recentAlbum", album_info)
+            else:
+                pyotherside.send("printConsole", "trouble loading album")
+
+        elif isinstance(item, tidalapi.artist.Artist):
+            self.items.append("\t" + item.name)
+            pyotherside.send("printConsole", item.name)
+            artist_info = self.handle_artist(item)
+            if artist_info:
+                self.send_object("cacheArtist", artist_info)
+                self.send_object("recentArtist", artist_info)
+            else:
+                pyotherside.send("printConsole", "trouble loading artist")
+
+        elif isinstance(item, tidalapi.playlist.Playlist):
+            playlist_info = self.handle_playlist(item)
+            self.send_object("recentPlaylist", playlist_info)
+
+        elif isinstance(item, tidalapi.mix.Mix):
+            mix_info = self.handle_mix(item)
+        else:
+            pyotherside.send("printConsole", item.name)
+
+    def getForYou(self, item):
+        if isinstance(item, tidalapi.album.Album):
+            album_info = self.handle_album(item)
+
+            if album_info:
+                self.send_object("cacheAlbum", album_info)
+                self.send_object("foryouAlbum", album_info)
+            else:
+                pyotherside.send("printConsole", "trouble loading album")
+
+        elif isinstance(item, tidalapi.artist.Artist):
+            self.items.append("\t" + item.name)
+            artist_info = self.handle_artist(item)
+            if artist_info:
+                self.send_object("cacheArtist", artist_info)
+                self.send_object("foryouArtist", artist_info)
+            else:
+                pyotherside.send("printConsole", "trouble loading artist")
+
+        elif isinstance(item, tidalapi.playlist.Playlist):
+            pyotherside.send("printConsole", item.name)
+            playlist_info = self.handle_playlist(item)
+            self.send_object("foryouPlaylist", playlist_info)
+
+        elif isinstance(item, tidalapi.mix.Mix):
+            mix_info = self.handle_mix(item)
+            self.send_object("foryouMix", mix_info)
+
+    def getCustomMixes(self, item):
+        if isinstance(item, tidalapi.mix.Mix):
+            mix_info = self.handle_mix(item)
+            self.send_object("customMix", mix_info)
 
     def getUser(self):
         return self.session.get_user(self.session.user.id)
