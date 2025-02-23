@@ -32,6 +32,7 @@ DockedPanel {
         icon.source: "image://theme/icon-s-favorite"
         icon.sourceSize: Qt.size(Theme.iconSizeMedium, Theme.iconSizeMedium)
         highlighted: miniPlayerPanel.isFav
+        opacity: highlighted ? 1.0 : 0.3
         onClicked: {
             favManager.setTrackFavoriteInfo(playlistManager.tidalId,!miniPlayerPanel.isFav)
         }
