@@ -121,6 +121,7 @@ Page {
                                 margins: Theme.paddingSmall
                             }
                             icon.source: "image://theme/icon-s-favorite"
+                            icon.sourceSize: Qt.size(Theme.iconSizeMedium, Theme.iconSizeMedium)
                             highlighted: isFav
                             onClicked: {
                                favManager.setAlbumFavoriteInfo(albumId,!isFav)
