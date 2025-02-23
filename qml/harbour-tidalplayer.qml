@@ -121,6 +121,10 @@ ApplicationWindow
 
     }
 
+    FavoritesManager {
+        id: favManager
+    }
+
     TidalCache
     {
         id: cacheManager

@@ -10,6 +10,7 @@ Page {
     property int albumId: -1
     property var albumData: null
     property bool isHeaderCollapsed: false
+    property bool isFav: false
     //property alias model: listModel
 
     allowedOrientations: Orientation.All
@@ -108,6 +109,23 @@ Page {
                             color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
                             anchors.fill: parent
                             visible: coverImage.status !== Image.Ready
+                        }
+
+                        IconButton {
+                            id: favButton
+                            width: Theme.iconSizeMedium
+                            height: Theme.iconSizeMedium
+                            anchors {
+                                top: coverImage.top
+                                right: coverImage.right
+                                margins: Theme.paddingSmall
+                            }
+                            icon.source: "image://theme/icon-s-favorite"
+                            highlighted: isFav
+                            onClicked: {
+                               favManager.setAlbumFavoriteInfo(albumId,!isFav)
+                            }
+                            z:1 // tobe on top of the image
                         }
                     }
 
@@ -266,6 +284,17 @@ Page {
             if (!albumData) {
                 console.log("Album nicht im Cache gefunden:", albumId)
             }
+
+            isFav = favManager.isFavorite(albumId)
+        }
+    }
+
+    Connections {
+        target: favManager
+
+        onUpdateFavorite: {
+            if (id === albumId)
+                isFav = status
         }
     }
 }
