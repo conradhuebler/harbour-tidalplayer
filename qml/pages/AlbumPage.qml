@@ -205,8 +205,7 @@ Page {
                 onClicked: {
                     if (albumData) {
                         playlistManager.clearPlayList()
-                        playlistManager.playAlbum(albumId)
-                        playlistManager.playTrack(0)
+                        playlistManager.playAlbum(albumId, true) // start playing immediately
                     }
                 }
             }
@@ -218,14 +217,14 @@ Page {
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
                     if (albumData) {
-                        playlistManager.playAlbum(albumId, false)
+                        playlistManager.playAlbum(albumId,false)
                     }
                 }
             }
 
             Label {
                 text: qsTr("Play Album")
-                color: Theme.highlightColor
+                // color: Theme.highlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 anchors.verticalCenter: parent.verticalCenter
             }

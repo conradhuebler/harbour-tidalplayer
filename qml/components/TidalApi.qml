@@ -228,10 +228,14 @@ Item {
                 playlistManager.nextTrack();
             });
 
-            setHandler('fillFinished', function()
+            // adding tracks to playlist / album finished
+            setHandler('fillFinished', function(autoPlay)
             {
+                var auto=false
+                if (autoPlay !== undefined) auto = autoPlay
                 playlistManager.generateList()
-                //playlistManager.nextTrack();
+                if(auto)
+                    playlistManager.nextTrack();
             });
 
             // Info Handler
@@ -289,10 +293,12 @@ Item {
                 searchResults(playlist)
             })
 
+            // Response Loading started
             setHandler('loadingStarted', function() {
                 root.loading = true
             })
 
+            // Response Loading finished
             setHandler('loadingFinished', function() {
                 root.loading = false
             })
@@ -427,8 +433,9 @@ Item {
         pythonTidal.call("tidal.Tidaler.getAlbumInfo", [id])
     }
 
-    function playAlbumTracks(id) {
-        pythonTidal.call("tidal.Tidaler.playAlbumTracks", [id])
+    function playAlbumTracks(id, startPlay) {
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        pythonTidal.call("tidal.Tidaler.playAlbumTracks", [id,shouldPlay])
     }
 
     function playAlbumFromTrack(id) {
@@ -451,8 +458,10 @@ Item {
         pythonTidal.call('tidal.Tidaler.getPlaylistTracks', [id])
     }
 
-    function playPlaylist(id) {
-        pythonTidal.call("tidal.Tidaler.playPlaylist", [id])
+    function playPlaylist(id, startPlay) {
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        console.log("playPlaylist", id, shouldPlay)
+        pythonTidal.call("tidal.Tidaler.playPlaylist", [id, shouldPlay])
     }
 
     function getFavorites() {
