@@ -97,6 +97,72 @@ Page {
                 }
             }
 
+            TextSwitch {
+                id: recentList
+                visible: tidalApi.loginTrue
+                text: qsTr("Show Recent")
+                description: qsTr("Show recently played tracks, playlist, albums and mixes")
+                checked: applicationWindow.settings.recentList
+                onClicked: {
+                    applicationWindow.settings.recentList = recentList.checked
+                }
+            }
+
+            TextSwitch {
+                id: yourList
+                visible: tidalApi.loginTrue
+                text: qsTr("Show Your Mixes")
+                description: qsTr("Show your personal mixes")
+                checked: applicationWindow.settings.yourList
+                onClicked: {
+                    applicationWindow.settings.yourList = yourList.checked
+                }
+            }
+
+            TextSwitch {
+                id: topartistList
+                visible: tidalApi.loginTrue
+                text: qsTr("Show Favourite Artists")
+                description: qsTr("Show your favourite artists")
+                checked: applicationWindow.settings.topartistList
+                onClicked: {
+                    applicationWindow.settings.topartistList = topartistList.checked
+                }
+            }
+
+            TextSwitch {
+                id: topalbumsList
+                visible: tidalApi.loginTrue
+                text: qsTr("Show Favourite Albums")
+                description: qsTr("Show your favourite played albums")
+                checked: applicationWindow.settings.topalbumsList
+                onClicked: {
+                    applicationWindow.settings.topalbumsList = topalbumsList.checked
+                }
+            }
+
+            TextSwitch {
+                id: toptrackList
+                visible: tidalApi.loginTrue
+                text: qsTr("Show Favourite Tracks")
+                description: qsTr("Show your favourite played tracks")
+                checked: applicationWindow.settings.toptrackList
+                onClicked: {
+                    applicationWindow.settings.toptrackList = toptrackList.checked
+                }
+            }
+
+            TextSwitch {
+                id: personalPlaylistList
+                visible: tidalApi.loginTrue
+                text: qsTr("Show Personal Playlists")
+                description: qsTr("Show your personal playlists")
+                checked: applicationWindow.settings.personalPlaylistList
+                onClicked: {
+                    applicationWindow.settings.personalPlaylistList = personalPlaylistList.checked
+                }
+            }
+
             ComboBox {
                 visible: tidalApi.loginTrue
                 label: qsTr("Audio Quality")

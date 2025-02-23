@@ -24,7 +24,8 @@ Item {
     signal artistAdded(int id, string name, string image)
 
     signal playlistSearchAdded(int id, string name, string image, int duration, string uid)
-    signal personalPlaylistAdded(string id, string title, string image, int num_tracks, string description, int duration)
+    //signal personalPlaylistAdded(string id, string title, string image, int num_tracks, string description, int duration)
+    signal personalPlaylistAdded(var playlist_info)
     signal playlistAdded(string id, string title, string image, int num_tracks, string description, int duration)
 
     // Info Change Signale
@@ -262,9 +263,14 @@ Item {
             })
 
             // Playlist Handler
-            setHandler('addPersonalPlaylist', function(id, name, image, num_tracks, description, duration) {
-                tidalApi.personalPlaylistAdded(id, name, image, num_tracks, description, duration)
+            //setHandler('addPersonalPlaylist', function(id, name, image, num_tracks, description, duration) {
+            //    tidalApi.personalPlaylistAdded(id, name, image, num_tracks, description, duration)
+            //})
+
+            setHandler('addPersonalPlaylist', function(playlist_info) {
+                tidalApi.personalPlaylistAdded(playlist_info)
             })
+
             setHandler('setPlaylist', function(id, title, image, num_tracks, description, duration) {
                 tidalApi.playlistAdded(id, title, image, num_tracks, description, duration)
             })

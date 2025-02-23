@@ -29,6 +29,13 @@ ApplicationWindow
         property string mail: ""
         property string audio_quality : ""
         property bool resume_playback : false
+
+        property bool recentList: true
+        property bool yourList: true
+        property bool topartistList: true
+        property bool topalbumsList: true
+        property bool toptrackList: true
+        property bool personalPlaylistList: true
     }
 
     // Configuration Storage
@@ -69,6 +76,43 @@ ApplicationWindow
         key : "/resumePlayback"
         defaultValue: false
     }
+
+    ConfigurationValue {
+        id: recentListConfig
+        key : "/recentList"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: yourListConfig
+        key : "/yourList"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: topartistListConfig
+        key : "/topartistList"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: topalbumsListConfig
+        key : "/topalbumsList"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: toptrackListConfig
+        key : "/toptrackList"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: personalPlaylistListConfig
+        key : "/personalPlaylistList"
+        defaultValue: true
+    }
+
     property int remainingMinutes: 0
 
     property var sleepTimer: Timer {
@@ -335,8 +379,15 @@ ApplicationWindow
             refresh_token.value = applicationWindow.settings.refresh_token
             expiry_time.value = applicationWindow.settings.expiry_time
             mail.value = applicationWindow.settings.mail
-            audioQuality.value = applicationWindow.settings.audio_quailty
+            audioQuality.value = applicationWindow.settings.audio_quality
             resumePlayback.value = applicationWindow.settings.resume_playback
+
+            recentListConfig.value = applicationWindow.settings.recentList
+            yourListConfig.value = applicationWindow.settings.yourList
+            topartistListConfig.value = applicationWindow.settings.topartistList
+            topalbumsListConfig.value = applicationWindow.settings.topalbumsList
+            toptrackListConfig.value = applicationWindow.settings.toptrackList
+            personalPlaylistListConfig.value = applicationWindow.settings.personalPlaylistList
         }
     }
 
@@ -351,6 +402,13 @@ ApplicationWindow
         applicationWindow.settings.resume_playback = resumePlayback.value
         tidalApi.quality = audioQuality.value
 
+        applicationWindow.settings.recentList = recentListConfig.value
+        applicationWindow.settings.yourList = yourListConfig.value
+        applicationWindow.settings.topartistList = topartistListConfig.value
+        applicationWindow.settings.topalbumsList = topalbumsListConfig.value
+        applicationWindow.settings.toptrackList = toptrackListConfig.value
+        applicationWindow.settings.personalPlaylistList = personalPlaylistListConfig.value
+
         authManager.checkAndLogin()
         mprisPlayer.setCanControl(true)
     }
@@ -362,8 +420,15 @@ ApplicationWindow
         refresh_token.value = applicationWindow.settings.refresh_token
         expiry_time.value = applicationWindow.settings.expiry_time
         mail.value = applicationWindow.settings.mail
-        audioQuality.value = applicationWindow.settings.audio_quailty
+        audioQuality.value = applicationWindow.settings.audio_quality
         resumePlayback.value = applicationWindow.settings.resume_playback
+
+        recentListConfig.value = applicationWindow.settings.recentList
+        yourListConfig.value = applicationWindow.settings.yourList
+        topartistListConfig.value = applicationWindow.settings.topartistList
+        topalbumsListConfig.value = applicationWindow.settings.topalbumsList
+        toptrackListConfig.value = applicationWindow.settings.toptrackList
+        personalPlaylistListConfig.value = applicationWindow.settings.personalPlaylistList
     }
 
 }

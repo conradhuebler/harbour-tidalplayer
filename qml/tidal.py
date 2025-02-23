@@ -371,26 +371,10 @@ class Tidal:
         pyotherside.send('loadingStarted')
         playlists = self.session.user.playlists()
         for i in playlists:
-            try:
-                pyotherside.send("addPersonalPlaylist", i.id, i.name, i.image(320), i.num_tracks, i.description, i.duration)
-            except AttributeError:
-                pyotherside.send("addPersonalPlaylist", i.id, i.name, "", i.num_tracks, i.description, i.duration)
-
+            playlist_info = self.handle_playlist(i)
+            self.send_object("addPersonalPlaylist", playlist_info)
         pyotherside.send('loadingFinished')
 
-    def getPersonalPlaylist(self, id):
-        pyotherside.send('loadingStarted')
-        playlist = self.session.playlist(int(id))
-        try:
-            pyotherside.send("setPlaylist", i.id, i.name, i.image(320), i.num_tracks, i.description, i.duration)
-        except AttributeError:
-            pyotherside.send("setPlaylist", i.id, i.name, "", i.num_tracks, i.description, i.duration)
-
-        for ti in playlist.tracks():
-            i = self.handle_track(ti)
-            pyotherside.send("cacheTrack", i)
-            #pyotherside.send("cacheTrack", i.id, i.name, i.album.name, i.artist.name, i.album, i.duration)
-        pyotherside.send('loadingFinished')
 
     def playPlaylist(self, id, autoPlay=False):
         pyotherside.send('loadingStarted')
