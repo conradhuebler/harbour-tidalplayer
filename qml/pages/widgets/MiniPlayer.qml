@@ -9,6 +9,7 @@ DockedPanel {
     height: 1.5*Theme.itemSizeExtraLarge // Reduzierte Höhe
     open: true
     dock: Dock.Bottom
+    property bool isFav: false
 
     // Hintergrundbild
     Image {
@@ -17,6 +18,24 @@ DockedPanel {
         fillMode: Image.PreserveAspectCrop
         opacity: 0.85 // Transparenter Hintergrund
         z: 0 // Hinter allen anderen Elementen
+    }
+
+    IconButton {
+        id: favButton
+        width: Theme.iconSizeMedium
+        height: Theme.iconSizeMedium
+        anchors {
+            verticalCenter: parent.verticalCenter
+            right: parent.right
+            margins: Theme.paddingLarge
+        }
+        icon.source: "image://theme/icon-s-favorite"
+        icon.sourceSize: Qt.size(Theme.iconSizeMedium, Theme.iconSizeMedium)
+        highlighted: miniPlayerPanel.isFav
+        onClicked: {
+            favManager.setTrackFavoriteInfo(playlistManager.tidalId,!miniPlayerPanel.isFav)
+        }
+        z:1 // to be on top of the image
     }
 
     Rectangle {
@@ -251,6 +270,7 @@ DockedPanel {
             nextButton.enabled = playlistManager.canNext
             progressSlider.visible = true
             //mprisPlayer.updateTrack(title, artist, album)
+            miniPlayerPanel.isFav = favManager.isFavorite(trackinfo.trackid)
         }
     }
 
@@ -261,6 +281,15 @@ DockedPanel {
             bgImage.source = ""
             minPlayerPanel.hide(100)
             progressSlider.visible = false
+        }
+    }
+
+    Connections {
+        target: favManager
+
+        onUpdateFavorite: {
+            if (id === playlistManager.tidalId)
+                isFav = status
         }
     }
 }
