@@ -78,7 +78,7 @@ SilicaListView {
     {
         console.log(mix_info)
         if (mix_info === undefined) {
-             console.error("album_info is undefined. skip append to model")
+             console.error("mix_info is undefined. skip append to model")
              return;
         }
         model.append({
