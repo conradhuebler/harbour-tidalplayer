@@ -39,6 +39,8 @@ SilicaListView {
             "title": album_info.title,
             "image": album_info.image,
             "albumid": album_info.albumid,
+            "playlistid" : "",
+            "artistid": "",
             "type" : typeAlbum
         })
     }
@@ -55,6 +57,8 @@ SilicaListView {
             "title": artist_info.name,
             "image": artist_info.image,
             "artistid": artist_info.artistid,
+            "playlistid":  "",
+            "albumid": -1,
             "type" : typeArtist
         })
     }
@@ -66,10 +70,13 @@ SilicaListView {
              console.error("album_info is undefined. skip append to model")
              return;
         }
+        console.log("addPlaylist", playlist_info.title, playlist_info.playlistid)
         model.append({
             "title": playlist_info.title,
             "image": playlist_info.image,
             "playlistid": playlist_info.playlistid,
+            "albumid":-1,
+            "artistid":"",
             "type" : typePlaylist
         })
     }
@@ -85,6 +92,9 @@ SilicaListView {
             "title": mix_info.title,
             "image": mix_info.image,
             "mixid": mix_info.mixid,
+                         "artistid":"",
+                         "albumid":-1,
+                         "playlistid":"",
             "type" : typePlaylist
         })
     }
@@ -189,6 +199,8 @@ SilicaListView {
                                 break
                             case 4: // Playlist
                                     playlistManager.clearPlayList()
+                                    // playlistManager.playPlaylist(model.playlistid) //todo: extend tidalApi with playPlaylist
+                                    console.log("Play Playlist", model.playlistid, model.name)  
                                     tidalApi.playPlaylist(model.playlistid,true) //todo: extend tidalApi with playPlaylist
                             break
 
@@ -223,7 +235,8 @@ SilicaListView {
                         })
                         break
                     case 4: // Playlist
-                    console.log("Playlist", item.playlistid, item.name)
+                        console.log("Playlist", item.playlistid, item.name)
+                        console.log("Playlist", model.playlistid, mode.name)
                         pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"),
                         {
                             "playlistId" :model.playlistid,
