@@ -502,7 +502,7 @@ class Tidal:
                 pyotherside.send("printConsole", "trouble loading album")
 
         elif isinstance(item, tidalapi.artist.Artist):
-            self.items.append("\t" + item.name)
+            # ps: crashes here self.items.append("\t" + item.name)
             pyotherside.send("printConsole", item.name)
             artist_info = self.handle_artist(item)
             if artist_info:
@@ -531,7 +531,7 @@ class Tidal:
                 pyotherside.send("printConsole", "trouble loading album")
 
         elif isinstance(item, tidalapi.artist.Artist):
-            self.items.append("\t" + item.name)
+            # ps: crashes here: self.items.append("\t" + item.name)
             artist_info = self.handle_artist(item)
             if artist_info:
                 self.send_object("cacheArtist", artist_info)
