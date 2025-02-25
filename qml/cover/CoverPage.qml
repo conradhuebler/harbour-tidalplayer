@@ -12,9 +12,11 @@ CoverBackground {
         visible: !isPlaying
         source: "/usr/share/icons/hicolor/86x86/apps/harbour-tidalplayer.png"
         anchors.centerIn: parent
-        width: parent.width * 0.5
-        height: width
-        opacity: 0.6
+        // width: parent.width * 0.5
+        // height: width
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        opacity: 0.5
     }
 
     Image {
