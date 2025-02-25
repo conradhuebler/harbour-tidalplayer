@@ -16,96 +16,96 @@ SilicaListView {
     function addTrack(track_info)
     {
         console.log(track_info)
-            if (track_info === undefined) {
-                     console.error("track_info is undefined. skip append to model")
-                     return;
-                }
-                model.append({
-                    "title": track_info.title,
-                    "image": track_info.image,
-                    "albumid": track_info.trackid,
-                    "type" : typeTrack
-                })
+        if (track_info === undefined) {
+             console.error("track_info is undefined. skip append to model")
+             return;
+        }
+        model.append({
+            "title": track_info.title,
+            "image": track_info.image,
+            "trackid": track_info.trackid,
+            "type" : typeTrack
+        })
     }
 
     function addAlbum(album_info)
     {
         console.log(album_info)
-            if (album_info === undefined) {
-                     console.error("track_info is undefined. skip append to model")
-                     return;
-                }
-                model.append({
-                     "title": album_info.title,
-                    "image": album_info.image,
-                    "albumid": album_info.albumid,
-                    "type" : typeAlbum
-                })
+        if (album_info === undefined) {
+             console.error("album_info is undefined. skip append to model")
+             return;
+        }
+        model.append({
+            "title": album_info.title,
+            "image": album_info.image,
+            "albumid": album_info.albumid,
+            "type" : typeAlbum
+        })
     }
 
     function addArtist(artist_info)
     {
-                console.log(artist_info)
-            if (artist_info === undefined) {
-                     console.error("artist_info is undefined. skip append to model")
-                     return;
-                }
-                model.append({
-                    "name": artist_info.name,
-                    "title": artist_info.name,
-                    "image": artist_info.image,
-                    "artistid": artist_info.artistid,
-                    "type" : typeArtist
-                })
+        console.log(artist_info)
+        if (artist_info === undefined) {
+             console.error("artist_info is undefined. skip append to model")
+             return;
+        }
+        model.append({
+            "name": artist_info.name,
+            "title": artist_info.name,
+            "image": artist_info.image,
+            "artistid": artist_info.artistid,
+            "type" : typeArtist
+        })
     }
 
     function addPlaylist(playlist_info)
     {
-            console.log(playlist_info)
+        console.log(playlist_info)
         if (playlist_info === undefined) {
-                 console.error("album_info is undefined. skip append to model")
-                 return;
-            }
-            model.append({
-                "title": playlist_info.title,
-                "image": playlist_info.image,
-                "playlistid": playlist_info.playlistid,
-                "type" : typePlaylist
-            })
+             console.error("album_info is undefined. skip append to model")
+             return;
+        }
+        model.append({
+            "title": playlist_info.title,
+            "image": playlist_info.image,
+            "playlistid": playlist_info.playlistid,
+            "type" : typePlaylist
+        })
     }
 
     function addMix(mix_info)
     {
         console.log(mix_info)
         if (mix_info === undefined) {
-                 console.error("album_info is undefined. skip append to model")
-                 return;
+             console.error("album_info is undefined. skip append to model")
+             return;
         }
         model.append({
-                    "title": mix_info.title,
-                    "image": mix_info.image,
-                    "mixid": mix_info.mixid,
-                    "type" : typePlaylist
-                })
+            "title": mix_info.title,
+            "image": mix_info.image,
+            "mixid": mix_info.mixid,
+            "type" : typePlaylist
+        })
     }
 
 
     id: root
-                width: parent.width
-                height: Theme.itemSizeLarge * 3
-                orientation: ListView.Horizontal
-                clip: true
-                spacing: Theme.paddingMedium
+    width: parent.width
+    height: Theme.itemSizeLarge * 3
+    orientation: ListView.Horizontal
+    clip: true
+    spacing: Theme.paddingMedium
 
-                model: ListModel {
-                    id: recentModel
-                }
+    model: ListModel {
+        id: recentModel
+    }
 
-                delegate: ListItem {
-                id: delegateItem  // ID hinzugefügt für Referenzierung
-                width: Theme.itemSizeLarge * 2
-                height: root.height
-                contentHeight: height
+    delegate: ListItem {
+    id: delegateItem  // ID hinzugefügt für Referenzierung
+    width: Theme.itemSizeLarge * 2
+    height: root.height
+    contentHeight: height
 
                 Column {
                     anchors {
@@ -194,7 +194,7 @@ SilicaListView {
 
                             case 5: // Mix
                                     playlistManager.clearPlayList()
-                                    tidalApi.playPlaylist(model.playlistid,true) //todo: extend tidalApi with playPlaylist
+                                    tidalApi.playPlaylist(model.mixid,true) //todo: extend tidalApi with playPlaylist
                             break;
                             }
                         }
