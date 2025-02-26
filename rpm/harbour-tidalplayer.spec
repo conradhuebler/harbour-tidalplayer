@@ -6,6 +6,9 @@
 Name:       harbour-tidalplayer
 
 # >> macros
+%define _binary_payload w2.xzdio
+%define __provides_exclude_from ^%{_datadir}/%{name}/lib/.*\\.so\\>
+%define __requires_exclude_from ^%{_datadir}/%{name}/python/*\\>
 # << macros
 
 %{!?qtc_qmake:%define qtc_qmake %qmake}
@@ -16,10 +19,12 @@ Summary:    Tidal player for Sailfish OS
 Version:    0.0.2
 Release:    1
 Group:      Qt/Qt
-License:    LICENSE
+License:    GPLv3
+BuildArch:  noarch
 URL:        https://github.com/sailfishos
 Source0:    %{name}-%{version}.tar.bz2
 Source100:  harbour-tidalplayer.yaml
+
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
@@ -28,6 +33,7 @@ Requires:   python3-future
 Requires:   python3-dateutil
 Requires:   python3-six
 Requires:   python3-devel
+
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
@@ -38,6 +44,16 @@ BuildRequires:  desktop-file-utils
 %description
 A Sailfish OS sample application written in Python.
 
+%if "%{?vendor}" == "chum"
+PackageName: tidalplayer
+Type: desktop-application
+Categories:
+ - Audio
+DeveloperName:  Conrad Huebler
+Custom:
+ - Repo: https://github.com/conradhuebler/harbour-tidalplayer
+Icon: https://raw.githubusercontent.com/conradhuebler/harbour-tidalplayer/main/icons/172x172/harbour-audiocut.png
+%endif
 
 %prep
 %setup -q -n %{name}-%{version}
