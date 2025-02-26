@@ -8,6 +8,9 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* We Feb 26 2025 Conrad Hübler <Conrad.Huebler@gmx.net> 0.1.0
+- basic playback for tracks, albums, playlists is working
+
 * Fr Dec 27 2024 Conrad Hübler <Conrad.Huebler@gmx.net> 0.0.3prev-1
 - restructure some code using Claude Sonnet
 - add icon
