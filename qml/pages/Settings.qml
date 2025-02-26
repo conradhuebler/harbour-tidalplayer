@@ -164,9 +164,9 @@ Page {
             }
 
             ComboBox {
+                id: audioQuality
                 visible: tidalApi.loginTrue
                 label: qsTr("Audio Quality")
-                    currentIndex: 1 // Default auf HIGH
                     description: qsTr("Select streaming quality")
                     menu: ContextMenu {
                         MenuItem { text: qsTr("Low (96 kbps)") }
@@ -177,7 +177,7 @@ Page {
                     onCurrentIndexChanged: {
                            var qualities = ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
                            applicationWindow.settings.audio_quality = qualities[currentIndex]
-                       }
+                    }
             }
             SectionHeader {
                 text: qsTr("Maintenance")
@@ -199,5 +199,14 @@ Page {
         }
 
         VerticalScrollDecorator {}
+
+
+    Component.onCompleted: {
+        var savedQuality = applicationWindow.settings.audio_quality
+        var qualities = ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
+        var idx = qualities.indexOf(savedQuality)
+        idx >= 0 ? idx : 1  // default to HIGH (index 1) if not found
+        audioQuality.currentIndex = idx
+       }
     }
 }
