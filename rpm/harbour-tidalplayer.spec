@@ -49,10 +49,10 @@ PackageName: tidalplayer
 Type: desktop-application
 Categories:
  - Audio
-DeveloperName:  Conrad Huebler
+DeveloperName:  Conrad Hübler
 Custom:
  - Repo: https://github.com/conradhuebler/harbour-tidalplayer
-Icon: https://raw.githubusercontent.com/conradhuebler/harbour-tidalplayer/main/icons/172x172/harbour-audiocut.png
+Icon: https://raw.githubusercontent.com/conradhuebler/harbour-tidalplayer/main/icons/172x172/harbour-tidalplayer.png
 %endif
 
 %prep

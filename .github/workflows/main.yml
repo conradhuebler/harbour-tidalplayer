@@ -38,7 +38,7 @@ jobs:
     - name: Rename RPM to fixed name
       run: |
         cd /home/mersdk/harbour-tidalplayer/RPMS/
-        mv harbour-tidalplayer-*-1.aarch64.rpm "harbour-tidalplayer-master-1.noarch.rpm"
+        mv harbour-tidalplayer-*.rpm "harbour-tidalplayer-master-1.noarch.rpm"
         ls -la
 
     - name: Install curl
