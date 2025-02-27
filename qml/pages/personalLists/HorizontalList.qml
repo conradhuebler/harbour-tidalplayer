@@ -15,7 +15,7 @@ SilicaListView {
 
     function addTrack(track_info)
     {
-        console.log(track_info)
+        //console.log(track_info)
         if (track_info === undefined) {
              console.error("track_info is undefined. skip append to model")
              return;
@@ -24,13 +24,16 @@ SilicaListView {
             "title": track_info.title,
             "image": track_info.image,
             "trackid": track_info.trackid,
+            "playlistid" : "",
+            "artistid": "",
+            "albumid": -1,            
             "type" : typeTrack
         })
     }
 
     function addAlbum(album_info)
     {
-        console.log(album_info)
+        //console.log(album_info)
         if (album_info === undefined) {
              console.error("album_info is undefined. skip append to model")
              return;
@@ -41,13 +44,14 @@ SilicaListView {
             "albumid": album_info.albumid,
             "playlistid" : "",
             "artistid": "",
+            "trackid" : "",
             "type" : typeAlbum
         })
     }
 
     function addArtist(artist_info)
     {
-        console.log(artist_info)
+        //console.log(artist_info)
         if (artist_info === undefined) {
              console.error("artist_info is undefined. skip append to model")
              return;
@@ -59,6 +63,7 @@ SilicaListView {
             "artistid": artist_info.artistid,
             "playlistid":  "",
             "albumid": -1,
+            "trackid" : "",
             "type" : typeArtist
         })
     }
@@ -77,6 +82,7 @@ SilicaListView {
             "playlistid": playlist_info.playlistid,
             "albumid":-1,
             "artistid":"",
+            "trackid" : "",
             "type" : typePlaylist
         })
     }
@@ -92,9 +98,10 @@ SilicaListView {
             "title": mix_info.title,
             "image": mix_info.image,
             "mixid": mix_info.mixid,
-                         "artistid":"",
-                         "albumid":-1,
-                         "playlistid":"",
+            "artistid":"",
+            "albumid":-1,
+            "playlistid":"",
+            "trackid" : "",
             "type" : typePlaylist
         })
     }
@@ -191,22 +198,24 @@ SilicaListView {
                                     playlistManager.playTrack(model.trackid)
                                 break
                             case 2: // Album
-                                    playlistManager.clearPlayList()
-                                    playlistManager.playAlbum(model.albumid)
+                                playlistManager.clearPlayList()
+                                playlistManager.playAlbum(model.albumid)
                                 break
                             case 3: // Artist
-                                    // Todo
+                                playlistManager.clearPlayList()
+                                playlistManager.playArtistTracks(model.artistid, true)  // true for autoPlay                            
+                                // Todo
                                 break
                             case 4: // Playlist
                                     playlistManager.clearPlayList()
-                                    // playlistManager.playPlaylist(model.playlistid) //todo: extend tidalApi with playPlaylist
+                                    // todo: playlistManager.playPlaylist(model.playlistid) //todo: extend tidalApi with playPlaylist
                                     console.log("Play Playlist", model.playlistid, model.name)  
                                     tidalApi.playPlaylist(model.playlistid,true) //todo: extend tidalApi with playPlaylist
                             break
 
                             case 5: // Mix
                                     playlistManager.clearPlayList()
-                                    tidalApi.playPlaylist(model.mixid,true) //todo: extend tidalApi with playPlaylist
+                                    tidalApi.playPlaylist(model.mixid,true) //todo: use playlistmanager ?
                             break;
                             }
                         }

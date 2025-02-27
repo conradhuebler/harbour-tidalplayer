@@ -269,6 +269,13 @@ Item {
         currentTrackIndex()
     }
 
+    function playArtistTracks(id, startPlay) {
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        console.log("Playlistmanager::playartist", id, startPlay)
+        tidalApi.playArtistTracks(id,shouldPlay)
+        currentTrackIndex()
+    }
+
     function playTrack(id) {
         console.log("Playlistmanager::playtrack", id)
         mediaController.blockAutoNext = true

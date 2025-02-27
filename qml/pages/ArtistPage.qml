@@ -232,6 +232,50 @@ Page {
                 text: qsTr("Popular Tracks")
             }
 
+            Row {
+                id: artistControlBar
+                width: parent.width
+                height: Theme.itemSizeSmall
+                spacing: Theme.paddingMedium
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.paddingMedium
+                }
+
+                IconButton {
+                    id: playButton
+                    width: Theme.iconSizeMedium
+                    height: Theme.iconSizeMedium
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                    }
+                    icon.source: "image://theme/icon-m-play"
+                    icon.sourceSize: Qt.size(Theme.iconSizeMedium, Theme.iconSizeMedium)
+                    onClicked: {
+                        playlistManager.clearPlayList()
+                        playlistManager.playArtistTracks(artistId, true)  // true for autoPlay
+                    }
+                }
+
+                Label {
+                    text: qsTr("Play Artist")
+                    font.pixelSize: Theme.fontSizeSmall
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Item {
+                    width: Theme.paddingLarge
+                    height: parent.height
+                }
+            }
+            // Add separator
+            Separator {
+                width: parent.width
+                color: Theme.primaryColor
+                horizontalAlignment: Qt.AlignHCenter
+            }
+
             TrackList {
                 id: topTracks
                 width: parent.width

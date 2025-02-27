@@ -44,6 +44,13 @@ Item {
         anchors.bottomMargin: miniPlayerPanel.height * 0.4
         // highlightFollowsCurrentItem: true //introduced by Pawel for removing of tracks
 
+        // Add smooth scrolling properties
+        highlightRangeMode: ListView.ApplyRange
+        highlightMoveDuration: 1000  // Duration of the scroll animation in milliseconds
+        highlightMoveVelocity: -1   // -1 means use duration instead of velocity
+        preferredHighlightBegin: height * 0.1
+        preferredHighlightEnd: height * 0.9
+        
         header: PageHeader {
             title: root.title
         }
@@ -326,7 +333,7 @@ Item {
 
         onCurrentTrack: {
             if (type === "current") {
-                tracks.positionViewAtIndex(position, ListView.Center)
+                tracks.positionViewAtIndex(position, ListView.Contain)
             }
         }
 
