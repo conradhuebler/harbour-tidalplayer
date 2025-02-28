@@ -167,17 +167,17 @@ Page {
                 id: audioQuality
                 visible: tidalApi.loginTrue
                 label: qsTr("Audio Quality")
-                    description: qsTr("Select streaming quality")
-                    menu: ContextMenu {
-                        MenuItem { text: qsTr("Low (96 kbps)") }
-                        MenuItem { text: qsTr("High (320 kbps)") }
-                        MenuItem { text: qsTr("Lossless (FLAC)") }
-                        MenuItem { text: qsTr("Master (MQA)") }
-                    }
-                    onCurrentIndexChanged: {
-                           var qualities = ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
-                           applicationWindow.settings.audio_quality = qualities[currentIndex]
-                    }
+                description: qsTr("Select streaming quality")
+                property var qualities: ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
+                menu: ContextMenu {
+                    MenuItem { text: qsTr("Low (96 kbps)") }
+                    MenuItem { text: qsTr("High (320 kbps)") }
+                    MenuItem { text: qsTr("Lossless (FLAC)") }
+                    MenuItem { text: qsTr("Master (MQA)") }
+                }
+                onCurrentIndexChanged: {
+                    applicationWindow.settings.audio_quality = qualities[currentIndex]
+                }
             }
             SectionHeader {
                 text: qsTr("Maintenance")
@@ -203,8 +203,7 @@ Page {
 
     Component.onCompleted: {
         var savedQuality = applicationWindow.settings.audio_quality
-        var qualities = ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
-        var idx = qualities.indexOf(savedQuality)
+        var idx = audioQuality.qualities.indexOf(savedQuality)
         idx >= 0 ? idx : 1  // default to HIGH (index 1) if not found
         audioQuality.currentIndex = idx
        }
