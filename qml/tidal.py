@@ -360,7 +360,7 @@ class Tidal:
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("addTracktoPL", track_info['trackid'])
-        pyotherside.send("fillFinished")
+        pyotherside.send("fillFinished", autoPlay)
 
     def getTopTracks(self, id, max):
         toptracks = self.session.artist(int(id)).get_top_tracks(max)
