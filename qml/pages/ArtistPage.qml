@@ -264,6 +264,15 @@ Page {
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
+                Label {
+                    text: "  " + topTracks.model.count + " " + qsTr("Tracks")
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.secondaryColor
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: opacity > 0
+                    Behavior on opacity { NumberAnimation { duration: 150 } } 
+                }
+
                 Item {
                     width: Theme.paddingLarge
                     height: parent.height
