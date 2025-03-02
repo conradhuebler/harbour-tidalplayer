@@ -32,7 +32,7 @@ OTHER_FILES += harbour-tidalplayer.desktop \
         rpm/harbour-tidalplayer.spec\
         rpm/harbour-tidalplayer.yaml
 
-COPIES += tidalpython, future, dateutil
+COPIES += tidalpython future dateutil
 tidalpython.files = $$files(external/python-tidal/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
 
