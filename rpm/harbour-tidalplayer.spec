@@ -34,6 +34,7 @@ Requires:   libsailfishapp-launcher
 Requires:       python3-six
 Requires:       python3-requests
 
+BuildRequires: python3-pip
 BuildRequires:  python3-devel
 BuildRequires:  python3-rpm-macros
 BuildRequires:  python3-setuptools
