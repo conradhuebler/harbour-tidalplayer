@@ -178,3 +178,4 @@ sequenceDiagram
 
     Note over UI: Turning wheel goes away
 ```
+https://sidharthv96.github.io/mermaid/syntax/sequenceDiagram.html
