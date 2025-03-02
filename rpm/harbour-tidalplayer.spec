@@ -88,6 +88,19 @@ desktop-file-install --delete-original       \
   --dir %{buildroot}%{_datadir}/applications             \
    %{buildroot}%{_datadir}/applications/*.desktop
 
+cd %{buildroot}%{_datadir}/%{name}/external/python-future
+python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
+rm -rf  %{buildroot}%{_datadir}/%{name}/external/python-future
+
+cd %{buildroot}/%{_datadir}/%{name}/external/dateutil
+python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
+rm -rf %{buildroot}/%{_datadir}/%{name}/external/dateutil
+
+rm -rf %{buildroot}/%{_datadir}/%{name}/share
+rm -rf %{buildroot}/%{_datadir}/%{name}/bin
+
+cd %_builddir
+
 %files
 %defattr(-,root,root,-)
 %{_datadir}/%{name}
