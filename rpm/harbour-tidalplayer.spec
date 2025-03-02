@@ -82,24 +82,24 @@ rm -rf %{buildroot}
 mkdir %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/tidalapi
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
+
+cd %{buildroot}%{_datadir}/%{name}/python/python-future
+python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
+rm -rf  %{buildroot}%{_datadir}/%{name}/python/python-future
+
+cd %{buildroot}/%{_datadir}/%{name}/python/dateutil
+python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
+rm -rf %{buildroot}/%{_datadir}/%{name}/python/dateutil
+
+rm -rf %{buildroot}/%{_datadir}/%{name}/share
+rm -rf %{buildroot}/%{_datadir}/%{name}/bin
+cd %_builddir
+
 # << install post
 
 desktop-file-install --delete-original       \
   --dir %{buildroot}%{_datadir}/applications             \
    %{buildroot}%{_datadir}/applications/*.desktop
-
-cd %{buildroot}%{_datadir}/%{name}/external/python-future
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf  %{buildroot}%{_datadir}/%{name}/external/python-future
-
-cd %{buildroot}/%{_datadir}/%{name}/external/dateutil
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf %{buildroot}/%{_datadir}/%{name}/external/dateutil
-
-rm -rf %{buildroot}/%{_datadir}/%{name}/share
-rm -rf %{buildroot}/%{_datadir}/%{name}/bin
-
-cd %_builddir
 
 %files
 %defattr(-,root,root,-)
