@@ -9,6 +9,7 @@ Name:       harbour-tidalplayer
 %define _binary_payload w2.xzdio
 %define __provides_exclude_from ^%{_datadir}/%{name}/lib/.*\\.so\\>
 %define __requires_exclude_from ^%{_datadir}/%{name}/python/*\\>
+%define __requires_exclude_from ^%{_datadir}/%{name}/external/*\\>
 # << macros
 
 %{!?qtc_qmake:%define qtc_qmake %qmake}
@@ -28,17 +29,19 @@ Source100:  harbour-tidalplayer.yaml
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
-Requires:   python3-requests
-Requires:   python3-future
-Requires:   python3-dateutil
-Requires:   python3-six
-Requires:   python3-devel
+#Requires:   python3-future
+#Requires:   python3-dateutil
+Requires:       python3-six
+Requires:       python3-requests
 
-BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
+BuildRequires:  python3-devel
+BuildRequires:  python3-rpm-macros
+BuildRequires:  python3-setuptools
+BuildRequires:  qt5-qttools-linguist
+BuildRequires:  pkgconfig(sailfishapp) >= 1.0.3
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
-BuildRequires:  pkgconfig(python3)
 BuildRequires:  desktop-file-utils
 
 %description
@@ -83,13 +86,13 @@ mkdir %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/tidalapi
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
 
-cd %{buildroot}%{_datadir}/%{name}/python/python-future
+cd %{buildroot}%{_datadir}/%{name}/external/python-future
 python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf  %{buildroot}%{_datadir}/%{name}/python/python-future
+rm -rf  %{buildroot}%{_datadir}/%{name}/external/python-future
 
-cd %{buildroot}/%{_datadir}/%{name}/python/dateutil
+cd %{buildroot}/%{_datadir}/%{name}/external/dateutil
 python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf %{buildroot}/%{_datadir}/%{name}/python/dateutil
+rm -rf %{buildroot}/%{_datadir}/%{name}/external/dateutil
 
 rm -rf %{buildroot}/%{_datadir}/%{name}/share
 rm -rf %{buildroot}/%{_datadir}/%{name}/bin
