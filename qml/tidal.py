@@ -351,7 +351,7 @@ class Tidal:
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("addTracktoPL", track_info['trackid'])
-        pyotherside.send("fillFinished")
+        pyotherside.send("fillFinished", False)
 
     def playArtistTracks(self, id, autoPlay=False):
         artist = self.session.artist(int(id))

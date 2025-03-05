@@ -131,7 +131,7 @@ Page {
                     }
 
                     Column {
-                        width: parent.width - coverImage.width - parent.spacing - Theme.paddingLarge * 2
+                        width: parent.width - coverImage.width - 2* parent.spacing //- Theme.paddingLarge //* 2
                         height: parent.height
                         spacing: Theme.paddingSmall
                         anchors.verticalCenter: parent.verticalCenter
