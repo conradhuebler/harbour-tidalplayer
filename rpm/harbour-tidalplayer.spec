@@ -6,9 +6,6 @@
 Name:       harbour-tidalplayer
 
 # >> macros
-%define _binary_payload w2.xzdio
-%define __provides_exclude_from ^%{_datadir}/%{name}/lib/.*\\.so\\>
-%define __requires_exclude_from ^%{_datadir}/%{name}/python/*\\>
 # << macros
 
 %{!?qtc_qmake:%define qtc_qmake %qmake}
@@ -16,24 +13,20 @@ Name:       harbour-tidalplayer
 %{!?qtc_make:%define qtc_make make}
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    Tidal player for Sailfish OS
-Version:    0.0.2
-Release:    1
+Version:    0.1.2
+Release:    0
 Group:      Qt/Qt
-License:    GPLv3
-BuildArch:  noarch
+License:    LICENSE
 URL:        https://github.com/sailfishos
 Source0:    %{name}-%{version}.tar.bz2
 Source100:  harbour-tidalplayer.yaml
-
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
 Requires:   python3-requests
-Requires:   python3-future
-Requires:   python3-dateutil
+Requires:   python-dateutil
 Requires:   python3-six
 Requires:   python3-devel
-
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
@@ -42,18 +35,8 @@ BuildRequires:  pkgconfig(python3)
 BuildRequires:  desktop-file-utils
 
 %description
-A Sailfish OS sample application written in Python.
+A native Tidal Player for Sailfish OS written in python
 
-%if "%{?vendor}" == "chum"
-PackageName: tidalplayer
-Type: desktop-application
-Categories:
- - Audio
-DeveloperName:  Conrad Hübler
-Custom:
- - Repo: https://github.com/conradhuebler/harbour-tidalplayer
-Icon: https://raw.githubusercontent.com/conradhuebler/harbour-tidalplayer/main/icons/172x172/harbour-tidalplayer.png
-%endif
 
 %prep
 %setup -q -n %{name}-%{version}
@@ -82,6 +65,15 @@ rm -rf %{buildroot}
 mkdir %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/tidalapi
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
+
+cd %{buildroot}%{_datadir}/%{name}/external/python-future
+python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
+rm -rf  %{buildroot}%{_datadir}/%{name}/external/python-future
+
+rm -rf %{buildroot}/%{_datadir}/%{name}/share
+rm -rf %{buildroot}/%{_datadir}/%{name}/bin
+cd %_builddir
+
 # << install post
 
 desktop-file-install --delete-original       \
