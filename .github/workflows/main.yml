@@ -22,7 +22,7 @@ jobs:
     - name: Manual Checkout
       run: |
         cd /home/mersdk
-        git clone https://github.com/poetaster/harbour-tidalplayer.git
+        git clone https://github.com/conradhuebler/harbour-tidalplayer.git
         cd harbour-tidalplayer
         git submodule update --init --recursive
         ls -la
@@ -51,18 +51,18 @@ jobs:
       run: |
         cd /home/mersdk/harbour-tidalplayer/RPMS/
         # Erst altes Asset löschen falls vorhanden
-        #        ASSET_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-        #  "https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets" | \
-        #  grep -B 2 '"name": "harbour-tidalplayer-master-1.noarch.rpm"' | \
-        #  grep '"id":' | sed 's/.*"id": \([0-9]*\).*/\1/')
-        #if [ ! -z "$ASSET_ID" ]; then
-        #  curl -X DELETE \
-        #    -H "Authorization: token $GITHUB_TOKEN" \
-        #    "https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/assets/$ASSET_ID"
-        #fi
+                ASSET_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets" | \
+          grep -B 2 '"name": "harbour-tidalplayer-master-1.noarch.rpm"' | \
+          grep '"id":' | sed 's/.*"id": \([0-9]*\).*/\1/')
+        if [ ! -z "$ASSET_ID" ]; then
+          curl -X DELETE \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/assets/$ASSET_ID"
+        fi
         # Neues Asset hochladen
-        #curl -X POST \
-        #  -H "Authorization: token $GITHUB_TOKEN" \
-        #  -H "Content-Type: application/x-rpm" \
-        #  --data-binary @"harbour-tidalplayer-master-1.noarch.rpm" \
-        #  "https://uploads.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets?name=harbour-tidalplayer-master-1.noarch.rpm"
+        curl -X POST \
+          -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Content-Type: application/x-rpm" \
+          --data-binary @"harbour-tidalplayer-master-1.noarch.rpm" \
+          "https://uploads.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets?name=harbour-tidalplayer-master-1.noarch.rpm"
