@@ -8,6 +8,9 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Su Mar 2 2025 Mark Washeim <blueprint@poetaster.de> 0.1.0
+- add external deps python future and dateutil
+
 * We Feb 26 2025 Conrad Hübler <Conrad.Huebler@gmx.net> 0.1.0
 - basic playback for tracks, albums, playlists is working
 

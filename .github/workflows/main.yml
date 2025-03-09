@@ -51,7 +51,7 @@ jobs:
       run: |
         cd /home/mersdk/harbour-tidalplayer/RPMS/
         # Erst altes Asset löschen falls vorhanden
-        ASSET_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                ASSET_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
           "https://api.github.com/repos/conradhuebler/harbour-tidalplayer/releases/148043359/assets" | \
           grep -B 2 '"name": "harbour-tidalplayer-master-1.noarch.rpm"' | \
           grep '"id":' | sed 's/.*"id": \([0-9]*\).*/\1/')
