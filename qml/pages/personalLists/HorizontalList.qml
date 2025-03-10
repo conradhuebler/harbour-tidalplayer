@@ -89,7 +89,6 @@ SilicaListView {
 
     function addMix(mix_info)
     {
-        console.log(mix_info)
         if (mix_info === undefined) {
              console.error("mix_info is undefined. skip append to model")
              return;

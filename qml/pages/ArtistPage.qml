@@ -360,6 +360,10 @@ Page {
                 console.log("Artist nicht im Cache gefunden:", artistId)
                 //todo: react - retry ?
             }
+            //todo: even though i did add some logic to cache it does not work always
+            if (!artistData.image) {
+                artistData.image = "image://theme/icon-m-media-artists"
+            }
             header.title = artistData.name
             artistName.text = artistData.name
             coverImage.source = artistData.image

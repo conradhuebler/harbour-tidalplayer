@@ -249,6 +249,30 @@ Item {
                     }
                     visible: type === "current"
                 }
+                MenuItem {
+                    // get artistInfo
+                    text: qsTr("Artist Info")
+                    onClicked: {
+                        var trackId = playlistManager.requestPlaylistItem(model.index)
+                        var trackInfo = cacheManager.getTrackInfo(trackId)
+                        if (trackInfo && trackInfo.artistid) {
+                            pageStack.push(Qt.resolvedUrl("./ArtistPage.qml"),
+                                { artistId: trackInfo.artistid })
+                        }
+                    }
+                }
+                MenuItem {
+                    // get albumInfo
+                    text: qsTr("Album Info")
+                    onClicked: {
+                        var trackId = playlistManager.requestPlaylistItem(model.index)
+                        var trackInfo = cacheManager.getTrackInfo(trackId)
+                        if (trackInfo && trackInfo.albumid) {
+                            pageStack.push(Qt.resolvedUrl("./AlbumPage.qml"),
+                                { albumId: trackInfo.albumid })
+                        }
+                    }
+                }
             }
         }
 
