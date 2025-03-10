@@ -153,7 +153,7 @@ Page {
 
                                 Image {
                                     id: artistIcon
-                                    source: "image://theme/icon-s-person"
+                                    source: "image://theme/icon-m-media-artists"
                                     width: Theme.iconSizeSmall
                                     height: width
                                     anchors.verticalCenter: parent.verticalCenter
