@@ -114,7 +114,7 @@ class Tidal:
             return {
                 "artistid": str(artist.id),
                 "name": str(artist.name),
-                "image": artist.image(320) if hasattr(artist, 'image') else "",
+                "image": artist.image(320) if hasattr(artist, 'image') else "image://theme/icon-m-media-artists",
                 "type": "artist",
                 "bio" : str(artist.get_bio())
             }
@@ -141,7 +141,7 @@ class Tidal:
                 "title": str(album.name),
                 "artist": str(album.artist.name),
                 "artistid" : str(album.artist.id),
-                "image": album.image(320) if hasattr(album, 'image') else "",
+                "image": album.image(320) if hasattr(album, 'image') else "image://theme/icon-m-media-albums",
                 "duration": int(album.duration) if hasattr(album, 'duration') else 0,
                 "num_tracks": int(album.num_tracks),
                 "year": int(album.year),
@@ -183,7 +183,7 @@ class Tidal:
             return {
                 "playlistid": str(playlist.id),
                 "title": str(playlist.name),
-                "image": playlist.image(320) if hasattr(playlist, 'image') else "",
+                "image": playlist.image(320) if hasattr(playlist, 'image') else "image://theme/icon-m-media-playlists",
                 "duration": int(playlist.duration) if hasattr(playlist, 'duration') else 0,
                 "num_tracks": playlist.num_tracks if hasattr(playlist, 'num_tracks') else 0,
                 "description": playlist.description if hasattr(playlist, 'description') else "",
@@ -199,14 +199,15 @@ class Tidal:
             return {
                 "playlistid": str(mix.id),
                 "title": str(mix.name),
-                "image": mix.image(320) if hasattr(mix, 'image') else "",
+                "image": mix.image(320) if hasattr(mix, 'image') else "image://theme/icon-m-media-playlists",
                 "duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
                 "num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
                 "description": mix.description if hasattr(mix, 'description') else "",
-                "type": "playlist"
+                "type": "mix" # "playlist"
             }
         except AttributeError as e:
-            print(f"Error handling playlist: {e}")
+            print(f"Error handling mix: {e}")
+            pyotherside.send("printConsole", "trouble loading mix")
             return None
 
     def genericSearch(self, text):
@@ -526,8 +527,9 @@ class Tidal:
 
         elif isinstance(item, tidalapi.mix.Mix):
             mix_info = self.handle_mix(item)
+            self.send_object("recentMix", mix_info)
         else:
-            pyotherside.send("printConsole", item.name)
+            pyotherside.send("printConsole", "trouble loading mix")
 
     def getForYou(self, item):
         if isinstance(item, tidalapi.album.Album):
