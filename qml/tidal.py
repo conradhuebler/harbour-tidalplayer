@@ -194,20 +194,20 @@ class Tidal:
             return None
 
     def handle_mix(self, mix):
-        """Handler für Playlist-Informationen"""
+        """Handler für Mix-Informationen, nicht fertig, """
         try:
             return {
                 "playlistid": str(mix.id),
-                "title": str(mix.name),
-                "image": mix.image(320) if hasattr(mix, 'image') else "image://theme/icon-m-media-playlists",
-                "duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
-                "num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
-                "description": mix.description if hasattr(mix, 'description') else "",
+                "title": str(mix.title),
+                #"image": mix.image(320) if hasattr(mix, 'image') else "image://theme/icon-m-media-playlists",
+                #"duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
+                #"num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
+                "description": mix.sub_title if hasattr(mix, 'sub_title') else "",
                 "type": "mix" # "playlist"
             }
         except AttributeError as e:
             print(f"Error handling mix: {e}")
-            pyotherside.send("printConsole", "trouble loading mix")
+            pyotherside.send("printConsole", f"trouble loading mix: f{e}")
             return None
 
     def genericSearch(self, text):
@@ -495,11 +495,13 @@ class Tidal:
         for item in self.home.categories[0].items:
             self.getForYou(item)
 
-        for item in self.home.categories[1].items:
+        recent_page = self.session.page.get("pages/CONTINUE_LISTEN_TO/view-all")
+        for item in recent_page:
             self.getRecently(item)
 
-        #for item in self.home.categories[2].items:
+        #for item in self.home.categories[4].items:
         #    self.getCustomMixes(item)
+        # todo: when enabled you need to define a handler + visualization
 
     def getRecently(self, item):
         if isinstance(item, tidalapi.album.Album):
@@ -523,13 +525,20 @@ class Tidal:
 
         elif isinstance(item, tidalapi.playlist.Playlist):
             playlist_info = self.handle_playlist(item)
-            self.send_object("recentPlaylist", playlist_info)
+            if playlist_info:
+                self.send_object("recentPlaylist", playlist_info)
 
         elif isinstance(item, tidalapi.mix.Mix):
             mix_info = self.handle_mix(item)
-            self.send_object("recentMix", mix_info)
+            if mix_info:
+                self.send_object("recentMix", mix_info)
+
+        elif isinstance(item, tidalapi.Track):
+            track_info = self.handle_track(item)
+            if track_info:
+                self.send_object("recentTrack", track_info)
         else:
-            pyotherside.send("printConsole", "trouble loading mix")
+            pyotherside.send("printConsole", f"trouble handling object in getrecently: {type(item)}")
 
     def getForYou(self, item):
         if isinstance(item, tidalapi.album.Album):

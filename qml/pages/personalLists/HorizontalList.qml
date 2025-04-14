@@ -70,7 +70,7 @@ SilicaListView {
 
     function addPlaylist(playlist_info)
     {
-        console.log(playlist_info)
+        console.log(JSON.stringify(playlist_info))
         if (playlist_info === undefined) {
              console.error("album_info is undefined. skip append to model")
              return;
