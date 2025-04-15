@@ -495,7 +495,7 @@ class Tidal:
         for item in self.home.categories[0].items:
             self.getForYou(item)
 
-        recent_page = self.session.page.get("pages/CONTINUE_LISTEN_TO/view-all")
+        recent_page = self.getPageContinueListen()
         for item in recent_page:
             self.getRecently(item)
 
@@ -503,75 +503,107 @@ class Tidal:
         #    self.getCustomMixes(item)
         # todo: when enabled you need to define a handler + visualization
 
-    def getRecently(self, item):
+    def getPageContinueListen(self):
+        return self.session.page.get("pages/CONTINUE_LISTEN_TO/view-all")
+    
+    def getPagePopularPlaylists(self): 
+        return self.session.page.get("pages/POPULAR_PLAYLISTS/view-all")
+    
+    def getPageSuggestedRadioMixes(self):
+        return self.session.page.get("pages/SUGGESTED_RADIOS_MIXES/view-all?")
+    
+    def getPageDailyMixes(self):
+        return self.session.page.get("pages/DAILY_MIXES/view-all?")
+
+    # sorted by activity
+    def getPageFavoriteArtists(self):
+        return self.session.page.get("pages/YOUR_FAVORITE_ARTISTS/view-all?")
+
+    def getPageListeningHistorypage(self):
+        return self.session.page.get("pages/HISTORY_MIXES/view-all?")
+    
+    def getPageSuggestedNewAlbumspage(self):
+        return self.session.page.get("pages/NEW_ALBUM_SUGGESTIONS/view-all?")
+    
+    def tryHandleAlbum(self, signalName, item):
         if isinstance(item, tidalapi.album.Album):
             album_info = self.handle_album(item)
 
             if album_info:
                 self.send_object("cacheAlbum", album_info)
-                self.send_object("recentAlbum", album_info)
+                self.send_object(signalName, album_info)
             else:
                 pyotherside.send("printConsole", "trouble loading album")
-
-        elif isinstance(item, tidalapi.artist.Artist):
+            return True
+        return False
+    
+    def tryHandleArtist(self, signalName, item):
+        if isinstance(item, tidalapi.artist.Artist):
             # ps: crashes here self.items.append("\t" + item.name)
             pyotherside.send("printConsole", item.name)
             artist_info = self.handle_artist(item)
             if artist_info:
                 self.send_object("cacheArtist", artist_info)
-                self.send_object("recentArtist", artist_info)
+                self.send_object(signalName, artist_info)
             else:
                 pyotherside.send("printConsole", "trouble loading artist")
+            return True
+        return False
 
-        elif isinstance(item, tidalapi.playlist.Playlist):
+    def tryHandlePlaylist(self, signalName, item):
+        if isinstance(item, tidalapi.playlist.Playlist):
             playlist_info = self.handle_playlist(item)
             if playlist_info:
-                self.send_object("recentPlaylist", playlist_info)
-
-        elif isinstance(item, tidalapi.mix.Mix):
-            mix_info = self.handle_mix(item)
-            if mix_info:
-                self.send_object("recentMix", mix_info)
-
-        elif isinstance(item, tidalapi.Track):
-            track_info = self.handle_track(item)
-            if track_info:
-                self.send_object("recentTrack", track_info)
-        else:
-            pyotherside.send("printConsole", f"trouble handling object in getrecently: {type(item)}")
-
-    def getForYou(self, item):
-        if isinstance(item, tidalapi.album.Album):
-            album_info = self.handle_album(item)
-
-            if album_info:
-                self.send_object("cacheAlbum", album_info)
-                self.send_object("foryouAlbum", album_info)
-            else:
-                pyotherside.send("printConsole", "trouble loading album")
-
-        elif isinstance(item, tidalapi.artist.Artist):
-            # ps: crashes here: self.items.append("\t" + item.name)
-            artist_info = self.handle_artist(item)
-            if artist_info:
-                self.send_object("cacheArtist", artist_info)
-                self.send_object("foryouArtist", artist_info)
-            else:
-                pyotherside.send("printConsole", "trouble loading artist")
-
-        elif isinstance(item, tidalapi.playlist.Playlist):
-            pyotherside.send("printConsole", item.name)
-            playlist_info = self.handle_playlist(item)
-            self.send_object("foryouPlaylist", playlist_info)
-
-        elif isinstance(item, tidalapi.mix.Mix):
-            mix_info = self.handle_mix(item)
-            self.send_object("foryouMix", mix_info)
-
-    def getCustomMixes(self, item):
+                self.send_object(signalName, playlist_info)
+            return True
+        return False
+    
+    def tryHandleMix(self, signalName, item):
         if isinstance(item, tidalapi.mix.Mix):
             mix_info = self.handle_mix(item)
-            self.send_object("customMix", mix_info)
+            if mix_info:
+                self.send_object(signalName, mix_info)
+            return True
+        return False
+    
+    def tryHandleTrack(self, signalName, item):
+        if isinstance(item, tidalapi.Track):
+            track_info = self.handle_track(item)
+            if track_info:
+                self.send_object(signalName, track_info)
+            return True
+        return False
+
+    def getRecently(self, item):
+        if self.tryHandleAlbum("recentAlbum", item):
+            return
+        if self.tryHandleArtist("recentArtist", item):
+            return
+        if self.tryHandlePlaylist("recentPlaylist", item):
+            return
+        if self.tryHandleMix("recentMix", item):
+            return
+        if self.tryHandleTrack("recentTrack", item):
+            return
+        pyotherside.send("printConsole", f"trouble handling object in getRecently: {type(item)}")
+
+    def getForYou(self, item):
+        if self.tryHandleAlbum("foryouAlbum", item):
+            return
+        if self.tryHandleArtist("foryouArtist",item):
+            return
+        if self.tryHandlePlaylist("foryouPlaylist", item):
+            return
+        if self.tryHandleMix("foryouMix", item):
+            return
+        if self.tryHandleTrack("foryouTrack", item):
+            return
+        pyotherside.send("printConsole", f"trouble handling object in getForYou: {type(item)}")
+
+    def getCustomMixes(self, item):
+        if self.tryHandleMix("customMix",item):
+            return
+        pyotherside.send("printConsole", f"trouble handling object in getCustomMixes: {type(item)}")
 
     def getUser(self):
         return self.session.get_user(self.session.user.id)
