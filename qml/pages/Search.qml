@@ -179,6 +179,10 @@ Item {
         results.artists.forEach(function(artist) {
             listModel.append(createArtistItem(artist))
         })
+        // Playlist hinzufügen
+        results.playlists.forEach(function(playlist) {
+            listModel.append(createPlaylistItem(playlist))
+        })
     }
 
     function createTrackItem(track) {
@@ -189,6 +193,7 @@ Item {
             trackid: track.trackid,
             albumid: track.albumid,
             artistid: track.artistid,
+            playlistid: "",
             type: typeTrack,
             image: track.image,
             duration: track.duration,
@@ -201,6 +206,8 @@ Item {
             name: album.title,
             albumid: album.albumid,
             artistid: album.artistid,
+            playlistid: "",
+            trackid: "",
             type: typeAlbum,
             image: album.image,
             duration: album.duration
@@ -212,6 +219,8 @@ Item {
             name: artist.name,
             artistid: artist.artistid,
             albumid:artist.albumid,
+            playlistid : "",
+            trackid : "",
             type: typeArtist,
             image: artist.image
         }
@@ -222,12 +231,23 @@ Item {
         return {
             name: playlist.title,
             playlistid: playlist.playlistid,
+            artistid: "",
+            albumid: 0,
+            trackid: "",
             type: typePlaylist,
             image: playlist.image,
             duration: playlist.duration
-
         }
     }
+
+    /*
+    'playlistid': 'a1010338-0ebe-49f9-85e9-91e5bd4c54f7',
+    'title': 'Metal Party Classics', 
+    'image': 'https://resources.tidal.com/images/0db830f2/f569/45c5/984a/da9a38188fb9/320x320.jpg',
+     'duration': 9335, 'num_tracks': 40, 
+     'description': "Get that hard rockin' party started with these shout-a-long friendly all-time classics! (Photo: Johannes Havn / Pexels)", 
+     'type': 'playlist
+    */
 
     function createVideoItem(video) {
         console.log("Found video", video.title)

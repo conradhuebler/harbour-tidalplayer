@@ -208,7 +208,7 @@ SilicaListView {
                             case 4: // Playlist
                                     playlistManager.clearPlayList()
                                     // todo: playlistManager.playPlaylist(model.playlistid) //todo: extend tidalApi with playPlaylist
-                                    console.log("Play Playlist", model.playlistid, model.name)  
+                                    console.log("Play Playlist", model.playlistid, model.title)  
                                     tidalApi.playPlaylist(model.playlistid,true) //todo: extend tidalApi with playPlaylist
                             break
 
@@ -243,12 +243,12 @@ SilicaListView {
                         })
                         break
                     case 4: // Playlist
-                        console.log("Playlist", item.playlistid, item.name)
-                        console.log("Playlist", model.playlistid, mode.name)
+                        console.log("Playlist", model.playlistid, model.title)
+                        // id exists, name is undefined
                         pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"),
                         {
                             "playlistId" :model.playlistid,
-                            "playlistTitle" : model.name
+                            "playlistTitle" : model.title
                         })
                         break
                     }
