@@ -525,6 +525,15 @@ class Tidal:
     def getPageSuggestedNewAlbumspage(self):
         return self.session.page.get("pages/NEW_ALBUM_SUGGESTIONS/view-all?")
     
+    def getPageDecades(self):
+        return self.session.page.get("pages/genre_decades")
+    
+    def getPageGenres(self):
+        return self.session.page.get("pages/genre_page")
+
+    def getPageMoods(self):
+        return self.session.page.get("pages/moods_page")   
+    
     def tryHandleAlbum(self, signalName, item):
         if isinstance(item, tidalapi.album.Album):
             album_info = self.handle_album(item)

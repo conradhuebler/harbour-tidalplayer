@@ -80,7 +80,16 @@ def test_getPagePopularPlaylists(session):
     assert page.categories
     for item in page.categories:
          print(item.title)         
-         
+
+def test_getPageDecades(session):
+    tidal = Tidal()
+    tidal.session = session
+    page = tidal.getPageDecades()
+    assert page is not None
+    assert page.categories
+    for item in page.categories:
+         print(item.title)      
+
 def test_get_user_recently_played(session):
     tidaler = Tidal()
     tidaler.initialize(tidalapi.Quality.high_lossless) # it does not work to use the enum
