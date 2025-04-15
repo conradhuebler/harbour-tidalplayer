@@ -8,7 +8,7 @@ import pytest
 import tidalapi
 from tidalapi.page import PageItem, PageLink
 from tidalapi.mix import Mix
-
+from tidalapi import VideoQuality
 import sys
 sys.path.append( './../..' )
 
@@ -80,13 +80,17 @@ def test_getPagePopularPlaylists(session):
     assert page.categories
     for item in page.categories:
          print(item.title)         
-
+         
 def test_get_user_recently_played(session):
     tidaler = Tidal()
+    tidaler.initialize(tidalapi.Quality.high_lossless) # it does not work to use the enum
+    tidaler.config = tidalapi.Config(quality=tidalapi.Quality.high_lossless, video_quality=tidalapi.VideoQuality.low)
     tidaler.session = session
-    recent_page = tidaler.getPageContinueListen()
-    for item in recent_page:
+    page = tidaler.getPageContinueListen()
+    assert page is not None
+    for item in page:
         tidaler.getRecently(item)
+
 
 def test_get_fav_artist(session):
     assert isinstance(session.user.favorites, tidalapi.Favorites)

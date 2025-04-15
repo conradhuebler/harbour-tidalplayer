@@ -29,6 +29,7 @@ class Tidal:
     def initialize(self, quality="HIGH"):
         pyotherside.send("printConsole", "Initialise tidal api")
 
+        selected_quality = ""
         if quality == "LOW":
             selected_quality = tidalapi.Quality.low
         elif quality == "HIGH":
@@ -111,28 +112,27 @@ class Tidal:
 
     def handle_artist(self, artist):
         try:
-            return {
+            artisti = {
                 "artistid": str(artist.id),
                 "name": str(artist.name),
                 "image": artist.image(320) if hasattr(artist, 'image') else "image://theme/icon-m-media-artists",
                 "type": "artist",
-                "bio" : str(artist.get_bio())
+                "bio" : ""
             }
         except AttributeError as e:
             print(f"Error handling artist: {e}")
             return None
-
+        try:
+            bio = str(artist.get_bio())
         except HTTPError as e:
             if e.response.status_code == 404:
-                return {
-                    "artistid": str(artist.id),
-                    "name": str(artist.name),
-                    "image": artist.image(320) if hasattr(artist, 'image') else "",
-                    "type": "artist",
-                    "bio" : ""
-                }
-            else:
-                return f"Error fetching biography: {str(e)}"
+                print(f"Error fetching biography: {e}")
+                return artisti
+            return artisti
+        except tidalapi.exceptions.ObjectNotFound as e:
+            return artisti
+        artisti["bio"] = bio
+        return artisti
 
     def handle_album(self, album):
         try:
@@ -528,7 +528,6 @@ class Tidal:
     def tryHandleAlbum(self, signalName, item):
         if isinstance(item, tidalapi.album.Album):
             album_info = self.handle_album(item)
-
             if album_info:
                 self.send_object("cacheAlbum", album_info)
                 self.send_object(signalName, album_info)
