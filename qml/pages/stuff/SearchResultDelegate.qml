@@ -177,7 +177,10 @@ ListItem {
                 playlistManager.playAlbum(item.albumid)
                 break
             case 4: // Playlist
-                tidalApi.playPlaylist(item.playlistid)
+                // why tidalApi and not playlist-manager ?
+                //tidalApi.playPlaylist(item.playlistid)
+                console.log(item.playlistid, item.name)
+                playlistManager.playPlaylist(item.playlistid)
                 break
         }
     }

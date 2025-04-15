@@ -36,6 +36,8 @@ class Tidal:
             selected_quality = tidalapi.Quality.high
         elif quality == "LOSSLESS":
             selected_quality = tidalapi.Quality.lossless
+        elif quality == "TEST":
+            selected_quality = tidalapi.Quality.high_lossless
         else:
             # Fallback auf HIGH wenn unbekannte Qualität
             selected_quality = tidalapi.Quality.high
@@ -190,6 +192,7 @@ class Tidal:
                 "type": "playlist"
             }
         except AttributeError as e:
+            pyotherside.send("printConsole", f"Error handling playlist: {e}")
             print(f"Error handling playlist: {e}")
             return None
 
@@ -249,6 +252,8 @@ class Tidal:
         # Gesamtergebnis senden
         #self.send_object("search_results", search_results)
         pyotherside.send('loadingFinished')
+        # mainly for testing, i do return ..
+        return result
 
     def getAlbumInfo(self, id):
         try:

@@ -35,6 +35,17 @@ sys.modules['pyotherside'] = debug_mock
 
 from qml.tidal import Tidal
 
+# should go into setup
+def test_genericSearch(session):
+    tidal = Tidal()
+    tidal.session = session
+    tidal.initialize("TEST") # it does not work to use the enum
+    tidal.config = tidalapi.Config(quality=tidalapi.Quality.high_lossless, video_quality=tidalapi.VideoQuality.low)
+    tidal.session = session
+    result = tidal.genericSearch("Def Leppard")
+    for playlist in result["playlists"]:
+        if playlist_info := tidal.handle_playlist(playlist):
+            print("debug",playlist_info)
 
 def test_getPageContinueListen(session):
     tidal = Tidal()
@@ -92,7 +103,7 @@ def test_getPageDecades(session):
 
 def test_get_user_recently_played(session):
     tidaler = Tidal()
-    tidaler.initialize(tidalapi.Quality.high_lossless) # it does not work to use the enum
+    tidaler.initialize("TEST") # it does not work to use the enum
     tidaler.config = tidalapi.Config(quality=tidalapi.Quality.high_lossless, video_quality=tidalapi.VideoQuality.low)
     tidaler.session = session
     page = tidaler.getPageContinueListen()
