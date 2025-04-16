@@ -256,6 +256,11 @@ Item {
         return id
     }
 
+    function playPlaylist(id) {
+        tidalApi.playPlaylist(id)
+        currentTrackIndex()
+    }
+
     function playAlbum(id, startPlay) {
         var shouldPlay = startPlay === undefined ? true : startPlay
         console.log("playalbum", id, startPlay)
