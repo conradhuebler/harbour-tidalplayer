@@ -121,6 +121,11 @@ Item {
             recentList.addPlaylist(playlist_info)
         }
 
+        onRecentTrack:
+        {
+            recentList.addTrack(track_info)
+        }
+
         onForyouAlbum:
         {
             foryouList.addAlbum(album_info)

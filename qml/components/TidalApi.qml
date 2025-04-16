@@ -60,6 +60,7 @@ Item {
     signal recentArtist(var artist_info)
     signal recentPlaylist(var playlist_info)
     signal recentMix(var mix_info)
+    signal recentTrack(var track_info)
 
     signal foryouAlbum(var album_info)
     signal foryouArtist(var artist_info)
@@ -353,6 +354,11 @@ Item {
                 root.recentMix(mix_info)
             })
 
+            setHandler('recentTrack', function(track_info)
+            {
+                root.recentTrack(track_info)
+            })
+
             setHandler('foryouAlbum', function(album_info)
             {
                 root.foryouAlbum(album_info)
@@ -398,21 +404,21 @@ Item {
     }
 
     onOAuthSuccess: {
-            console.log(type, token, rtoken, date)
-            authManager.updateTokens(type, token, rtoken, date)
-            loginSuccess()
-        }
+        console.log(type, token, rtoken, date)
+        authManager.updateTokens(type, token, rtoken, date)
+        loginSuccess()
+    }
 
-        onLoginSuccess: {
-            loginTrue = true
-        }
+    onLoginSuccess: {
+        loginTrue = true
+    }
 
-        onLoginFailed: {
-            loginTrue = false
-            if (authManager) {
-                authManager.clearTokens()
-            }
+    onLoginFailed: {
+        loginTrue = false
+        if (authManager) {
+            authManager.clearTokens()
         }
+    }
 
 
     // Login Funktionen

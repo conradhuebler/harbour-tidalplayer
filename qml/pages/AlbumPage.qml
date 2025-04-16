@@ -267,7 +267,7 @@ Page {
             color: Theme.primaryColor
             horizontalAlignment: Qt.AlignHCenter
         }
-            TrackList {
+        TrackList {
                 id: trackList
                 width: parent.width
                 height: albumPage.height -  y - (minPlayerPanel.open ? minPlayerPanel.height*0.6 : 0)
