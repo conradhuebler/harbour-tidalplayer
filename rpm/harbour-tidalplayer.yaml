@@ -40,6 +40,7 @@ Requires:
   - python-dateutil
   - python3-six
   - python3-devel
+  - mpris-qt5-qml-plugin
 
 # All installed files
 Files:

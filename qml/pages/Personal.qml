@@ -88,13 +88,6 @@ Item {
         }
 
         VerticalScrollDecorator {}
-
-        PullDownMenu {
-            MenuItem {
-                text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
-                onClicked: minPlayerPanel.open = !minPlayerPanel.open
-            }
-        }
     }
 
     Connections {
