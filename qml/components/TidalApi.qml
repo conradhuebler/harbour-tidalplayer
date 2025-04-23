@@ -72,6 +72,7 @@ Item {
 
     signal playlistTrackAdded(var track_info)
     signal albumTrackAdded(var track_info)
+    signal mixTrackAdded(var track_info)
 
     // Properties für die Suche
     property string artistsResults
@@ -334,6 +335,10 @@ Item {
                 root.albumTrackAdded(track_info)
             })
 
+            setHandler('mixTrackAdded', function(track_info) {
+                root.mixTrackAdded(track_info)
+            })
+
             setHandler('recentAlbum', function(album_info)
             {
                 root.recentAlbum(album_info)
@@ -536,6 +541,15 @@ Item {
         var shouldPlay = startPlay === undefined ? true : startPlay
         console.log("playPlaylist", id, shouldPlay)
         pythonTidal.call("tidal.Tidaler.playPlaylist", [id, shouldPlay])
+    }
+
+    function getMixTracks(id) {
+        pythonTidal.call('tidal.Tidaler.getMixTracks', [id])
+    }
+    function playMix(id, startPlay) {
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        console.log("playMix", id, shouldPlay)
+        pythonTidal.call("tidal.Tidaler.playMix", [id, shouldPlay])
     }
 
     function getFavorites() {
