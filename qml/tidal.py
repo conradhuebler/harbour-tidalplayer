@@ -199,14 +199,17 @@ class Tidal:
     def handle_mix(self, mix):
         """Handler für Mix-Informationen, nicht fertig, """
         try:
+            default_image = "image://theme/icon-m-media-playlists"
+            image = default_image
+            # image will not work with current tidalapi version
             return {
                 "mixid": str(mix.id),
                 "title": str(mix.title),
-                "image": mix.image(320) if hasattr(mix, 'image') else "image://theme/icon-m-media-playlists",
+                "image": image,# if hasattr(mix, 'images') else image,
                 "duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
                 "num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
                 "description": mix.sub_title if hasattr(mix, 'sub_title') else "",
-                "type": "mix" # "playlist"
+                "type": "mix"
             }
         except AttributeError as e:
             print(f"Error handling mix: {e}")
@@ -265,6 +268,18 @@ class Tidal:
         # mainly for testing, i do return ..
         return result
 
+    def getMixInfo(self, id):
+        try:
+            mix = self.session.mix(id)
+            mix_info = self.handle_mix(mix)
+            if mix_info:
+                self.send_object("cacheMix", mix_info)
+                return mix_info
+            return None
+        except Exception as e:
+            self.send_object("error", {"message": str(e)})
+            return None
+        
     def getAlbumInfo(self, id):
         try:
             album = self.session.album(int(id))

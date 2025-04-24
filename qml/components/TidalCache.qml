@@ -6,6 +6,8 @@ id: root
     property var trackCache: ({})
     property var albumCache: ({})
     property var artistCache: ({})
+    property var playlistCache: ({})
+    property var mixCache: ({})
     property var db
     property int maxCacheAge: 24 * 3600000
 
@@ -75,13 +77,52 @@ id: root
                 fromSearch: true  // Optional: markiert Einträge aus der Suche
             })
         }
+
+        onCachePlaylist: {
+            //playlist_info
+            if (playlist_info == undefined) {
+                console.error("playlist_info is undefined. skipping save")
+                return;
+            }            
+            savePlaylistToCache({
+                playlistid: playlist_info.playlistid,
+                title: playlist_info.title,
+                image: playlist_info.image,
+                duration: playlist_info.duration,
+                timestamp: Date.now(),
+                fromSearch: true  // Optional: markiert Einträge aus der Suche
+            })
+        }
+
+        onCacheMix: {
+            //mix_info
+            if (mix_info == undefined) {
+                console.error("mix_info is undefined. skipping save")
+                return;
+            }            
+            saveMixToCache({
+                mixid: mix_info.mixid,
+                title: mix_info.title,
+                artist: mix_info.artist,
+                artistid:mix_info.artistid,
+                album: mix_info.album,
+                albumid: mix_info.albumid,
+                duration: mix_info.duration,
+                image: mix_info.image,
+                track_num : mix_info.track_num,
+                timestamp: Date.now(),
+                fromSearch: true  // Optional: markiert Einträge aus der Suche
+            })
+        }
     }
 
     // Optional: Erweiterte Such-spezifische Funktionen
     property var searchResults: ({
         tracks: [],
         albums: [],
-        artists: []
+        artists: [],
+        playlists: [],
+        mixes: []
     })
 
     // Suchergebnisse zwischenspeichern
@@ -89,6 +130,8 @@ id: root
         searchResults.tracks = []
         searchResults.albums = []
         searchResults.artists = []
+        searchResults.playlists = []
+        searchResults.mixes = []
     }
 
     function addSearchTrack(id) {
@@ -202,7 +245,7 @@ id: root
         return null
     }
 
-        function getArtistInfo(id) {
+    function getArtistInfo(id) {
         // Erst im Cache nachsehen
         var cachedTrack = getArtist(id)
         if (cachedTrack) {
@@ -233,6 +276,71 @@ id: root
         return null
     }
 
+    function getPlaylistInfo(id) {
+        // Erst im Cache nachsehen
+        var cachedTrack = getPlaylist(id)
+        if (cachedTrack) {
+            if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
+                return cachedTrack
+            } else {
+                console.log("Cache entry too old, refreshing...")
+            }
+        }
+
+        // Wenn nicht im Cache oder zu alt, von Python holen
+
+        var result = tidalApi.getPlaylistInfo(id)
+        if (result) {
+            var playlistData = {
+                playlistid: result.playlistid,
+                title: result.title,
+                image: result.image,
+                duration: result.duration,
+                timestamp: Date.now()
+            }
+            console.log("Adding to cache ...")
+
+            savePlaylistToCache(playlistData)
+            return playlistData
+        }
+
+        return null
+    }
+
+    function getMixInfo(id) {
+        // Erst im Cache nachsehen
+        var cachedTrack = getMix(id)
+        if (cachedTrack) {
+            if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
+                return cachedTrack
+            } else {
+                console.log("Cache entry too old, refreshing...")
+            }
+        }
+
+        // Wenn nicht im Cache oder zu alt, von Python holen
+
+        var result = tidalApi.getMixInfo(id)
+        if (result) {
+            var mixData = {
+                mixid: result.mixid,
+                title: result.title,
+                artist: result.artist,
+                artistid: result.artistid,
+                album: result.album,
+                albumid: result.albumid,
+                duration: result.duration,
+                timestamp: Date.now()
+            }
+            console.log("Adding to cache ...")
+
+            saveMixToCache(mixData)
+            return mixData
+        }
+
+        return null
+    }
+
     // Datenbank initialisieren
     function initDatabase() {
         db = LocalStorage.openDatabaseSync("TidalCache", "1.2", "Cache for Tidal data", 1000000)
@@ -248,6 +356,15 @@ id: root
             // Artists Tabelle
             tx.executeSql('CREATE TABLE IF NOT EXISTS artists(id TEXT PRIMARY KEY, data TEXT, timestamp INTEGER)')
             tx.executeSql('CREATE INDEX IF NOT EXISTS artists_timestamp_idx ON artists(timestamp)')
+        
+            // Playlists Tabelle
+            tx.executeSql('CREATE TABLE IF NOT EXISTS playlists(id TEXT PRIMARY KEY, data TEXT, timestamp INTEGER)') 
+            tx.executeSql('CREATE INDEX IF NOT EXISTS playlists_timestamp_idx ON playlists(timestamp)')
+            
+            // Mixes Tabelle
+            tx.executeSql('CREATE TABLE IF NOT EXISTS mixes(id TEXT PRIMARY KEY, data TEXT, timestamp INTEGER)')
+            tx.executeSql('CREATE INDEX IF NOT EXISTS mixes_timestamp_idx ON mixes(timestamp)')
+            
         })
     }
 
@@ -313,6 +430,22 @@ id: root
         })
     }
 
+    function savePlaylistToCache(playlistData) {
+        playlistCache[playlistData.playlistid] = playlistData
+        db.transaction(function(tx) {
+            tx.executeSql('INSERT OR REPLACE INTO playlists(id, data, timestamp) VALUES(?, ?, ?)',
+                [playlistData.playlistid, JSON.stringify(playlistData), playlistData.timestamp])
+        })
+    }
+
+    function saveMixToCache(mixData) {
+        mixCache[mixData.mixid] = mixData
+        db.transaction(function(tx) {
+            tx.executeSql('INSERT OR REPLACE INTO mixes(id, data, timestamp) VALUES(?, ?, ?)',
+                [mixData.mixid, JSON.stringify(mixData), mixData.timestamp])
+        })
+    }
+
     // Getter-Funktionen
     function getTrack(id) {
         return trackCache[id] || null
@@ -326,6 +459,14 @@ id: root
         return artistCache[id] || null
     }
 
+    function getPlaylist(id) {
+        return playlistCache[id] || null
+    }
+
+    function getMix(id) {
+        return mixCache[id] || null
+    }        
+
     // Cache bereinigen
     function cleanOldCache() {
         var now = Date.now()
@@ -334,6 +475,8 @@ id: root
             tx.executeSql('DELETE FROM tracks WHERE timestamp < ?', [now - maxCacheAge])
             tx.executeSql('DELETE FROM albums WHERE timestamp < ?', [now - maxCacheAge])
             tx.executeSql('DELETE FROM artists WHERE timestamp < ?', [now - maxCacheAge])
+            tx.executeSql('DELETE FROM playlists WHERE timestamp < ?', [now - maxCacheAge])
+            tx.executeSql('DELETE FROM mixes WHERE timestamp < ?', [now - maxCacheAge])
 
             // Cache-Objekte aktualisieren
             var rs = tx.executeSql('SELECT * FROM tracks')
@@ -353,6 +496,18 @@ id: root
             for(i = 0; i < rs.rows.length; i++) {
                 artistCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
             }
+
+            rs = tx.executeSql('SELECT * FROM playlists')
+            playlistCache = ({})
+            for(i = 0; i < rs.rows.length; i++) {
+                playlistCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
+            }
+
+            rs = tx.executeSql('SELECT * FROM mixes')
+            mixCache = ({})
+            for(i = 0; i < rs.rows.length; i++) {
+                mixCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
+            }    
         })
     }
 
@@ -361,7 +516,9 @@ id: root
         var stats = {
             tracks: { count: 0, oldest: null, newest: null },
             albums: { count: 0, oldest: null, newest: null },
-            artists: { count: 0, oldest: null, newest: null }
+            artists: { count: 0, oldest: null, newest: null },
+            playlists: { count: 0, oldest: null, newest: null },
+            mixes: { count: 0, oldest: null, newest: null }
         }
 
         db.transaction(function(tx) {
@@ -385,6 +542,20 @@ id: root
                 oldest: new Date(rs.rows.item(0).oldest),
                 newest: new Date(rs.rows.item(0).newest)
             }
+
+            rs = tx.executeSql('SELECT COUNT(*) as count, MIN(timestamp) as oldest, MAX(timestamp) as newest FROM playlists')
+            stats.playlists = {
+                count: rs.rows.item(0).count,
+                oldest: new Date(rs.rows.item(0).oldest),
+                newest: new Date(rs.rows.item(0).newest)
+            }
+
+            rs = tx.executeSql('SELECT COUNT(*) as count, MIN(timestamp) as oldest, MAX(timestamp) as newest FROM mixes')
+            stats.mixes = {
+                count: rs.rows.item(0).count,
+                oldest: new Date(rs.rows.item(0).oldest),
+                newest: new Date(rs.rows.item(0).newest)
+            }
         })
 
         return stats
@@ -397,9 +568,13 @@ id: root
             tx.executeSql('DELETE FROM tracks')
             tx.executeSql('DELETE FROM albums')
             tx.executeSql('DELETE FROM artists')
+            tx.executeSql('DELETE FROM playlists')
+            tx.executeSql('DELETE FROM mixes')
         })
         trackCache = ({})
         albumCache = ({})
         artistCache = ({})
+        playlistCache = ({})
+        mixCache = ({})
     }
 }
