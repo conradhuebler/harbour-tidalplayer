@@ -330,7 +330,7 @@ Item {
         }
 
         onMixTrackAdded: {
-            console.log("Mix track added")
+            //console.log("Mix track added")
             if (type === "mix") {
                 listModel.append({
                     "title": track_info.title,

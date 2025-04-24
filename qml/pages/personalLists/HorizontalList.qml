@@ -97,16 +97,16 @@ SilicaListView {
              console.error("mix_info is undefined. skip append to model")
              return;
         }
-        console.log("addMix", mix_info.title, mix_info.mixid)
+        console.log("addMix", mix_info.title, mix_info.mixid, mix_info.image)
         model.append({
             "title": mix_info.title,
             "mixid": mix_info.mixid,
+            "image": mix_info.image,            
             "artistid":"",
             "albumid":-1,
             "playlistid":"",
             "trackid" : "",
-            "type" : typeMix,
-            "image": mix_info.image
+            "type" : typeMix
         })
     }
 
@@ -120,17 +120,18 @@ SilicaListView {
 
     model: ListModel {
         id: recentModel
-        // would solve role problem, but would need to set element instead of append on first append
-        /*ListElement {
-            title: "Title";
-            image: "image://theme/icon-m-media-playlists";
-            trackid: "";
-            mixid: "";
-            playlistid: "";
-            artistid: "";
-            albumid: -1;
-            type: 0
-        }*/
+        function getEmpty()  {
+            return {
+                title: "Title",
+                image: "image://theme/icon-m-media-playlists",
+                trackid: "",
+                mixid: "",
+                playlistid: "",
+                artistid: "",
+                albumid: -1,
+                type: 0
+            }
+        }
     }
 
     delegate: ListItem {
