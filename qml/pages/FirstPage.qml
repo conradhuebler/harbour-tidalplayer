@@ -117,7 +117,7 @@ Page {
                       source: swipeView.carouselPages[index]
                       asynchronous: true
 
-                      onLoaded: {
+                    onLoaded: {
                     if (index === 2) { // TrackList
                         item.title = ""
                         item.type = "current"
@@ -126,7 +126,7 @@ Page {
                         }
                     }
                 }
-                }
-              }
+            }
+        }
     }
 }

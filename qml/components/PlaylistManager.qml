@@ -261,6 +261,12 @@ Item {
         currentTrackIndex()
     }
 
+    function playMix(id) {
+        //tidalApi.playPlaylist(id)
+        tidalApi.playMix(id)
+        currentTrackIndex()
+    }
+
     function playAlbum(id, startPlay) {
         var shouldPlay = startPlay === undefined ? true : startPlay
         console.log("playalbum", id, startPlay)

@@ -199,14 +199,17 @@ class Tidal:
     def handle_mix(self, mix):
         """Handler für Mix-Informationen, nicht fertig, """
         try:
+            default_image = "image://theme/icon-m-media-playlists"
+            image = default_image
+            # image will not work with current tidalapi version
             return {
-                "playlistid": str(mix.id),
+                "mixid": str(mix.id),
                 "title": str(mix.title),
-                #"image": mix.image(320) if hasattr(mix, 'image') else "image://theme/icon-m-media-playlists",
-                #"duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
-                #"num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
+                "image": image,# if hasattr(mix, 'images') else image,
+                "duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
+                "num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
                 "description": mix.sub_title if hasattr(mix, 'sub_title') else "",
-                "type": "mix" # "playlist"
+                "type": "mix"
             }
         except AttributeError as e:
             print(f"Error handling mix: {e}")
@@ -218,36 +221,46 @@ class Tidal:
         result = self.session.search(text)
 
         # Tracks verarbeiten
-        for track in result["tracks"]:
-            if track_info := self.handle_track(track):
-                #search_results["tracks"].append(track_info)
-                self.send_object("cacheTrack", track_info)
-                self.send_object("foundTrack", track_info)
+        if "tracks" in result:
+            for track in result["tracks"]:
+                if track_info := self.handle_track(track):
+                    #search_results["tracks"].append(track_info)
+                    self.send_object("cacheTrack", track_info)
+                    self.send_object("foundTrack", track_info)
 
         # Artists verarbeiten
-        for artist in result["artists"]:
-            if artist_info := self.handle_artist(artist):
-                #search_results["artists"].append(artist_info)
-                self.send_object("cacheArtist", artist_info)
-                self.send_object("foundArtist", artist_info)
+        if "artists" in result:
+            for artist in result["artists"]:
+                if artist_info := self.handle_artist(artist):
+                    #search_results["artists"].append(artist_info)
+                    self.send_object("cacheArtist", artist_info)
+                    self.send_object("foundArtist", artist_info)
 
         # Albums verarbeiten
-        for album in result["albums"]:
-            if album_info := self.handle_album(album):
-                #search_results["albums"].append(album_info)
-                self.send_object("cacheAlbum", album_info)
-                self.send_object("foundAlbum", album_info)
+        if "albums" in result:
+            for album in result["albums"]:
+                if album_info := self.handle_album(album):
+                    #search_results["albums"].append(album_info)
+                    self.send_object("cacheAlbum", album_info)
+                    self.send_object("foundAlbum", album_info)
 
-        # Playlists verarbeiten
-        for playlist in result["playlists"]:
-            if playlist_info := self.handle_playlist(playlist):
-                #search_results["playlists"].append(playlist_info)
-                self.send_object("foundPlaylist", playlist_info)
+        if "playlists" in result:
+            for playlist in result["playlists"]:
+                if playlist_info := self.handle_playlist(playlist):
+                    #search_results["playlists"].append(playlist_info)
+                    self.send_object("foundPlaylist", playlist_info)
 
-        for video in result["videos"]:
-            if video_info := self.handle_video(video):
-                #search_results["videos"].append(video_info)
-                self.send_object("foundVideo", video_info)
+        if "videos" in result:
+            for video in result["videos"]:
+                if video_info := self.handle_video(video):
+                    #search_results["videos"].append(video_info)
+                    self.send_object("foundVideo", video_info)
+
+        if "mixes" in result:
+            for mix in result["mixes"]:
+                if mix_info := self.handle_mix(mix):
+                    #search_results["videos"].append(video_info)
+                    self.send_object("foundMix", mix_info)
 
         # Gesamtergebnis senden
         #self.send_object("search_results", search_results)
@@ -255,6 +268,18 @@ class Tidal:
         # mainly for testing, i do return ..
         return result
 
+    def getMixInfo(self, id):
+        try:
+            mix = self.session.mix(id)
+            mix_info = self.handle_mix(mix)
+            if mix_info:
+                self.send_object("cacheMix", mix_info)
+                return mix_info
+            return None
+        except Exception as e:
+            self.send_object("error", {"message": str(e)})
+            return None
+        
     def getAlbumInfo(self, id):
         try:
             album = self.session.album(int(id))
@@ -307,6 +332,33 @@ class Tidal:
         except Exception as e:
             self.send_object("error", {"message": str(e)})
         return None
+
+    def getMixTracks(self, id):
+        pyotherside.send('loadingStarted')
+        try:
+            mix = self.session.mix(id)
+            for track in mix.items():
+                track_info = self.handle_track(track)
+                if track_info:
+                    pyotherside.send("cacheTrack", track_info)
+                    pyotherside.send("mixTrackAdded",track_info)
+            return mix # just for testing
+        finally:
+            pyotherside.send('loadingFinished')        
+
+    def playMix(self, id,autoPlay=False):        
+        pyotherside.send('loadingStarted')
+        mix = self.session.mix(id)
+        mix_info = self.handle_mix(mix)
+        if mix_info:
+            for track in mix.items(): #tracks():
+                track_info = self.handle_track(track)
+                if track_info:
+                    pyotherside.send("cacheTrack", track_info)
+                    pyotherside.send("addTracktoPL", track_info['trackid'])
+
+        pyotherside.send("fillFinished", autoPlay)
+        pyotherside.send('loadingFinished')
 
 #  not sure if this method is used at all
     def playPlaylist(self, id):
@@ -390,7 +442,6 @@ class Tidal:
             self.send_object("addPersonalPlaylist", playlist_info)
         pyotherside.send('loadingFinished')
 
-
     def playPlaylist(self, id, autoPlay=False):
         pyotherside.send('loadingStarted')
         playlist = self.session.playlist(id)
@@ -423,6 +474,8 @@ class Tidal:
                 i = self.handle_track(ti)
                 pyotherside.send("cacheTrack", i)
                 pyotherside.send('playlistTrackAdded',i)
+            return playlist # just for testing
+        
         finally:
             pyotherside.send('loadingFinished')
 
