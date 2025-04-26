@@ -152,12 +152,12 @@ Item {
                 tidalApi.cacheAlbum(album_info)
             })
             setHandler('cachePlaylist', function(playlist_info) {
-                tidalApi.cacheAlbum(playlist_info)
+                tidalApi.cachePlaylist(playlist_info)
             })
             setHandler('cacheMix', function(mix_info) {
-                tidalApi.cacheAlbum(mix_info)
+                tidalApi.cacheMix(mix_info)
             })            
-
+            
             setHandler('TopTrackofArtist', function(track_info) {
                 tidalApi.topTracksofArtist(track_info)
             })
