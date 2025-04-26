@@ -10,6 +10,7 @@ Page {
     property var artistData: null
     property bool isHeaderCollapsed: false
     property bool isFav: false
+    property bool initialized: false
 
     function processWimpLinks(text) {
         if (!text) return ""
@@ -355,29 +356,30 @@ Page {
 
     Component.onCompleted: {
         if (artistId > 0) {
-            artistData = cacheManager.getArtistInfo(artistId)
-            if (!artistData) {
-                console.log("Artist nicht im Cache gefunden:", artistId)
-                //todo: react - retry ?
-            }
-            //todo: even though i did add some logic to cache it does not work always
-            if (!artistData.image) {
-                artistData.image = "image://theme/icon-m-media-artists"
-            }
-            header.title = artistData.name
-            artistName.text = artistData.name
-            coverImage.source = artistData.image
-            if (artistData.bio) {
-                console.log("Verarbeite Bio...")
-                var processedBio = processWimpLinks(artistData.bio)
-                bioText.text = processedBio
-            }
 
             isFav = favManager.isFavorite(artistId)
 
-            tidalApi.getAlbumsofArtist(artistData.artistid)
-            tidalApi.getTopTracksofArtist(artistData.artistid)
-            tidalApi.getSimiliarArtist(artistData.artistid)
+            tidalApi.getAlbumsofArtist(artistId)
+            tidalApi.getTopTracksofArtist(artistId)
+            tidalApi.getSimiliarArtist(artistId)
+
+            artistData = cacheManager.getArtistInfo(artistId)
+            if (artistData) {
+                if (!artistData.image) {
+                    artistData.image = "image://theme/icon-m-media-artists"
+                }
+                header.title = artistData.name
+                artistName.text = artistData.name
+                coverImage.source = artistData.image
+                if (artistData.bio) {
+                    console.log("Verarbeite Bio...")
+                    var processedBio = processWimpLinks(artistData.bio)
+                    bioText.text = processedBio
+                }
+                initialized = true
+                return
+            }
+            console.log("Artist nicht im Cache gefunden:", artistId)
         }
     }
 
@@ -393,11 +395,24 @@ Page {
     Connections {
         target: tidalApi
 
-        onArtistChanged: {
-            header.title = name
-            artistName.text = name
-            coverImage.source = img
-            bioText.text = ""
+        onCacheArtist: {
+            if (initialized) {
+                return
+            }
+            if (artistId == artist_info.artistid) {
+                if (!artist_info.image) {
+                    artist_info.image = "image://theme/icon-m-media-artists"
+                }
+                header.title = artist_info.name
+                artistName.text = artist_info.name
+                coverImage.source = artist_info.image
+                if (artist_info.bio) {
+                    console.log("Verarbeite Bio...")
+                    var processedBio = processWimpLinks(artist_info.bio)
+                    bioText.text = processedBio
+                }
+                initialized = true
+            }
         }
 
         onTrackAdded: {

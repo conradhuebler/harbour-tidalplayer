@@ -253,7 +253,13 @@ Item {
                     // get artistInfo
                     text: qsTr("Artist Info")
                     onClicked: {
-                        var trackId = playlistManager.requestPlaylistItem(model.index)
+                        var trackId
+                        if (type === "current") {
+                            trackId = playlistManager.requestPlaylistItem(model.index)
+                        }
+                        else {
+                            trackId = model.trackid
+                        }                        
                         var trackInfo = cacheManager.getTrackInfo(trackId)
                         if (trackInfo && trackInfo.artistid) {
                             pageStack.push(Qt.resolvedUrl("./ArtistPage.qml"),
@@ -265,7 +271,13 @@ Item {
                     // get albumInfo
                     text: qsTr("Album Info")
                     onClicked: {
-                        var trackId = playlistManager.requestPlaylistItem(model.index)
+                        var trackId
+                        if (type === "current") {
+                            trackId = playlistManager.requestPlaylistItem(model.index)
+                        }
+                        else {
+                            trackId = model.trackid
+                        }
                         var trackInfo = cacheManager.getTrackInfo(trackId)
                         if (trackInfo && trackInfo.albumid) {
                             pageStack.push(Qt.resolvedUrl("./AlbumPage.qml"),

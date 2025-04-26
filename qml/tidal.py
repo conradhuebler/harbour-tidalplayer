@@ -202,10 +202,17 @@ class Tidal:
             default_image = "image://theme/icon-m-media-playlists"
             image = default_image
             # image will not work with current tidalapi version
+            if hasattr(mix, 'image'):
+                image = mix.image(320)
+            else:
+                if hasattr(mix, 'images'):
+                    images = mix.images
+                    if images:
+                        image = images.small
             return {
                 "mixid": str(mix.id),
                 "title": str(mix.title),
-                "image": image,# if hasattr(mix, 'images') else image,
+                "image": image,
                 "duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
                 "num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
                 "description": mix.sub_title if hasattr(mix, 'sub_title') else "",
@@ -620,6 +627,7 @@ class Tidal:
         if isinstance(item, tidalapi.playlist.Playlist):
             playlist_info = self.handle_playlist(item)
             if playlist_info:
+                self.send_object("cachePlaylist", playlist_info)
                 self.send_object(signalName, playlist_info)
             return True
         return False
@@ -628,6 +636,7 @@ class Tidal:
         if isinstance(item, tidalapi.mix.Mix):
             mix_info = self.handle_mix(item)
             if mix_info:
+                self.send_object("cacheMix", mix_info)
                 self.send_object(signalName, mix_info)
             return True
         return False
