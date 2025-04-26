@@ -11,7 +11,7 @@ Page {
     property var albumData: null
     property bool isHeaderCollapsed: false
     property bool isFav: false
-    //property alias model: listModel
+    property bool initialized: false
 
     allowedOrientations: Orientation.All
 
@@ -282,11 +282,13 @@ Page {
     Component.onCompleted: {
         if (albumId > 0) {
             albumData = cacheManager.getAlbumInfo(albumId)
-            if (!albumData) {
-                console.log("Album nicht im Cache gefunden:", albumId)
+            if (albumData) {
+                initialized = true
+                isFav = favManager.isFavorite(albumId)
+                return
             }
-
-            isFav = favManager.isFavorite(albumId)
+            console.log("Album nicht im Cache gefunden:", albumId)
+            initialized = false
         }
     }
 
@@ -296,6 +298,25 @@ Page {
         onUpdateFavorite: {
             if (id === albumId)
                 isFav = status
+        }
+    }
+    
+    Connections {
+
+        target: tidalApi
+        onCacheAlbum: {
+            if (initialized) {
+                return
+            }
+            if (albumId === album_info.albumid) {
+                albumData = cacheManager.getAlbumInfo(albumId)
+                if (albumData) {
+                    initialized = true
+                    isFav = favManager.isFavorite(albumId)
+                } else {
+                    console.log("Album nicht im Cache gefunden:", albumId)
+                }
+            }
         }
     }
 }
