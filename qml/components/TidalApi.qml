@@ -157,7 +157,7 @@ Item {
             setHandler('cacheMix', function(mix_info) {
                 tidalApi.cacheMix(mix_info)
             })            
-            
+
             setHandler('TopTrackofArtist', function(track_info) {
                 tidalApi.topTracksofArtist(track_info)
             })
@@ -468,11 +468,12 @@ Item {
     function playTrackId(id) {
         console.log(id)
         pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(name) {
-            console.log(name.url)
-            if(typeof name === 'undefined')
+            console.log(name.title)
+// imho this returny onyl track-info (the signal contains track-info and url but retval not)
+/*            if(typeof name === 'undefined')
                 console.log(typeof name)
             else
-                console.log(typeof name)
+                console.log(typeof name)*/
         })
     }
 
