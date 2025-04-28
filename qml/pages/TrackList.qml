@@ -8,7 +8,7 @@ Item {
     property string title: ""
     property string playlistId: ""
     property int albumId: -1
-    property string type: "current"  // "playlist" oder "current" oder "album" oder "tracklist"
+    property string type: "current"  // "playlist" oder "current" oder "album" oder "tracklist "
     property int currentIndex: playlistManager.currentIndex
     property alias model: listModel
     Timer {
@@ -253,7 +253,13 @@ Item {
                     // get artistInfo
                     text: qsTr("Artist Info")
                     onClicked: {
-                        var trackId = playlistManager.requestPlaylistItem(model.index)
+                        var trackId
+                        if (type === "current") {
+                            trackId = playlistManager.requestPlaylistItem(model.index)
+                        }
+                        else {
+                            trackId = model.trackid
+                        }                        
                         var trackInfo = cacheManager.getTrackInfo(trackId)
                         if (trackInfo && trackInfo.artistid) {
                             pageStack.push(Qt.resolvedUrl("./ArtistPage.qml"),
@@ -265,7 +271,13 @@ Item {
                     // get albumInfo
                     text: qsTr("Album Info")
                     onClicked: {
-                        var trackId = playlistManager.requestPlaylistItem(model.index)
+                        var trackId
+                        if (type === "current") {
+                            trackId = playlistManager.requestPlaylistItem(model.index)
+                        }
+                        else {
+                            trackId = model.trackid
+                        }
                         var trackInfo = cacheManager.getTrackInfo(trackId)
                         if (trackInfo && trackInfo.albumid) {
                             pageStack.push(Qt.resolvedUrl("./AlbumPage.qml"),
@@ -289,9 +301,13 @@ Item {
 
     Component.onCompleted: {
         if (type === "playlist") {
+            console.log("getPlaylistTracks")
             tidalApi.getPlaylistTracks(playlistId)
         } else if (type == "album") {
             tidalApi.getAlbumTracks(albumId)
+        } else if (type == "mix") {
+            console.log("getMixTracks")
+            tidalApi.getMixTracks(playlistId)
         } else {
             playlistManager.generateList()
         }
@@ -324,6 +340,20 @@ Item {
                 })
             }
         }
+
+        onMixTrackAdded: {
+            //console.log("Mix track added")
+            if (type === "mix") {
+                listModel.append({
+                    "title": track_info.title,
+                    "artist": track_info.artist,
+                    "album": track_info.album,
+                    "trackid": track_info.trackid,
+                    "duration": track_info.duration,
+                    "image": track_info.image
+                })
+            }
+        }        
 
         onTopTracksofArtist: {
             if (type === "tracklist") {
