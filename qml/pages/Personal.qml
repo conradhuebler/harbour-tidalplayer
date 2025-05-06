@@ -83,9 +83,54 @@ Item {
             HorizontalList {
                 visible: applicationWindow.settings.personalPlaylistList
                 id: playlistList
+            } 
+
+            SectionHeader {
+                visible: applicationWindow.settings.dailyMixesList
+                text: qsTr("Daily Mixes")
             }
 
-        }
+            HorizontalList {
+                visible: applicationWindow.settings.dailyMixesList
+                id: dailyMixesList
+               // getPageDailyMixes
+            }
+
+            SectionHeader {
+                visible: applicationWindow.settings.radioMixesList
+                text: qsTr("Radio Mixes")
+            }
+
+            HorizontalList {
+                visible: applicationWindow.settings.radioMixesList
+                id: radioMixesList
+                //def getPageSuggestedRadioMixes(self):
+            }
+
+            SectionHeader {
+                visible: applicationWindow.settings.topArtistsList
+                text: qsTr("Favorite Artists")
+            }
+
+            HorizontalList {
+                visible: applicationWindow.settings.topArtistsList
+                id: topArtistList
+                //getPageFavoriteArtists // sorted by activity
+            }
+
+        }            
+
+/*
+
+    def getPageListeningHistorypage(self):
+        return self.session.page.get("pages/HISTORY_MIXES/view-all?")
+    
+    def getPageSuggestedNewAlbumspage(self):
+        return self.session.page.get("pages/NEW_ALBUM_SUGGESTIONS/view-all?")
+    
+    def getPageMoods(self):
+        return self.session.page.get("pages/moods_page") */
+        
 
         VerticalScrollDecorator {}
 
@@ -162,10 +207,40 @@ Item {
             tracksList.addTrack(track_info)
         }
 
+        onCustomMix: {
+            //if (mix_info.type == "dailyMix") {
+            if (mixType == "dailyMix") {
+                dailyMixesList.addMix(mix_info)
+            } else if (mixType == "radioMix") {
+                radioMixesList.addMix(mix_info)
+            }
+        }
+
+        onTopArtist: {
+            topArtistList.addArtist(artist_info)
+        }
+
         onLoginSuccess: {
             console.log("Loading personal content")
-            tidalApi.getPersonalPlaylists()
-            tidalApi.getFavorits()
+            tidalApi.getHomepage() // loads recent, for you
+            if (applicationWindow.settings.personalPlaylistList) {
+                console.log("Loading personal playlists")
+                tidalApi.getPersonalPlaylists()
+            }
+            if (applicationWindow.settings.dailyMixesList) {
+                console.log("Loading daily mixes")
+                tidalApi.getDailyMixes()
+            }
+            if (applicationWindow.settings.radioMixesList) {
+                console.log("Loading radio mixes")
+                tidalApi.getRadioMixes()
+            }
+            if (applicationWindow.settings.topArtistsList) {
+                console.log("Loading recent top artists")
+                tidalApi.getTopArtists() // loads top artists
+            }
+            console.log("Loading favorites")
+            tidalApi.getFavorits() // loads fav artists, fav albums, fav tracks
         }
     }
 }

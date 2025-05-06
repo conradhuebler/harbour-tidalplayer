@@ -47,12 +47,14 @@ Item {
     signal topTracksofArtist(var track_info)
     signal similarArtist(var artist_info)
 
+    // signals for search
     signal foundTrack(var track_info)
     signal foundPlaylist(var playlist_info)
     signal foundAlbum(var album_info)
     signal foundArtist(var artist_info)
     signal foundVideo(var video_info)
 
+    // signal for favorites
     signal favTracks(var track_info)
     signal favAlbums(var album_info)
     signal favArtists(var artist_info)
@@ -64,11 +66,17 @@ Item {
     signal recentMix(var mix_info)
     signal recentTrack(var track_info)
 
+    // for you 
     signal foryouAlbum(var album_info)
     signal foryouArtist(var artist_info)
     signal foryouPlaylist(var playlist_info)
     signal foryouMix(var mix_info)
-    signal customMix(var mix_info)
+
+    // dailyMix, radioMix
+    signal customMix(var mix_info, var mixType) // mixType: dailyMix, radioMix, customMix
+
+    // sorted items like
+    signal topArtist(var artist_info) // artists sorted by my popularity
 
     signal noSimilarArtists()
 
@@ -387,9 +395,15 @@ Item {
                 root.foryouMix(mix_info)
             })
 
-            setHandler('customMix', function(mix_info)
+            setHandler('customMix', function(mix_info, mixType)
             {
-                root.customMix(mix_info)
+                root.customMix(mix_info, mixType)
+            })
+
+            setHandler('topArtist', function(artist_info)
+            {
+                console.log("topArtist", artist_info)
+                root.topArtist(artist_info)
             })
 
             importModule('tidal', function() {
@@ -533,8 +547,23 @@ Item {
     // Playlist Funktionen
     function getPersonalPlaylists() {
         pythonTidal.call('tidal.Tidaler.getPersonalPlaylists', [])
-        pythonTidal.call('tidal.Tidaler.homepage', [])
+        //pythonTidal.call('tidal.Tidaler.homepage', [])
+    }
 
+    function getHomepage() {
+        pythonTidal.call('tidal.Tidaler.homepage', [])
+    }
+
+    function getDailyMixes() {
+        pythonTidal.call('tidal.Tidaler.getDailyMixes', [])
+    }
+
+    function getRadioMixes() {
+        pythonTidal.call('tidal.Tidaler.getRadioMixes', [])
+    }
+
+    function getTopArtists() {
+        pythonTidal.call('tidal.Tidaler.getTopArtists', [])
     }
 
     function getPlaylistTracks(id) {
