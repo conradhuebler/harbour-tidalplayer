@@ -31,11 +31,14 @@ ApplicationWindow
         property bool resume_playback : false
 
         property bool recentList: true
-        property bool yourList: true
+        property bool yourList: true //shows currently pop / rock hits ..
         property bool topartistList: true
         property bool topalbumsList: true
         property bool toptrackList: true
         property bool personalPlaylistList: true
+        property bool dailyMixesList: true
+        property bool radioMixesList: true
+        property bool topArtistsList: true
     }
 
     // Configuration Storage
@@ -110,6 +113,24 @@ ApplicationWindow
     ConfigurationValue {
         id: personalPlaylistListConfig
         key : "/personalPlaylistList"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: dailyMixesListConfig
+        key : "/dailyMixesList"
+        defaultValue: true
+    }
+    
+    ConfigurationValue {
+        id: radioMixesListConfig
+        key : "/radioMixesList"
+        defaultValue: true
+    }
+    
+    ConfigurationValue {
+        id: topArtistsListConfig
+        key : "/topArtistsList"
         defaultValue: true
     }
 
@@ -388,6 +409,9 @@ ApplicationWindow
             topalbumsListConfig.value = applicationWindow.settings.topalbumsList
             toptrackListConfig.value = applicationWindow.settings.toptrackList
             personalPlaylistListConfig.value = applicationWindow.settings.personalPlaylistList
+            dailyMixesListConfig.value = applicationWindow.settings.dailyMixesList
+            radioMixesListConfig.value = applicationWindow.settings.radioMixesList
+            topArtistsListConfig.value = applicationWindow.settings.topArtistsList
         }
     }
 
@@ -409,6 +433,10 @@ ApplicationWindow
         applicationWindow.settings.toptrackList = toptrackListConfig.value
         applicationWindow.settings.personalPlaylistList = personalPlaylistListConfig.value
 
+        applicationWindow.settings.dailyMixesList = dailyMixesListConfig.value
+        applicationWindow.settings.radioMixesList = radioMixesListConfig.value
+        applicationWindow.settings.topArtistsList = topArtistsListConfig.value
+
         authManager.checkAndLogin()
         mprisPlayer.setCanControl(true)
     }
@@ -429,6 +457,10 @@ ApplicationWindow
         topalbumsListConfig.value = applicationWindow.settings.topalbumsList
         toptrackListConfig.value = applicationWindow.settings.toptrackList
         personalPlaylistListConfig.value = applicationWindow.settings.personalPlaylistList
+
+        dailyMixesListConfig.value = applicationWindow.settings.dailyMixesList
+        radioMixesListConfig.value = applicationWindow.settings.radioMixesList
+        topArtistsListConfig.value = applicationWindow.settings.topArtistsList
     }
 
 }

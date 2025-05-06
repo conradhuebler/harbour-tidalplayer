@@ -111,8 +111,8 @@ Page {
             TextSwitch {
                 id: yourList
                 visible: tidalApi.loginTrue
-                text: qsTr("Show Your Mixes")
-                description: qsTr("Show your personal mixes")
+                text: qsTr("Show For You")
+                description: qsTr("Show for you playlists") //todo: check what this actually is
                 checked: applicationWindow.settings.yourList
                 onClicked: {
                     applicationWindow.settings.yourList = yourList.checked
@@ -162,6 +162,39 @@ Page {
                     applicationWindow.settings.personalPlaylistList = personalPlaylistList.checked
                 }
             }
+
+            TextSwitch {
+                id: dailyMixesList
+                visible: tidalApi.loginTrue
+                text: qsTr("Show Daily Mixes")
+                description: qsTr("Show your daily mixes")
+                checked: applicationWindow.settings.dailyMixesList
+                onClicked: {
+                    applicationWindow.settings.dailyMixesList = dailyMixesList.checked
+                }
+            }
+
+            TextSwitch {
+                id: radioMixesList
+                visible: tidalApi.loginTrue
+                text: qsTr("Show Radio Mixes")
+                description: qsTr("Show radio mixes")
+                checked: applicationWindow.settings.radioMixesList
+                onClicked: {
+                    applicationWindow.settings.radioMixesList = radioMixesList.checked
+                }
+            }
+
+            TextSwitch {
+                id: topArtistsList
+                visible: tidalApi.loginTrue
+                text: qsTr("Show Recent Favorite Artists")
+                description: qsTr("Show recent favorite artists")
+                checked: applicationWindow.settings.topArtistsList
+                onClicked: {
+                    applicationWindow.settings.topArtistsList = topArtistsList.checked
+                }
+            }            
 
             ComboBox {
                 id: audioQuality

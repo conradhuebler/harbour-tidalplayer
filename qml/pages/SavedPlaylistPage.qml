@@ -11,21 +11,52 @@ Page {
     property string playlistTitle
     property string type // or alias ?
 
-    TrackList {
-        id: trackList
+    SilicaFlickable {
+        id: flickable
         anchors {
             fill: parent
-            bottomMargin: getBottomOffset()
+            bottomMargin: minPlayerPanel.margin
         }
-        height: parent.height - getBottomOffset()
-        title: playlistTitle
-        type: "playlist"
-        playlistId: page.playlistId  // Wenn die TrackList einen playlistId Parameter hat
+        contentHeight: flickable.height //trackList.height + Theme.paddingLarge + getBottomOffset()
+        height: parent.height + miniPlayerPanel.height + getBottomOffset()            
+
+        PullDownMenu {
+
+            MenuItem {
+                text: qsTr("Play All")
+                onClicked: {
+                     playlistManager.clearPlayList()
+                     tidalApi.playPlaylist(playlistId)
+                }
+            }
+            MenuItem {
+                text: minPlayerPanel.open ? "Hide player" : "Show player"
+                onClicked: minPlayerPanel.open = !minPlayerPanel.open
+            }
+        }
 
         function getBottomOffset()
         {
             if (minPlayerPanel.open) return ( 0.6 * minPlayerPanel.height )
-            return 0
+            return minPlayerPanel.height * 0.2
+        }
+
+        TrackList {
+            id: trackList
+            anchors {
+                fill: parent
+                bottomMargin: getBottomOffset()
+            }
+            height: parent.height - getBottomOffset()
+            title: playlistTitle
+            type: "playlist"
+            playlistId: page.playlistId  // Wenn die TrackList einen playlistId Parameter hat
+
+            function getBottomOffset()
+            {
+                if (minPlayerPanel.open) return ( 0.6 * minPlayerPanel.height )
+                return 0
+            }
         }
     }
 }

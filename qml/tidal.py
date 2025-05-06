@@ -172,10 +172,13 @@ class Tidal:
             print(f"Error handling video: {e}")
             return None
 
-    def send_object(self, signal_name, data):
+    def send_object(self, signal_name, data, data2=None):
         """Helper-Funktion zum Senden von Objekten"""
         try:
-            pyotherside.send(signal_name, data)
+            if (data2 is None):
+                pyotherside.send(signal_name, data)
+            else:
+                pyotherside.send(signal_name, data, data2)
         except Exception as e:
             print(f"Error sending object: {e}")
 
@@ -564,10 +567,21 @@ class Tidal:
         for item in recent_page:
             self.getRecently(item)
 
-        #for item in self.home.categories[4].items:
-        #    self.getCustomMixes(item)
-        # todo: when enabled you need to define a handler + visualization
+    def getRadioMixes(self):
+        page = self.getPageSuggestedRadioMixes()
+        for item in page:
+            self.getCustomMixes("radioMix",item)
+    
+    def getDailyMixes(self):
+        page = self.getPageDailyMixes()
+        for item in page:
+            self.getCustomMixes("dailyMix",item)
 
+    def getTopArtists(self): # should there be a switch on get-artist in the end ?
+        page = self.getPageFavoriteArtists()
+        for item in page:
+            self.tryHandleArtist("topArtist", item)
+    
     def getPageContinueListen(self):
         return self.session.page.get("pages/CONTINUE_LISTEN_TO/view-all")
     
@@ -632,12 +646,13 @@ class Tidal:
             return True
         return False
     
-    def tryHandleMix(self, signalName, item):
+    def tryHandleMix(self, signalName, item, sub=None):
+        # sub is used for customMixes
         if isinstance(item, tidalapi.mix.Mix):
             mix_info = self.handle_mix(item)
             if mix_info:
                 self.send_object("cacheMix", mix_info)
-                self.send_object(signalName, mix_info)
+                self.send_object(signalName, mix_info,sub)
             return True
         return False
     
@@ -675,8 +690,8 @@ class Tidal:
             return
         pyotherside.send("printConsole", f"trouble handling object in getForYou: {type(item)}")
 
-    def getCustomMixes(self, item):
-        if self.tryHandleMix("customMix",item):
+    def getCustomMixes(self, sub, item):
+        if self.tryHandleMix("customMix",item,sub):
             return
         pyotherside.send("printConsole", f"trouble handling object in getCustomMixes: {type(item)}")
 

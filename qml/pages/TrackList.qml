@@ -8,7 +8,7 @@ Item {
     property string title: ""
     property string playlistId: ""
     property int albumId: -1
-    property string type: "current"  // "playlist" oder "current" oder "album" oder "tracklist "
+    property string type: "current"  // "playlist" oder "current" oder "album" oder "mix" ("tracklist")
     property int currentIndex: playlistManager.currentIndex
     property alias model: listModel
     Timer {
@@ -59,10 +59,11 @@ Item {
         clip: true  // Verhindert Überläufe
 
         PullDownMenu {
+            // this works only when parent does not define any other menues
             MenuItem {
                 text: qsTr("Play All")
                 onClicked: {
-                    if (type === "playlist") {
+                    if (type === "playlist" ) {
                         playlistManager.clearPlayList()
                         tidalApi.playPlaylist(playlistId)
                     }
