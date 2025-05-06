@@ -31,14 +31,14 @@ ApplicationWindow
         property bool resume_playback : false
 
         property bool recentList: true
-        property bool yourList: true //shows currently pop / rock hits ..
-        property bool topartistList: true
-        property bool topalbumsList: true
-        property bool toptrackList: true
+        property bool yourList: true //shows currently popular playlists
+        property bool topartistList: true // your favourite artists
+        property bool topalbumsList: true // your favourite albums
+        property bool toptrackList: true  // your favourite tracks
         property bool personalPlaylistList: true
-        property bool dailyMixesList: true
-        property bool radioMixesList: true
-        property bool topArtistsList: true
+        property bool dailyMixesList: true // custom mixes
+        property bool radioMixesList: true // personal radio stations
+        property bool topArtistsList: true // your top artists (most played)
     }
 
     // Configuration Storage

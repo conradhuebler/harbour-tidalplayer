@@ -111,8 +111,8 @@ Page {
             TextSwitch {
                 id: yourList
                 visible: tidalApi.loginTrue
-                text: qsTr("Show For You")
-                description: qsTr("Show for you playlists") //todo: check what this actually is
+                text: qsTr("Show Popular Playlists")
+                description: qsTr("Show popular playlists")
                 checked: applicationWindow.settings.yourList
                 onClicked: {
                     applicationWindow.settings.yourList = yourList.checked
@@ -166,8 +166,8 @@ Page {
             TextSwitch {
                 id: dailyMixesList
                 visible: tidalApi.loginTrue
-                text: qsTr("Show Daily Mixes")
-                description: qsTr("Show your daily mixes")
+                text: qsTr("Show Custom Mixes")
+                description: qsTr("Show custom mixes")
                 checked: applicationWindow.settings.dailyMixesList
                 onClicked: {
                     applicationWindow.settings.dailyMixesList = dailyMixesList.checked
@@ -177,8 +177,8 @@ Page {
             TextSwitch {
                 id: radioMixesList
                 visible: tidalApi.loginTrue
-                text: qsTr("Show Radio Mixes")
-                description: qsTr("Show radio mixes")
+                text: qsTr("Show Personal Radio Stations")
+                description: qsTr("Show personal radio stations")
                 checked: applicationWindow.settings.radioMixesList
                 onClicked: {
                     applicationWindow.settings.radioMixesList = radioMixesList.checked
