@@ -114,7 +114,6 @@ DockedPanel {
                     id: prevButton
                     icon.source: "image://theme/icon-m-previous"
                     // icons move around horizontally when using visible
-                    enabled: playlistManager.canPrev
                     onClicked:
                     {
                         console.log("prev button pressed")
@@ -267,7 +266,6 @@ DockedPanel {
          {
             mediaTitle.text = trackinfo.track_num + " - " + trackinfo.title + " - " + trackinfo.album + " - " + trackinfo.artist
             bgImage.source = trackinfo.image
-            prevButton.enabled = playlistManager.canPrev
             nextButton.enabled = playlistManager.canNext
             progressSlider.visible = true
             //mprisPlayer.updateTrack(title, artist, album)

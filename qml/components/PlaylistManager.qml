@@ -15,6 +15,15 @@ Item {
         }
     }
 
+    Timer {
+        id: skipTrackGracePeriod
+        interval: 5000
+        repeat: false
+        onTriggered: {
+            skipTrack = false
+        }
+    }
+
     //property var currentPlaylist: []
     property int currentIndex: -1
     property bool canNext: size > 0 && currentIndex < size - 1
@@ -22,6 +31,7 @@ Item {
     property int size: 0 //currentPlaylist.length
     property int current_track: -1
     property int tidalId : 0
+    property bool skipTrack : false
 
     signal currentTrackChanged(var track)
     signal playlistChanged()
@@ -326,15 +336,31 @@ Item {
 
     function restartTrack(id) {
         playlistPython.restartTrack()
+        // for whatever reason we need to seek(0) here
+        mediaController.seek(0)
         currentTrackIndex()
     }
 
     function previousTrackClicked() {
+        // first press of the previous track button should skip to
+        // the beginning of the current track
+        // TODO: Add a setting to enable/disable this feature?
+        if(!skipTrack || !canPrev)
+        {
+            restartTrack(currentId)
+            skipTrack = true
+            // if this is not what we want, give a 5s grace period
+            // to click the previous track again and actually skip
+            // to the previous song
+            skipTrackGracePeriod.restart()
+            return
+        }
+
         playlistPython.canNext = false
         mediaController.blockAutoNext = true
         playlistPython.previousTrack()
         currentTrackIndex()
-         if (playlistStorage.playlistTitle) {
+        if (playlistStorage.playlistTitle) {
             playlistStorage.updatePosition(playlistStorage.playlistTitle, currentIndex);
         }
     }
