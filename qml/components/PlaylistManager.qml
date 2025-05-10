@@ -345,7 +345,7 @@ Item {
         // first press of the previous track button should skip to
         // the beginning of the current track
         // TODO: Add a setting to enable/disable this feature?
-        if(!skipTrack)
+        if(!skipTrack || !canPrev)
         {
             restartTrack(currentId)
             skipTrack = true
