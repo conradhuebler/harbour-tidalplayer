@@ -41,7 +41,7 @@ DockedPanel {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.darkPrimaryColor
+        color: Theme.overlayBackgroundColor //Theme.darkPrimaryColor
         opacity: 0.65
 
         // Hauptcontainer
