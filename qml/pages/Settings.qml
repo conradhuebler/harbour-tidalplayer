@@ -85,16 +85,48 @@ Page {
                 visible: tidalApi.loginTrue
             }
 
+            ComboBox {
+                id: audioQuality
+                visible: tidalApi.loginTrue
+                label: qsTr("Audio Quality")
+                description: qsTr("Select streaming quality")
+                property var qualities: ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
+                menu: ContextMenu {
+                    MenuItem { text: qsTr("Low (96 kbps)") }
+                    MenuItem { text: qsTr("High (320 kbps)") }
+                    MenuItem { text: qsTr("Lossless (FLAC)") }
+                    MenuItem { text: qsTr("Master (MQA)") }
+                }
+                onCurrentIndexChanged: {
+                    applicationWindow.settings.audio_quality = qualities[currentIndex]
+                }
+            }
+
             TextSwitch {
                 id: resumePlayback
                 visible: tidalApi.loginTrue
                 text: qsTr("Resume playback on startup")
                 description: qsTr("Resume playback after starting the app")
-                // Verbinde dies mit deiner Konfiguration
                 checked: applicationWindow.settings.resume_playback
                 onClicked: {
                     applicationWindow.settings.resume_playback = resumePlayback.checked
                 }
+            }
+
+            TextSwitch {
+                id: hidePlayerOnFinished
+                visible: tidalApi.loginTrue
+                text: qsTr("Hide player on finished")
+                description: qsTr("Hide player when playback is finished")
+                checked: applicationWindow.settings.hide_player
+                onClicked: {
+                    applicationWindow.settings.hide_player = hidePlayerOnFinished.checked
+                }
+            }
+
+            SectionHeader {
+                text: qsTr("Home")
+                visible: tidalApi.loginTrue
             }
 
             TextSwitch {
@@ -196,22 +228,6 @@ Page {
                 }
             }            
 
-            ComboBox {
-                id: audioQuality
-                visible: tidalApi.loginTrue
-                label: qsTr("Audio Quality")
-                description: qsTr("Select streaming quality")
-                property var qualities: ["LOW", "HIGH", "LOSSLESS", "HI_RES"]
-                menu: ContextMenu {
-                    MenuItem { text: qsTr("Low (96 kbps)") }
-                    MenuItem { text: qsTr("High (320 kbps)") }
-                    MenuItem { text: qsTr("Lossless (FLAC)") }
-                    MenuItem { text: qsTr("Master (MQA)") }
-                }
-                onCurrentIndexChanged: {
-                    applicationWindow.settings.audio_quality = qualities[currentIndex]
-                }
-            }
             SectionHeader {
                 text: qsTr("Maintenance")
 

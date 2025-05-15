@@ -29,6 +29,7 @@ ApplicationWindow
         property string mail: ""
         property string audio_quality : ""
         property bool resume_playback : false
+        property bool hide_player: false
 
         property bool recentList: true
         property bool yourList: true //shows currently popular playlists
@@ -77,6 +78,12 @@ ApplicationWindow
     ConfigurationValue {
         id: resumePlayback
         key : "/resumePlayback"
+        defaultValue: false
+    }
+
+    ConfigurationValue {
+        id: hidePlayerOnFinished
+        key : "/hidePlayerOnFinished"
         defaultValue: false
     }
 
@@ -402,6 +409,7 @@ ApplicationWindow
             mail.value = applicationWindow.settings.mail
             audioQuality.value = applicationWindow.settings.audio_quality
             resumePlayback.value = applicationWindow.settings.resume_playback
+            hidePlayerOnFinished.value = applicationWindow.settings.hide_player
 
             recentListConfig.value = applicationWindow.settings.recentList
             yourListConfig.value = applicationWindow.settings.yourList
@@ -424,6 +432,7 @@ ApplicationWindow
         applicationWindow.settings.mail = mail.value
         applicationWindow.settings.audio_quality = audioQuality.value
         applicationWindow.settings.resume_playback = resumePlayback.value
+        applicationWindow.settings.hide_player = hidePlayerOnFinished.value
         tidalApi.quality = audioQuality.value
 
         applicationWindow.settings.recentList = recentListConfig.value
@@ -450,6 +459,7 @@ ApplicationWindow
         mail.value = applicationWindow.settings.mail
         audioQuality.value = applicationWindow.settings.audio_quality
         resumePlayback.value = applicationWindow.settings.resume_playback
+        hidePlayerOnFinished.value = applicationWindow.settings.hide_player
 
         recentListConfig.value = applicationWindow.settings.recentList
         yourListConfig.value = applicationWindow.settings.yourList
