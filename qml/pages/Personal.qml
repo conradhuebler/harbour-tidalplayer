@@ -34,7 +34,7 @@ Item {
 
             // For you section
             SectionHeader {
-                text: qsTr("For you")
+                text: qsTr("Popular playlists")
                 visible: applicationWindow.settings.yourList
             }
 
@@ -87,7 +87,7 @@ Item {
 
             SectionHeader {
                 visible: applicationWindow.settings.dailyMixesList
-                text: qsTr("Daily Mixes")
+                text: qsTr("Custom Mixes")
             }
 
             HorizontalList {
@@ -98,7 +98,7 @@ Item {
 
             SectionHeader {
                 visible: applicationWindow.settings.radioMixesList
-                text: qsTr("Radio Mixes")
+                text: qsTr("Personal Radio Stations")
             }
 
             HorizontalList {

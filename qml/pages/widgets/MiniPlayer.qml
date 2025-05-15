@@ -41,7 +41,7 @@ DockedPanel {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.darkPrimaryColor
+        color: Theme.overlayBackgroundColor //Theme.darkPrimaryColor
         opacity: 0.65
 
         // Hauptcontainer
@@ -278,10 +278,13 @@ DockedPanel {
     Connections {
         target: playlistManager
         onPlaylistFinished: {
-            mediaTitle.text = ""
-            bgImage.source = ""
-            minPlayerPanel.hide(100)
-            progressSlider.visible = false
+            console.log("Playlist finished, hide player: " + applicationWindow.settings.hide_player)
+            if (applicationWindow.settings.hide_player) {
+                mediaTitle.text = ""
+                bgImage.source = ""    
+                minPlayerPanel.hide(100)
+                progressSlider.visible = false
+            }
         }
     }
 

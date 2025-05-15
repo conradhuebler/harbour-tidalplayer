@@ -29,16 +29,17 @@ ApplicationWindow
         property string mail: ""
         property string audio_quality : ""
         property bool resume_playback : false
+        property bool hide_player: false
 
         property bool recentList: true
-        property bool yourList: true //shows currently pop / rock hits ..
-        property bool topartistList: true
-        property bool topalbumsList: true
-        property bool toptrackList: true
+        property bool yourList: true //shows currently popular playlists
+        property bool topartistList: true // your favourite artists
+        property bool topalbumsList: true // your favourite albums
+        property bool toptrackList: true  // your favourite tracks
         property bool personalPlaylistList: true
-        property bool dailyMixesList: true
-        property bool radioMixesList: true
-        property bool topArtistsList: true
+        property bool dailyMixesList: true // custom mixes
+        property bool radioMixesList: true // personal radio stations
+        property bool topArtistsList: true // your top artists (most played)
     }
 
     // Configuration Storage
@@ -77,6 +78,12 @@ ApplicationWindow
     ConfigurationValue {
         id: resumePlayback
         key : "/resumePlayback"
+        defaultValue: false
+    }
+
+    ConfigurationValue {
+        id: hidePlayerOnFinished
+        key : "/hidePlayerOnFinished"
         defaultValue: false
     }
 
@@ -402,6 +409,7 @@ ApplicationWindow
             mail.value = applicationWindow.settings.mail
             audioQuality.value = applicationWindow.settings.audio_quality
             resumePlayback.value = applicationWindow.settings.resume_playback
+            hidePlayerOnFinished.value = applicationWindow.settings.hide_player
 
             recentListConfig.value = applicationWindow.settings.recentList
             yourListConfig.value = applicationWindow.settings.yourList
@@ -424,6 +432,7 @@ ApplicationWindow
         applicationWindow.settings.mail = mail.value
         applicationWindow.settings.audio_quality = audioQuality.value
         applicationWindow.settings.resume_playback = resumePlayback.value
+        applicationWindow.settings.hide_player = hidePlayerOnFinished.value
         tidalApi.quality = audioQuality.value
 
         applicationWindow.settings.recentList = recentListConfig.value
@@ -450,6 +459,7 @@ ApplicationWindow
         mail.value = applicationWindow.settings.mail
         audioQuality.value = applicationWindow.settings.audio_quality
         resumePlayback.value = applicationWindow.settings.resume_playback
+        hidePlayerOnFinished.value = applicationWindow.settings.hide_player
 
         recentListConfig.value = applicationWindow.settings.recentList
         yourListConfig.value = applicationWindow.settings.yourList
