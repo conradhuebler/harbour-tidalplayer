@@ -13,8 +13,8 @@ Name:       harbour-tidalplayer
 %{!?qtc_make:%define qtc_make make}
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    Tidal player for Sailfish OS
-Version:    0.1.2
-Release:    0
+Version:    0.2.0
+Release:    1
 Group:      Qt/Qt
 License:    LICENSE
 URL:        https://github.com/sailfishos
@@ -27,6 +27,7 @@ Requires:   python3-requests
 Requires:   python-dateutil
 Requires:   python3-six
 Requires:   python3-devel
+Requires:   mpris-qt5-qml-plugin
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
