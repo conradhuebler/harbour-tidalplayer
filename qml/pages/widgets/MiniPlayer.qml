@@ -41,7 +41,7 @@ DockedPanel {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.darkPrimaryColor
+        color: Theme.overlayBackgroundColor //Theme.darkPrimaryColor
         opacity: 0.65
 
         // Hauptcontainer
@@ -114,7 +114,6 @@ DockedPanel {
                     id: prevButton
                     icon.source: "image://theme/icon-m-previous"
                     // icons move around horizontally when using visible
-                    enabled: playlistManager.canPrev
                     onClicked:
                     {
                         console.log("prev button pressed")
@@ -267,7 +266,6 @@ DockedPanel {
          {
             mediaTitle.text = trackinfo.track_num + " - " + trackinfo.title + " - " + trackinfo.album + " - " + trackinfo.artist
             bgImage.source = trackinfo.image
-            prevButton.enabled = playlistManager.canPrev
             nextButton.enabled = playlistManager.canNext
             progressSlider.visible = true
             //mprisPlayer.updateTrack(title, artist, album)
@@ -278,10 +276,13 @@ DockedPanel {
     Connections {
         target: playlistManager
         onPlaylistFinished: {
-            mediaTitle.text = ""
-            bgImage.source = ""
-            minPlayerPanel.hide(100)
-            progressSlider.visible = false
+            console.log("Playlist finished, hide player: " + applicationWindow.settings.hide_player)
+            if (applicationWindow.settings.hide_player) {
+                mediaTitle.text = ""
+                bgImage.source = ""    
+                minPlayerPanel.hide(100)
+                progressSlider.visible = false
+            }
         }
     }
 
