@@ -41,16 +41,20 @@ Item {
     signal cacheTrack(var track_info)
     signal cacheAlbum(var album_info)
     signal cacheArtist(var artist_info)
+    signal cacheMix(var mix_info)
+    signal cachePlaylist(var playlist_info)
     signal albumofArtist(var album_info)
     signal topTracksofArtist(var track_info)
     signal similarArtist(var artist_info)
 
+    // signals for search
     signal foundTrack(var track_info)
     signal foundPlaylist(var playlist_info)
     signal foundAlbum(var album_info)
     signal foundArtist(var artist_info)
     signal foundVideo(var video_info)
 
+    // signal for favorites
     signal favTracks(var track_info)
     signal favAlbums(var album_info)
     signal favArtists(var artist_info)
@@ -62,16 +66,23 @@ Item {
     signal recentMix(var mix_info)
     signal recentTrack(var track_info)
 
+    // for you 
     signal foryouAlbum(var album_info)
     signal foryouArtist(var artist_info)
     signal foryouPlaylist(var playlist_info)
     signal foryouMix(var mix_info)
-    signal customMix(var mix_info)
+
+    // dailyMix, radioMix
+    signal customMix(var mix_info, var mixType) // mixType: dailyMix, radioMix, customMix
+
+    // sorted items like
+    signal topArtist(var artist_info) // artists sorted by my popularity
 
     signal noSimilarArtists()
 
     signal playlistTrackAdded(var track_info)
     signal albumTrackAdded(var track_info)
+    signal mixTrackAdded(var track_info)
 
     // Properties für die Suche
     property string artistsResults
@@ -138,21 +149,22 @@ Item {
                 console.log("tidalApi::printConsole " + string)
             })
 
-            // Search Handler
-            //setHandler('cacheTrack', function(id, title, album, artist, image, duration) {
-            //    tidalApi.cacheTrack(id, title, album, artist, image, duration)
-            //})
 
             setHandler('cacheTrack', function(track_info) {
                 tidalApi.cacheTrack(track_info)
             })
-
             setHandler('cacheArtist', function(artist_info) {
                 tidalApi.cacheArtist(artist_info)
             })
             setHandler('cacheAlbum', function(album_info) {
                 tidalApi.cacheAlbum(album_info)
             })
+            setHandler('cachePlaylist', function(playlist_info) {
+                tidalApi.cachePlaylist(playlist_info)
+            })
+            setHandler('cacheMix', function(mix_info) {
+                tidalApi.cacheMix(mix_info)
+            })            
 
             setHandler('TopTrackofArtist', function(track_info) {
                 tidalApi.topTracksofArtist(track_info)
@@ -334,6 +346,10 @@ Item {
                 root.albumTrackAdded(track_info)
             })
 
+            setHandler('mixTrackAdded', function(track_info) {
+                root.mixTrackAdded(track_info)
+            })
+
             setHandler('recentAlbum', function(album_info)
             {
                 root.recentAlbum(album_info)
@@ -379,9 +395,15 @@ Item {
                 root.foryouMix(mix_info)
             })
 
-            setHandler('customMix', function(mix_info)
+            setHandler('customMix', function(mix_info, mixType)
             {
-                root.customMix(mix_info)
+                root.customMix(mix_info, mixType)
+            })
+
+            setHandler('topArtist', function(artist_info)
+            {
+                console.log("topArtist", artist_info)
+                root.topArtist(artist_info)
             })
 
             importModule('tidal', function() {
@@ -460,11 +482,12 @@ Item {
     function playTrackId(id) {
         console.log(id)
         pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(name) {
-            console.log(name.url)
-            if(typeof name === 'undefined')
+            console.log(name.title)
+// imho this returny onyl track-info (the signal contains track-info and url but retval not)
+/*            if(typeof name === 'undefined')
                 console.log(typeof name)
             else
-                console.log(typeof name)
+                console.log(typeof name)*/
         })
     }
 
@@ -524,8 +547,23 @@ Item {
     // Playlist Funktionen
     function getPersonalPlaylists() {
         pythonTidal.call('tidal.Tidaler.getPersonalPlaylists', [])
-        pythonTidal.call('tidal.Tidaler.homepage', [])
+        //pythonTidal.call('tidal.Tidaler.homepage', [])
+    }
 
+    function getHomepage() {
+        pythonTidal.call('tidal.Tidaler.homepage', [])
+    }
+
+    function getDailyMixes() {
+        pythonTidal.call('tidal.Tidaler.getDailyMixes', [])
+    }
+
+    function getRadioMixes() {
+        pythonTidal.call('tidal.Tidaler.getRadioMixes', [])
+    }
+
+    function getTopArtists() {
+        pythonTidal.call('tidal.Tidaler.getTopArtists', [])
     }
 
     function getPlaylistTracks(id) {
@@ -536,6 +574,15 @@ Item {
         var shouldPlay = startPlay === undefined ? true : startPlay
         console.log("playPlaylist", id, shouldPlay)
         pythonTidal.call("tidal.Tidaler.playPlaylist", [id, shouldPlay])
+    }
+
+    function getMixTracks(id) {
+        pythonTidal.call('tidal.Tidaler.getMixTracks', [id])
+    }
+    function playMix(id, startPlay) {
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        console.log("playMix", id, shouldPlay)
+        pythonTidal.call("tidal.Tidaler.playMix", [id, shouldPlay])
     }
 
     function getFavorites() {

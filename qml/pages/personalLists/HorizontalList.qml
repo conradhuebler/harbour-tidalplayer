@@ -26,7 +26,8 @@ SilicaListView {
             "trackid": track_info.trackid,
             "playlistid" : "",
             "artistid": "",
-            "albumid": -1,            
+            "albumid": -1,  
+            "mixid": "",         
             "type" : typeTrack
         })
     }
@@ -45,6 +46,7 @@ SilicaListView {
             "playlistid" : "",
             "artistid": "",
             "trackid" : "",
+            "mixid": "",
             "type" : typeAlbum
         })
     }
@@ -64,6 +66,7 @@ SilicaListView {
             "playlistid":  "",
             "albumid": -1,
             "trackid" : "",
+            "mixid" : "",
             "type" : typeArtist
         })
     }
@@ -83,6 +86,7 @@ SilicaListView {
             "albumid":-1,
             "artistid":"",
             "trackid" : "",
+            "mixid": "",
             "type" : typePlaylist
         })
     }
@@ -93,15 +97,16 @@ SilicaListView {
              console.error("mix_info is undefined. skip append to model")
              return;
         }
+        console.log("addMix", mix_info.title, mix_info.mixid, mix_info.image)
         model.append({
             "title": mix_info.title,
-            "image": mix_info.image,
             "mixid": mix_info.mixid,
+            "image": mix_info.image,            
             "artistid":"",
             "albumid":-1,
             "playlistid":"",
             "trackid" : "",
-            "type" : typePlaylist
+            "type" : typeMix
         })
     }
 
@@ -115,6 +120,18 @@ SilicaListView {
 
     model: ListModel {
         id: recentModel
+        function getEmpty()  {
+            return {
+                title: "Title",
+                image: "image://theme/icon-m-media-playlists",
+                trackid: "",
+                mixid: "",
+                playlistid: "",
+                artistid: "",
+                albumid: -1,
+                type: 0
+            }
+        }
     }
 
     delegate: ListItem {
@@ -170,22 +187,28 @@ SilicaListView {
                     MenuItem {
                         text: {
                         switch(model.type) {
+                            case 0:
+                                "N.A"
                             case 1: // Track
-                                    "Play Track"
+                                "Play Track"
                                 break
                             case 2: // Album
-                                    "Play Album"
+                                "Play Album"
                                 break
                             case 3: // Artist
-                                    "Play Artist Radio todo"
+                                "Play Artist Radio"
                                 break
                             case 4: // Playlist
-                                    "Play Playlist"
-                            break
+                                "Play Playlist"
+                                break
 
                             case 5: // Mix
-                                    "Play Mix"
-                            break;
+                                "Play Video n.a."
+                                break;
+
+                            case 6: // Mix
+                                "Play Mix"
+                                break;
                             }
                         }
 
@@ -193,8 +216,8 @@ SilicaListView {
                         onClicked: {
                             switch(model.type) {
                             case 1: // Track
-                                    //playlistManager.clearPlayList()
-                                    playlistManager.playTrack(model.trackid)
+                                //playlistManager.clearPlayList()
+                                playlistManager.playTrack(model.trackid)
                                 break
                             case 2: // Album
                                 playlistManager.clearPlayList()
@@ -206,15 +229,16 @@ SilicaListView {
                                 // Todo
                                 break
                             case 4: // Playlist
-                                    playlistManager.clearPlayList()
-                                    // todo: playlistManager.playPlaylist(model.playlistid) //todo: extend tidalApi with playPlaylist
-                                    console.log("Play Playlist", model.playlistid, model.title)  
-                                    tidalApi.playPlaylist(model.playlistid,true) //todo: extend tidalApi with playPlaylist
-                            break
-
-                            case 5: // Mix
-                                    playlistManager.clearPlayList()
-                                    tidalApi.playPlaylist(model.mixid,true) //todo: use playlistmanager ?
+                                playlistManager.clearPlayList()
+                                console.log("Play Playlist", model.playlistid, model.title)
+                                playlistManager.playPlaylist(model.playlistid, true) 
+                                break
+                            case 5: // Video
+                                break
+                            case 6: // Mix
+                                playlistManager.clearPlayList()
+                                console.log("Play Mix", model.mixid, model.title)
+                                playlistManager.playMix(model.mixid,true)
                             break;
                             }
                         }
@@ -251,7 +275,19 @@ SilicaListView {
                             "playlistTitle" : model.title
                         })
                         break
-                    }
+                    case 5: // Video
+                        break
+                    case 6: // Mix
+                        console.log("Mix", model.mixid, model.title)
+                        // id exists, name is undefined
+                        pageStack.push(Qt.resolvedUrl("../MixPage.qml"),
+                        {
+                            "playlistId" :model.mixid,
+                            "playlistTitle" : model.title
+                        })
+                        break
+                }
+
                 }
             }
 

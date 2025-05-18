@@ -172,10 +172,13 @@ class Tidal:
             print(f"Error handling video: {e}")
             return None
 
-    def send_object(self, signal_name, data):
+    def send_object(self, signal_name, data, data2=None):
         """Helper-Funktion zum Senden von Objekten"""
         try:
-            pyotherside.send(signal_name, data)
+            if (data2 is None):
+                pyotherside.send(signal_name, data)
+            else:
+                pyotherside.send(signal_name, data, data2)
         except Exception as e:
             print(f"Error sending object: {e}")
 
@@ -199,14 +202,24 @@ class Tidal:
     def handle_mix(self, mix):
         """Handler für Mix-Informationen, nicht fertig, """
         try:
+            default_image = "image://theme/icon-m-media-playlists"
+            image = default_image
+            # image will not work with current tidalapi version
+            if hasattr(mix, 'image'):
+                image = mix.image(320)
+            else:
+                if hasattr(mix, 'images'):
+                    images = mix.images
+                    if images:
+                        image = images.small
             return {
-                "playlistid": str(mix.id),
+                "mixid": str(mix.id),
                 "title": str(mix.title),
-                #"image": mix.image(320) if hasattr(mix, 'image') else "image://theme/icon-m-media-playlists",
-                #"duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
-                #"num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
+                "image": image,
+                "duration": int(mix.duration) if hasattr(mix, 'duration') else 0,
+                "num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
                 "description": mix.sub_title if hasattr(mix, 'sub_title') else "",
-                "type": "mix" # "playlist"
+                "type": "mix"
             }
         except AttributeError as e:
             print(f"Error handling mix: {e}")
@@ -218,36 +231,46 @@ class Tidal:
         result = self.session.search(text)
 
         # Tracks verarbeiten
-        for track in result["tracks"]:
-            if track_info := self.handle_track(track):
-                #search_results["tracks"].append(track_info)
-                self.send_object("cacheTrack", track_info)
-                self.send_object("foundTrack", track_info)
+        if "tracks" in result:
+            for track in result["tracks"]:
+                if track_info := self.handle_track(track):
+                    #search_results["tracks"].append(track_info)
+                    self.send_object("cacheTrack", track_info)
+                    self.send_object("foundTrack", track_info)
 
         # Artists verarbeiten
-        for artist in result["artists"]:
-            if artist_info := self.handle_artist(artist):
-                #search_results["artists"].append(artist_info)
-                self.send_object("cacheArtist", artist_info)
-                self.send_object("foundArtist", artist_info)
+        if "artists" in result:
+            for artist in result["artists"]:
+                if artist_info := self.handle_artist(artist):
+                    #search_results["artists"].append(artist_info)
+                    self.send_object("cacheArtist", artist_info)
+                    self.send_object("foundArtist", artist_info)
 
         # Albums verarbeiten
-        for album in result["albums"]:
-            if album_info := self.handle_album(album):
-                #search_results["albums"].append(album_info)
-                self.send_object("cacheAlbum", album_info)
-                self.send_object("foundAlbum", album_info)
+        if "albums" in result:
+            for album in result["albums"]:
+                if album_info := self.handle_album(album):
+                    #search_results["albums"].append(album_info)
+                    self.send_object("cacheAlbum", album_info)
+                    self.send_object("foundAlbum", album_info)
 
-        # Playlists verarbeiten
-        for playlist in result["playlists"]:
-            if playlist_info := self.handle_playlist(playlist):
-                #search_results["playlists"].append(playlist_info)
-                self.send_object("foundPlaylist", playlist_info)
+        if "playlists" in result:
+            for playlist in result["playlists"]:
+                if playlist_info := self.handle_playlist(playlist):
+                    #search_results["playlists"].append(playlist_info)
+                    self.send_object("foundPlaylist", playlist_info)
 
-        for video in result["videos"]:
-            if video_info := self.handle_video(video):
-                #search_results["videos"].append(video_info)
-                self.send_object("foundVideo", video_info)
+        if "videos" in result:
+            for video in result["videos"]:
+                if video_info := self.handle_video(video):
+                    #search_results["videos"].append(video_info)
+                    self.send_object("foundVideo", video_info)
+
+        if "mixes" in result:
+            for mix in result["mixes"]:
+                if mix_info := self.handle_mix(mix):
+                    #search_results["videos"].append(video_info)
+                    self.send_object("foundMix", mix_info)
 
         # Gesamtergebnis senden
         #self.send_object("search_results", search_results)
@@ -255,6 +278,18 @@ class Tidal:
         # mainly for testing, i do return ..
         return result
 
+    def getMixInfo(self, id):
+        try:
+            mix = self.session.mix(id)
+            mix_info = self.handle_mix(mix)
+            if mix_info:
+                self.send_object("cacheMix", mix_info)
+                return mix_info
+            return None
+        except Exception as e:
+            self.send_object("error", {"message": str(e)})
+            return None
+        
     def getAlbumInfo(self, id):
         try:
             album = self.session.album(int(id))
@@ -307,6 +342,33 @@ class Tidal:
         except Exception as e:
             self.send_object("error", {"message": str(e)})
         return None
+
+    def getMixTracks(self, id):
+        pyotherside.send('loadingStarted')
+        try:
+            mix = self.session.mix(id)
+            for track in mix.items():
+                track_info = self.handle_track(track)
+                if track_info:
+                    pyotherside.send("cacheTrack", track_info)
+                    pyotherside.send("mixTrackAdded",track_info)
+            return mix # just for testing
+        finally:
+            pyotherside.send('loadingFinished')        
+
+    def playMix(self, id,autoPlay=False):        
+        pyotherside.send('loadingStarted')
+        mix = self.session.mix(id)
+        mix_info = self.handle_mix(mix)
+        if mix_info:
+            for track in mix.items(): #tracks():
+                track_info = self.handle_track(track)
+                if track_info:
+                    pyotherside.send("cacheTrack", track_info)
+                    pyotherside.send("addTracktoPL", track_info['trackid'])
+
+        pyotherside.send("fillFinished", autoPlay)
+        pyotherside.send('loadingFinished')
 
 #  not sure if this method is used at all
     def playPlaylist(self, id):
@@ -390,7 +452,6 @@ class Tidal:
             self.send_object("addPersonalPlaylist", playlist_info)
         pyotherside.send('loadingFinished')
 
-
     def playPlaylist(self, id, autoPlay=False):
         pyotherside.send('loadingStarted')
         playlist = self.session.playlist(id)
@@ -423,6 +484,8 @@ class Tidal:
                 i = self.handle_track(ti)
                 pyotherside.send("cacheTrack", i)
                 pyotherside.send('playlistTrackAdded',i)
+            return playlist # just for testing
+        
         finally:
             pyotherside.send('loadingFinished')
 
@@ -504,10 +567,21 @@ class Tidal:
         for item in recent_page:
             self.getRecently(item)
 
-        #for item in self.home.categories[4].items:
-        #    self.getCustomMixes(item)
-        # todo: when enabled you need to define a handler + visualization
+    def getRadioMixes(self):
+        page = self.getPageSuggestedRadioMixes()
+        for item in page:
+            self.getCustomMixes("radioMix",item)
+    
+    def getDailyMixes(self):
+        page = self.getPageDailyMixes()
+        for item in page:
+            self.getCustomMixes("dailyMix",item)
 
+    def getTopArtists(self): # should there be a switch on get-artist in the end ?
+        page = self.getPageFavoriteArtists()
+        for item in page:
+            self.tryHandleArtist("topArtist", item)
+    
     def getPageContinueListen(self):
         return self.session.page.get("pages/CONTINUE_LISTEN_TO/view-all")
     
@@ -567,15 +641,18 @@ class Tidal:
         if isinstance(item, tidalapi.playlist.Playlist):
             playlist_info = self.handle_playlist(item)
             if playlist_info:
+                self.send_object("cachePlaylist", playlist_info)
                 self.send_object(signalName, playlist_info)
             return True
         return False
     
-    def tryHandleMix(self, signalName, item):
+    def tryHandleMix(self, signalName, item, sub=None):
+        # sub is used for customMixes
         if isinstance(item, tidalapi.mix.Mix):
             mix_info = self.handle_mix(item)
             if mix_info:
-                self.send_object(signalName, mix_info)
+                self.send_object("cacheMix", mix_info)
+                self.send_object(signalName, mix_info,sub)
             return True
         return False
     
@@ -613,8 +690,8 @@ class Tidal:
             return
         pyotherside.send("printConsole", f"trouble handling object in getForYou: {type(item)}")
 
-    def getCustomMixes(self, item):
-        if self.tryHandleMix("customMix",item):
+    def getCustomMixes(self, sub, item):
+        if self.tryHandleMix("customMix",item,sub):
             return
         pyotherside.send("printConsole", f"trouble handling object in getCustomMixes: {type(item)}")
 

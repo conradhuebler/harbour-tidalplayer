@@ -197,7 +197,7 @@ Item {
             type: typeTrack,
             image: track.image,
             duration: track.duration,
-            albumid : track.albumid
+            mixid : ""// track.mixid
         }
     }
 

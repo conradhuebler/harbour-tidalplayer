@@ -1,4 +1,3 @@
-// SavedPlaylistPage.qml
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import "widgets"
@@ -9,7 +8,7 @@ Page {
 
     property string playlistId
     property string playlistTitle
-    property string type // or alias ?
+    property string type                                                                                                                                                                                                                                                                                                                                                                                                                        // or alias ?
 
     SilicaFlickable {
         id: flickable
@@ -18,15 +17,21 @@ Page {
             bottomMargin: minPlayerPanel.margin
         }
         contentHeight: flickable.height //trackList.height + Theme.paddingLarge + getBottomOffset()
-        height: parent.height + miniPlayerPanel.height + getBottomOffset()            
+        height: parent.height + miniPlayerPanel.height + getBottomOffset()
+
+        function getBottomOffset()
+        {
+            if (minPlayerPanel.open) return ( 0.6 * minPlayerPanel.height )
+            return minPlayerPanel.height * 0.2
+        }
 
         PullDownMenu {
 
             MenuItem {
                 text: qsTr("Play All")
                 onClicked: {
-                     playlistManager.clearPlayList()
-                     tidalApi.playPlaylist(playlistId)
+                    playlistManager.clearPlayList()
+                    tidalApi.playMix(playlistId)                       
                 }
             }
             MenuItem {
@@ -35,28 +40,18 @@ Page {
             }
         }
 
-        function getBottomOffset()
-        {
-            if (minPlayerPanel.open) return ( 0.6 * minPlayerPanel.height )
-            return minPlayerPanel.height * 0.2
-        }
-
         TrackList {
             id: trackList
+            width: parent.width
+            //height:  parent.height //Theme.itemSizeLarge * 14
             anchors {
                 fill: parent
-                bottomMargin: getBottomOffset()
+                bottomMargin: flickable.getBottomOffset()
             }
-            height: parent.height - getBottomOffset()
             title: playlistTitle
-            type: "playlist"
+            type: "mix"
             playlistId: page.playlistId  // Wenn die TrackList einen playlistId Parameter hat
 
-            function getBottomOffset()
-            {
-                if (minPlayerPanel.open) return ( 0.6 * minPlayerPanel.height )
-                return 0
-            }
         }
     }
 }
