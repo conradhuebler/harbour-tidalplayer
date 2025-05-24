@@ -11,6 +11,7 @@ import pyotherside
 
 from tidalapi.page import PageItem, PageLink
 from tidalapi.mix import Mix
+from tidalapi.media import Quality
 
 from requests.exceptions import HTTPError
 
@@ -31,16 +32,17 @@ class Tidal:
 
         selected_quality = ""
         if quality == "LOW":
-            selected_quality = tidalapi.Quality.low
+            selected_quality = Quality.low_96k
         elif quality == "HIGH":
-            selected_quality = tidalapi.Quality.high
+            selected_quality = Quality.high_320k
         elif quality == "LOSSLESS":
-            selected_quality = tidalapi.Quality.lossless
+            selected_quality = Quality.high_lossless
         elif quality == "TEST":
-            selected_quality = tidalapi.Quality.high_lossless
+            selected_quality = Quality.low_96k
         else:
             # Fallback auf HIGH wenn unbekannte Qualität
-            selected_quality = tidalapi.Quality.high
+            selected_quality = Quality.default
+        #todo: add the other qualities too
 
         self.config = tidalapi.Config(quality=selected_quality, video_quality=tidalapi.VideoQuality.low)
         self.session = tidalapi.Session(self.config)
@@ -205,13 +207,9 @@ class Tidal:
             default_image = "image://theme/icon-m-media-playlists"
             image = default_image
             # image will not work with current tidalapi version
-            if hasattr(mix, 'image'):
-                image = mix.image(320)
-            else:
-                if hasattr(mix, 'images'):
-                    images = mix.images
-                    if images:
-                        image = images.small
+            if hasattr(mix, 'images'):
+                if hasattr(mix.images, 'small'):
+                    image = str(mix.images.small)
             return {
                 "mixid": str(mix.id),
                 "title": str(mix.title),
@@ -220,7 +218,7 @@ class Tidal:
                 "num_tracks": mix.num_tracks if hasattr(mix, 'num_tracks') else 0,
                 "description": mix.sub_title if hasattr(mix, 'sub_title') else "",
                 "type": "mix"
-            }
+            } # rather try to return items.count as num_tracks
         except AttributeError as e:
             print(f"Error handling mix: {e}")
             pyotherside.send("printConsole", f"trouble loading mix: f{e}")
