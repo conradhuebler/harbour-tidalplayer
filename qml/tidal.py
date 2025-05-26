@@ -34,7 +34,7 @@ class Tidal:
         if quality == "LOW":
             selected_quality = Quality.low_96k
         elif quality == "HIGH":
-            selected_quality = Quality.high_320k
+            selected_quality = Quality.low_320k
         elif quality == "LOSSLESS":
             selected_quality = Quality.high_lossless
         elif quality == "TEST":
