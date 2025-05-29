@@ -62,7 +62,7 @@ futures for i486 are not provided by lpr
 download future src from https://files.pythonhosted.org/packages/a7/b2/4140c69c6a66432916b26158687e821ba631a4c9273c474343badf84d3ba/future-1.0.0.tar.gz
 https://dl.fedoraproject.org/pub/epel/9/Everything/aarch64/Packages/p/python3-future-0.18.3-3.el9.noarch.rpm
 on second terminal: copy them to ~
-scp -P 2223 -i 'C:\SailfishOS\vmshare\ssh\private_keys\sdk - Copy' C:\Users\janst\Downloads\future-1.0.0.tar.gz defaultuser@localhost:
+scp -P 2223 -i 'C:\SailfishOS\vmshare\ssh\private_keys\sdk - Copy' C:\Users\<user>\Downloads\future-1.0.0.tar.gz defaultuser@localhost:
 in emulator, unzip, and install them
 gunzip -c future-1.0.0.tar.gz | tar xf -
 cd future-1.0.0/
