@@ -40,3 +40,7 @@ tidalpython.path  = $$OUT_PWD/python/tidalapi
 libs.path = /usr/share/$${TARGET}
 libs.files = external
 INSTALLS += libs
+
+DISTFILES += \
+    qml/pages/MixPage.qml \
+    qml/pages/PlaylistPage.qml

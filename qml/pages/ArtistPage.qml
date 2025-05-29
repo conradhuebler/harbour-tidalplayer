@@ -362,6 +362,7 @@ Page {
             tidalApi.getAlbumsofArtist(artistId)
             tidalApi.getTopTracksofArtist(artistId)
             tidalApi.getSimiliarArtist(artistId)
+            //todo: tidalApi.getArtistRadio(artistId)
 
             artistData = cacheManager.getArtistInfo(artistId)
             if (artistData) {
