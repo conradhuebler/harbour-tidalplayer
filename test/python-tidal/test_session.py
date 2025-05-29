@@ -34,7 +34,8 @@ def test_load_oauth_session(session):
     assert session.check_login()
     assert isinstance(session.user, tidalapi.LoggedInUser)
 
-# obsolete with tidalapi 0.85
+# obsolete with tidalapi 0.83
+@pytest.mark.skip
 def test_failed_login():
     session = tidalapi.Session()
     with pytest.raises(requests.HTTPError):

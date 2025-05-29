@@ -544,6 +544,11 @@ Item {
         pythonTidal.call("tidal.Tidaler.playArtistTracks", [id, startPlay])
     }
 
+    function playArtistRadio(id, startPlay) {
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        pythonTidal.call("tidal.Tidaler.playArtistRadio", [id, startPlay])
+    }
+
     // Artist Funktionen
     function getArtistInfo(id) {
         pythonTidal.call("tidal.Tidaler.getArtistInfo", [id])
