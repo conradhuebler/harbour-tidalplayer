@@ -14,7 +14,8 @@ import "pages/widgets"
 ApplicationWindow
 {
     id: applicationWindow
-    //property alias firstPage: firstpage  // Property für FirstPage
+    
+    property FirstPage mainPage
 
     property bool loginTrue : false
     property var locale: Qt.locale()
@@ -309,6 +310,10 @@ ApplicationWindow
     initialPage: Component {
         FirstPage {
             id: firstpage  // Diese ID wird nun über applicationWindow.firstPage verfügbar
+            Component.onCompleted: {
+                // Store reference to the page
+                applicationWindow.mainPage = this
+            }
         }
     }
     cover: CoverPage {

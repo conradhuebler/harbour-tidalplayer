@@ -14,6 +14,11 @@ Page {
     allowedOrientations: Orientation.All
     property int currentIndex : 0
     // To enable PullDownMenu, place our content in a SilicaFlickable
+
+    function showPlaylist() {
+        swipeView.currentIndex = 2
+    }
+
     SilicaFlickable {
         id: flickable
         anchors {
