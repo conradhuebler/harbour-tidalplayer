@@ -66,7 +66,7 @@ Page {
                 onClicked: applicationWindow.cancelSleepTimer()
             }
               MenuItem {
-                text: minPlayerPanel.open ? "Hide player" : "Show player"
+                text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
                 anchors.horizontalCenter: parent.horizontalCenter
             }
