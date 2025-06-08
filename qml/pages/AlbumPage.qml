@@ -68,7 +68,17 @@ Page {
 
             MenuItem {
                 text: qsTr("Share")
-                onClicked: minPlayerPanel.open = !minPlayerPanel.open
+                onClicked: {
+                    if (albumData) {
+                        var shareText = qsTr("Check out this album: %1 by %2").arg(albumData.title).arg(albumData.artist);
+                        var shareUrl = "https://tidal.com/album/" + albumData.albumid;
+                        var shareData = {
+                            text: shareText,
+                            url: shareUrl
+                        };
+                        Clipboard.text = shareText + "\n" + shareUrl;
+                    }
+                }
             }
 
             MenuItem {

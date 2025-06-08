@@ -61,7 +61,24 @@ Page {
             return minPlayerPanel.height * 0.4
         }
 
+
         PullDownMenu {
+
+        MenuItem {
+            text: qsTr("Share")
+            onClicked: {
+                if (artistData) {
+                    var shareText = qsTr("Check out this artist: %1").arg(artistData.name)
+                    var shareUrl = "https://tidal.com/artist/" + artistData.artistid;
+                    var shareData = {
+                        text: shareText,
+                        url: shareUrl
+                    };
+                    Clipboard.text = shareText + "\n" + shareUrl;
+                }
+            }
+        }
+        
             MenuItem {
                 text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
