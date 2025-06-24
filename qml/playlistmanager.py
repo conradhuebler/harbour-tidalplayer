@@ -6,6 +6,7 @@ class PlaylistManager:
         self.current_index = -1
         self.playlist = []
         #self._notify_playlist_state()
+        pyotherside.send("playlistManagerLoaded")
 
     def _notify_playlist_state(self):
         """Benachrichtigt über den aktuellen Playlist-Status"""

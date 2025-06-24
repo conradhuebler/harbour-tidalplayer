@@ -12,8 +12,7 @@ import pyotherside
 from tidalapi.page import PageItem, PageLink
 from tidalapi.mix import Mix
 from tidalapi.media import Quality
-
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, RequestException
 
 
 class Tidal:
@@ -54,28 +53,75 @@ class Tidal:
         self.artist_search = artist_search
 
     def login(self, token_type, access_token, refresh_token, expiry_time):
-        if access_token == token_type:
-            pyotherside.send("oauth_login_failed")
-        else:
-            if access_token == refresh_token:
-                pyotherside.send("printConsole", "Getting new token")
-                self.session.token_refresh(refresh_token)
-                self.session.load_oauth_session(token_type, self.session.access_token)
-
-                if self.session.check_login() is True:
-                    pyotherside.send("printConsole", "New token", self.session.access_token)
-                    pyotherside.send("oauth_refresh", self.session.access_token)
-                    pyotherside.send("oauth_login_success")
-                    pyotherside.send("printConsole", "Login success")
-
+        try:
+            if access_token == token_type:
+                pyotherside.send("oauth_login_failed")
             else:
-                pyotherside.send("printConsole", "Login with old token")
-                self.session.load_oauth_session(token_type, access_token)
-                if self.session.check_login() == True:
-                    pyotherside.send("oauth_login_success")
-                    pyotherside.send("printConsole", "Login success")
+                if access_token == refresh_token:
+                    pyotherside.send("printConsole", "Getting new token")
 
+                    try:
+                        self.session.token_refresh(refresh_token)
+                        self.session.load_oauth_session(token_type, self.session.access_token)
 
+                        if self.session.check_login() is True:
+                            pyotherside.send("printConsole", "New token", self.session.access_token)
+                            pyotherside.send("oauth_refresh", self.session.access_token)
+                            pyotherside.send("oauth_login_success")
+                            pyotherside.send("printConsole", "Login success")
+                        else:
+                            pyotherside.send("printConsole", "Token refresh failed - login check unsuccessful")
+                            pyotherside.send("oauth_login_failed")
+
+                    except HTTPError as http_err:
+                        if http_err.response.status_code == 401:
+                            pyotherside.send("printConsole", "Token refresh failed - 401 Unauthorized")
+                            pyotherside.send("oauth_login_failed")
+                        else:
+                            pyotherside.send("printConsole", f"HTTP error during token refresh: {http_err}")
+                            pyotherside.send("oauth_login_failed")
+
+                    except RequestException as req_err:
+                        pyotherside.send("printConsole", f"Network error during token refresh: {req_err}")
+                        pyotherside.send("oauth_login_failed")
+
+                    except Exception as e:
+                        pyotherside.send("printConsole", f"Unexpected error during token refresh: {e}")
+                        pyotherside.send("oauth_login_failed")
+
+                else:
+                    pyotherside.send("printConsole", "Login with old token")
+
+                    try:
+                        self.session.load_oauth_session(token_type, access_token)
+
+                        if self.session.check_login() == True:
+                            pyotherside.send("oauth_login_success")
+                            pyotherside.send("printConsole", "Login success")
+                        else:
+                            pyotherside.send("printConsole", "Login check failed with old token")
+                            pyotherside.send("oauth_login_failed")
+
+                    except HTTPError as http_err:
+                        if http_err.response.status_code == 401:
+                            pyotherside.send("printConsole", "Login failed - 401 Unauthorized, please re-authenticate")
+                            pyotherside.send("oauth_login_failed")
+                        else:
+                            pyotherside.send("printConsole", f"HTTP error during login: {http_err}")
+                            pyotherside.send("oauth_login_failed")
+
+                    except RequestException as req_err:
+                        pyotherside.send("printConsole", f"Network error during login: {req_err}")
+                        pyotherside.send("oauth_login_failed")
+
+                    except Exception as e:
+                        pyotherside.send("printConsole", f"Unexpected error during login: {e}")
+                        pyotherside.send("oauth_login_failed")
+
+        except Exception as outer_e:
+            # Fallback für alle anderen unerwarteten Fehler
+            pyotherside.send("printConsole", f"Critical error in login function: {outer_e}")
+            pyotherside.send("oauth_login_failed")
 
     def request_oauth(self):
         pyotherside.send("printConsole", "Start new session")
