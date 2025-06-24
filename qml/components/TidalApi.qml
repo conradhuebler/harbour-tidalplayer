@@ -129,9 +129,17 @@ Item {
             setHandler('oauth_login_success', function() {
                 tidalApi.loginSuccess()
             })
+            // we have both here
+            //
             setHandler('oauth_failed', function() {
                 tidalApi.loginFailed()
             })
+
+            setHandler('oauth_login_failed', function() {
+                tidalApi.loginFailed()
+            })
+            // lets remove soon one
+
             setHandler('get_token', function(type, token, rtoken, date) {
                 console.log("Got new token from session")
                 console.log(type, token, rtoken, date)

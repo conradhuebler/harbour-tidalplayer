@@ -61,6 +61,6 @@ Item {
         applicationWindow.settings.access_token = ""
         applicationWindow.settings.refresh_token = ""
         applicationWindow.settings.expiry_time = ""
-        isLoggedIn = false
+        //isLoggedIn = false
     }
 }
