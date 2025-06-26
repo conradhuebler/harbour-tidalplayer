@@ -63,9 +63,14 @@ rm -rf %{buildroot}
 
 # >> install post
 
-#mkdir %{buildroot}%{_datadir}/%{name}/python
+mkdir %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/tidalapi
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
+
+cp -r python/mpegdash  %{buildroot}%{_datadir}/%{name}/python/mpegdash
+cp -r python/isodate  %{buildroot}%{_datadir}/%{name}/python/isodate
+cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
+cp -r python/typing_extensions/typing_extensions.py  %{buildroot}%{_datadir}/%{name}/python/typing_extensions.py
 
 rm -rf %{buildroot}/%{_datadir}/%{name}/share
 rm -rf %{buildroot}/%{_datadir}/%{name}/bin

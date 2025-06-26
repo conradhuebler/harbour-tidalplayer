@@ -33,18 +33,26 @@ OTHER_FILES += harbour-tidalplayer.desktop \
         rpm/harbour-tidalplayer.yaml
 
 COPIES += tidalpython
+COPIES += mpegdash
+COPIES += isodate
+COPIES += ratelimit
+COPIES += typing
 
 tidalpython.files = $$files(external/python-tidal/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
 
-python.files = external/*
-DISTFILES += external/mpgegdash/mpegdash/*
-DISTFILES += external/isodate/src/isodate/*
-DISTFILES += external/ratelimit/ratelimit/*
-DISTFILES += external/typing_extensions/src/*
+mpegdash.files = $$files(external/mpegdash/mpegdash/*.py)
+mpegdash.path  = $$OUT_PWD/python/mpegdash
 
-python.path = "/usr/share/harbour-tidalplayer/python"
-INSTALLS += python
+isodate.files = $$files(external/isodate/src/isodate/*.py)
+isodate.path  = $$OUT_PWD/python/isodate
+
+ratelimit.files = $$files(external/ratelimit/ratelimit/*.py)
+ratelimit.path  = $$OUT_PWD/python/ratelimit
+
+typing.files = $$files(external/typing_extensions/src/*.py)
+typing.path  = $$OUT_PWD/python/typing_extensions
+
 
 #libs.path = /usr/share/$${TARGET}
 #libs.files = external
