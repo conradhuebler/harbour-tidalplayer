@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import io.thp.pyotherside 1.5
+import QtFeedback 5.0  
 
 
 Item {
@@ -119,10 +120,16 @@ Item {
                 console.log("Playlist unfinished")
                 canNext = true
             })
-            importModule('playlistmanager', function() {
+
+            setHandler('playlistManagerLoaded', function()
+            {
                 console.log("Playlistmanager module imported successfully")
                 initialised = true
                 updateTimer.start()
+            })
+
+            importModule('playlistmanager', function() {
+                console.log("Starting playlist manager")
             })
         }
 
@@ -271,13 +278,25 @@ Item {
         currentTrackIndex()
     }
 
+    ThemeEffect {
+        id: buttonEffect
+        effect: ThemeEffect.PressStrong  // or ThemeEffect.Press, PressWeak, etc.
+    }
+
+    // Function to trigger feedback
+    function doFeedback() {
+        buttonEffect.play()
+    }
+
     function playMix(id) {
-        //tidalApi.playPlaylist(id)
+        doFeedback()
+        console.log("playMix", id)
         tidalApi.playMix(id)
         currentTrackIndex()
     }
 
     function playAlbum(id, startPlay) {
+        doFeedback()
         var shouldPlay = startPlay === undefined ? true : startPlay
         console.log("playalbum", id, startPlay)
         tidalApi.playAlbumTracks(id,shouldPlay)
@@ -285,12 +304,14 @@ Item {
     }
 
     function playAlbumFromTrack(id) {
+        doFeedback()
         clearPlayList()
         tidalApi.playAlbumFromTrack(id)
         currentTrackIndex()
     }
 
     function playArtistTracks(id, startPlay) {
+        doFeedback()
         var shouldPlay = startPlay === undefined ? true : startPlay
         console.log("Playlistmanager::playartist", id, startPlay)
         tidalApi.playArtistTracks(id,shouldPlay)
