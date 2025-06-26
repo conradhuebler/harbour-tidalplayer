@@ -1,3 +1,15 @@
 [submodule "external/python-tidal"]
 	path = external/python-tidal
 	url = https://github.com/EbbLabs/python-tidal
+[submodule "external/isodate"]
+	path = external/isodate
+	url = https://github.com/gweis/isodate
+[submodule "external/mpegdash"]
+	path = external/mpegdash
+    url = https://github.com/sangwonl/python-mpegdash
+[submodule "external/typing_extensions"]
+	path = external/typing_extensions
+    url = https://github.com/python/typing_extensions
+[submodule "external/ratelimit"]
+	path = external/ratelimit
+    url = https://github.com/tomasbasham/ratelimit
