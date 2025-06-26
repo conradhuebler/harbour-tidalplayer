@@ -68,10 +68,6 @@ mkdir %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/tidalapi
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
 
-cd %{buildroot}%{_datadir}/%{name}/external/python-future
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf  %{buildroot}%{_datadir}/%{name}/external/python-future
-
 rm -rf %{buildroot}/%{_datadir}/%{name}/share
 rm -rf %{buildroot}/%{_datadir}/%{name}/bin
 cd %_builddir
