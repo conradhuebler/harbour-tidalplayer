@@ -39,7 +39,6 @@ BuildRequires:  desktop-file-utils
 %description
 A native Tidal Player for Sailfish OS written in python
 
-
 %prep
 %setup -q -n %{name}-%{version}
 
