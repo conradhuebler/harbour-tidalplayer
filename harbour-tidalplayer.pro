@@ -32,11 +32,20 @@ OTHER_FILES += harbour-tidalplayer.desktop \
         rpm/harbour-tidalplayer.spec\
         rpm/harbour-tidalplayer.yaml
 
-COPIES += tidalpython future dateutil
+COPIES += tidalpython
 
 tidalpython.files = $$files(external/python-tidal/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
 
-libs.path = /usr/share/$${TARGET}
-libs.files = external
-INSTALLS += libs
+python.files = external/*
+DISTFILES += external/mpgegdash/mpegdash/*
+DISTFILES += external/isodate/src/isodate/*
+DISTFILES += external/ratelimit/ratelimit/*
+DISTFILES += external/typing_extensions/src/*
+
+python.path = "/usr/share/harbour-tidalplayer/python"
+INSTALLS += python
+
+#libs.path = /usr/share/$${TARGET}
+#libs.files = external
+#INSTALLS += libs

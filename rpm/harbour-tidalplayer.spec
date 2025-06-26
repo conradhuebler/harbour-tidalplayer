@@ -27,7 +27,6 @@ Requires:   python3-requests
 Requires:   python-dateutil
 Requires:   python3-six
 Requires:   python3-devel
-Requires:   python3-typing_extensions
 Requires:   mpris-qt5-qml-plugin
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
@@ -64,23 +63,7 @@ rm -rf %{buildroot}
 
 # >> install post
 
-cd %{buildroot}%{_datadir}/%{name}/external/isodate
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf  %{buildroot}%{_datadir}/%{name}/external/isodate
-
-cd %{buildroot}%{_datadir}/%{name}/external/mpegdash
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf  %{buildroot}%{_datadir}/%{name}/external/mpegdash
-
-cd %{buildroot}%{_datadir}/%{name}/external/ratelimit
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf  %{buildroot}%{_datadir}/%{name}/external/ratelimit
-
-cd %{buildroot}%{_datadir}/%{name}/external/python-tidal
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf  %{buildroot}%{_datadir}/%{name}/external/python-tidal
-
-mkdir %{buildroot}%{_datadir}/%{name}/python
+#mkdir %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/tidalapi
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
 
