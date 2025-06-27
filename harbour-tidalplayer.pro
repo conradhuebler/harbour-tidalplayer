@@ -38,7 +38,7 @@ COPIES += isodate
 COPIES += ratelimit
 COPIES += typing
 
-tidalpython.files = $$files(external/python-tidal/tidalapi/*.py)
+tidalpython.files = $$files(external/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
 
 mpegdash.files = $$files(external/mpegdash/mpegdash/*.py)

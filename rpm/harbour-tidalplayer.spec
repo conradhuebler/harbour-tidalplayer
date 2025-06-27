@@ -24,7 +24,11 @@ Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
 Requires:   python3-requests
-Requires:   python-dateutil
+
+%if "%{?vendor}" == "chum"
+Requires:  python-dateutil
+%endif
+
 Requires:   python3-six
 Requires:   python3-devel
 Requires:   mpris-qt5-qml-plugin
