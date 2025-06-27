@@ -37,6 +37,7 @@ COPIES += mpegdash
 COPIES += isodate
 COPIES += ratelimit
 COPIES += typing
+COPIES += dateutil
 
 tidalpython.files = $$files(external/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
@@ -53,6 +54,8 @@ ratelimit.path  = $$OUT_PWD/python/ratelimit
 typing.files = $$files(external/typing_extensions/src/*.py)
 typing.path  = $$OUT_PWD/python/typing_extensions
 
+dateutil.files = $$files(external/dateutil-2.8.2/dateutil/*.py)
+dateutil.path  = $$OUT_PWD/python/dateutil
 
 #libs.path = /usr/share/$${TARGET}
 #libs.files = external

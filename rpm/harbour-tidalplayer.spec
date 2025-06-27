@@ -25,10 +25,6 @@ Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
 Requires:   python3-requests
 
-%if "%{?vendor}" == "chum"
-Requires:  python-dateutil
-%endif
-
 Requires:   python3-six
 Requires:   python3-devel
 Requires:   mpris-qt5-qml-plugin
@@ -75,6 +71,7 @@ cp -r python/mpegdash  %{buildroot}%{_datadir}/%{name}/python/mpegdash
 cp -r python/isodate  %{buildroot}%{_datadir}/%{name}/python/isodate
 cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
 cp -r python/typing_extensions/typing_extensions.py  %{buildroot}%{_datadir}/%{name}/python/typing_extensions.py
+cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil
 
 rm -rf %{buildroot}/%{_datadir}/%{name}/share
 rm -rf %{buildroot}/%{_datadir}/%{name}/bin
