@@ -180,6 +180,12 @@ ApplicationWindow
 
     TidalApi {
         id: tidalApi
+
+        onLoginFailed: {
+            authManager.clearTokens()
+            console.log("Login failed")
+            pageStack.push(Qt.resolvedUrl("pages/Settings.qml"))
+        }
     }
 
 
@@ -347,6 +353,8 @@ ApplicationWindow
         }
         onLoginFailed: {
             authManager.clearTokens()
+            console.log("Login failed")
+            pageStack.push(Qt.resolvedUrl("Settings.qml"))
         }
     }
 
