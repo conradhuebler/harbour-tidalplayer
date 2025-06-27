@@ -120,10 +120,16 @@ Item {
                 console.log("Playlist unfinished")
                 canNext = true
             })
-            importModule('playlistmanager', function() {
+
+            setHandler('playlistManagerLoaded', function()
+            {
                 console.log("Playlistmanager module imported successfully")
                 initialised = true
                 updateTimer.start()
+            })
+
+            importModule('playlistmanager', function() {
+                console.log("Starting playlist manager")
             })
         }
 

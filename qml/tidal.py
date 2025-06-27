@@ -12,8 +12,7 @@ import pyotherside
 from tidalapi.page import PageItem, PageLink
 from tidalapi.mix import Mix
 from tidalapi.media import Quality
-
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, RequestException
 
 
 class Tidal:
@@ -54,28 +53,75 @@ class Tidal:
         self.artist_search = artist_search
 
     def login(self, token_type, access_token, refresh_token, expiry_time):
-        if access_token == token_type:
-            pyotherside.send("oauth_login_failed")
-        else:
-            if access_token == refresh_token:
-                pyotherside.send("printConsole", "Getting new token")
-                self.session.token_refresh(refresh_token)
-                self.session.load_oauth_session(token_type, self.session.access_token)
-
-                if self.session.check_login() is True:
-                    pyotherside.send("printConsole", "New token", self.session.access_token)
-                    pyotherside.send("oauth_refresh", self.session.access_token)
-                    pyotherside.send("oauth_login_success")
-                    pyotherside.send("printConsole", "Login success")
-
+        try:
+            if access_token == token_type:
+                pyotherside.send("oauth_login_failed")
             else:
-                pyotherside.send("printConsole", "Login with old token")
-                self.session.load_oauth_session(token_type, access_token)
-                if self.session.check_login() == True:
-                    pyotherside.send("oauth_login_success")
-                    pyotherside.send("printConsole", "Login success")
+                if access_token == refresh_token:
+                    pyotherside.send("printConsole", "Getting new token")
 
+                    try:
+                        self.session.token_refresh(refresh_token)
+                        self.session.load_oauth_session(token_type, self.session.access_token)
 
+                        if self.session.check_login() is True:
+                            pyotherside.send("printConsole", "New token", self.session.access_token)
+                            pyotherside.send("oauth_refresh", self.session.access_token)
+                            pyotherside.send("oauth_login_success")
+                            pyotherside.send("printConsole", "Login success")
+                        else:
+                            pyotherside.send("printConsole", "Token refresh failed - login check unsuccessful")
+                            pyotherside.send("oauth_login_failed")
+
+                    except HTTPError as http_err:
+                        if http_err.response.status_code == 401:
+                            pyotherside.send("printConsole", "Token refresh failed - 401 Unauthorized")
+                            pyotherside.send("oauth_login_failed")
+                        else:
+                            pyotherside.send("printConsole", f"HTTP error during token refresh: {http_err}")
+                            pyotherside.send("oauth_login_failed")
+
+                    except RequestException as req_err:
+                        pyotherside.send("printConsole", f"Network error during token refresh: {req_err}")
+                        pyotherside.send("oauth_login_failed")
+
+                    except Exception as e:
+                        pyotherside.send("printConsole", f"Unexpected error during token refresh: {e}")
+                        pyotherside.send("oauth_login_failed")
+
+                else:
+                    pyotherside.send("printConsole", "Login with old token")
+
+                    try:
+                        self.session.load_oauth_session(token_type, access_token)
+
+                        if self.session.check_login() == True:
+                            pyotherside.send("oauth_login_success")
+                            pyotherside.send("printConsole", "Login success")
+                        else:
+                            pyotherside.send("printConsole", "Login check failed with old token")
+                            pyotherside.send("oauth_login_failed")
+
+                    except HTTPError as http_err:
+                        if http_err.response.status_code == 401:
+                            pyotherside.send("printConsole", "Login failed - 401 Unauthorized, please re-authenticate")
+                            pyotherside.send("oauth_login_failed")
+                        else:
+                            pyotherside.send("printConsole", f"HTTP error during login: {http_err}")
+                            pyotherside.send("oauth_login_failed")
+
+                    except RequestException as req_err:
+                        pyotherside.send("printConsole", f"Network error during login: {req_err}")
+                        pyotherside.send("oauth_login_failed")
+
+                    except Exception as e:
+                        pyotherside.send("printConsole", f"Unexpected error during login: {e}")
+                        pyotherside.send("oauth_login_failed")
+
+        except Exception as outer_e:
+            # Fallback für alle anderen unerwarteten Fehler
+            pyotherside.send("printConsole", f"Critical error in login function: {outer_e}")
+            pyotherside.send("oauth_login_failed")
 
     def request_oauth(self):
         pyotherside.send("printConsole", "Start new session")
@@ -287,7 +333,7 @@ class Tidal:
         except Exception as e:
             self.send_object("error", {"message": str(e)})
             return None
-        
+
     def getAlbumInfo(self, id):
         try:
             album = self.session.album(int(id))
@@ -352,9 +398,9 @@ class Tidal:
                     pyotherside.send("mixTrackAdded",track_info)
             return mix # just for testing
         finally:
-            pyotherside.send('loadingFinished')        
+            pyotherside.send('loadingFinished')
 
-    def playMix(self, id,autoPlay=False):        
+    def playMix(self, id,autoPlay=False):
         pyotherside.send('loadingStarted')
         mix = self.session.mix(id)
         mix_info = self.handle_mix(mix)
@@ -485,9 +531,9 @@ class Tidal:
                 pyotherside.send("addTracktoPL", track_info['trackid']) #maybe silent ?
 
             #if i == 0:
-        
+
         # playlist = self.session.playlist(id)
-        #playlist_info = self.handle_playlist(playlist)    
+        #playlist_info = self.handle_playlist(playlist)
         # #    pyotherside.send("fillStarted")
 
         pyotherside.send("fillFinished", autoPlay)
@@ -504,7 +550,7 @@ class Tidal:
                 pyotherside.send("cacheTrack", i)
                 pyotherside.send('playlistTrackAdded',i)
             return playlist # just for testing
-        
+
         finally:
             pyotherside.send('loadingFinished')
 
@@ -590,7 +636,7 @@ class Tidal:
         page = self.getPageSuggestedRadioMixes()
         for item in page:
             self.getCustomMixes("radioMix",item)
-    
+
     def getDailyMixes(self):
         page = self.getPageDailyMixes()
         for item in page:
@@ -600,16 +646,16 @@ class Tidal:
         page = self.getPageFavoriteArtists()
         for item in page:
             self.tryHandleArtist("topArtist", item)
-    
+
     def getPageContinueListen(self):
         return self.session.page.get("pages/CONTINUE_LISTEN_TO/view-all")
-    
-    def getPagePopularPlaylists(self): 
+
+    def getPagePopularPlaylists(self):
         return self.session.page.get("pages/POPULAR_PLAYLISTS/view-all")
-    
+
     def getPageSuggestedRadioMixes(self):
         return self.session.page.get("pages/SUGGESTED_RADIOS_MIXES/view-all?")
-    
+
     def getPageDailyMixes(self):
         return self.session.page.get("pages/DAILY_MIXES/view-all?")
 
@@ -619,19 +665,19 @@ class Tidal:
 
     def getPageListeningHistorypage(self):
         return self.session.page.get("pages/HISTORY_MIXES/view-all?")
-    
+
     def getPageSuggestedNewAlbumspage(self):
         return self.session.page.get("pages/NEW_ALBUM_SUGGESTIONS/view-all?")
-    
+
     def getPageDecades(self):
         return self.session.page.get("pages/genre_decades")
-    
+
     def getPageGenres(self):
         return self.session.page.get("pages/genre_page")
 
     def getPageMoods(self):
-        return self.session.page.get("pages/moods_page")   
-    
+        return self.session.page.get("pages/moods_page")
+
     def tryHandleAlbum(self, signalName, item):
         if isinstance(item, tidalapi.album.Album):
             album_info = self.handle_album(item)
@@ -642,7 +688,7 @@ class Tidal:
                 pyotherside.send("printConsole", "trouble loading album")
             return True
         return False
-    
+
     def tryHandleArtist(self, signalName, item):
         if isinstance(item, tidalapi.artist.Artist):
             # ps: crashes here self.items.append("\t" + item.name)
@@ -664,7 +710,7 @@ class Tidal:
                 self.send_object(signalName, playlist_info)
             return True
         return False
-    
+
     def tryHandleMix(self, signalName, item, sub=None):
         # sub is used for customMixes
         if isinstance(item, tidalapi.mix.Mix):
@@ -674,7 +720,7 @@ class Tidal:
                 self.send_object(signalName, mix_info,sub)
             return True
         return False
-    
+
     def tryHandleTrack(self, signalName, item):
         if isinstance(item, tidalapi.Track):
             track_info = self.handle_track(item)
@@ -716,7 +762,7 @@ class Tidal:
 
     def getUser(self):
         return self.session.get_user(self.session.user.id)
-    
+
     def setAlbumFavInfo(self,id,status):
         result = False
         if status:
@@ -725,7 +771,7 @@ class Tidal:
             result = self.getUser().favorites.remove_album(id)
         if result:
             pyotherside.send('updateFavorite', id, status)
-    
+
     def setArtistFavInfo(self,id,status):
         user = self.session.get_user(self.session.user.id)
         result = False
