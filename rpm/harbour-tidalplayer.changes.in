@@ -8,6 +8,11 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Sa June 28 2025 Pawel Spoon <pawel@ich-habe-fertig.com>
+- added artist radio
+- swipe up on mini player to goto current playlists
+- make current song more prominent for older people
+
 * Su Mai 6 2025 Pawel Spoon <pawel@ich-habe-fertig.com> 0.1.0
 - fix recently played
 - add support for Mixes and playlists
