@@ -32,15 +32,31 @@ OTHER_FILES += harbour-tidalplayer.desktop \
         rpm/harbour-tidalplayer.spec\
         rpm/harbour-tidalplayer.yaml
 
-COPIES += tidalpython future dateutil
+COPIES += tidalpython
+COPIES += mpegdash
+COPIES += isodate
+COPIES += ratelimit
+COPIES += typing
+COPIES += dateutil
 
-tidalpython.files = $$files(external/python-tidal/tidalapi/*.py)
+tidalpython.files = $$files(external/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
 
-libs.path = /usr/share/$${TARGET}
-libs.files = external
-INSTALLS += libs
+mpegdash.files = $$files(external/mpegdash/mpegdash/*.py)
+mpegdash.path  = $$OUT_PWD/python/mpegdash
 
-DISTFILES += \
-    qml/pages/MixPage.qml \
-    qml/pages/PlaylistPage.qml
+isodate.files = $$files(external/isodate/src/isodate/*.py)
+isodate.path  = $$OUT_PWD/python/isodate
+
+ratelimit.files = $$files(external/ratelimit/ratelimit/*.py)
+ratelimit.path  = $$OUT_PWD/python/ratelimit
+
+typing.files = $$files(external/typing_extensions/src/*.py)
+typing.path  = $$OUT_PWD/python/typing_extensions
+
+dateutil.files = $$files(external/dateutil-2.8.2/dateutil/*.py)
+dateutil.path  = $$OUT_PWD/python/dateutil
+
+#libs.path = /usr/share/$${TARGET}
+#libs.files = external
+#INSTALLS += libs

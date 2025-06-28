@@ -2,7 +2,6 @@
 
 import sys
 sys.path.append('/usr/share/harbour-tidalplayer/python/')
-
 import socket
 import requests
 import json

@@ -24,10 +24,9 @@ Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
 Requires:   python3-requests
-Requires:   python-dateutil
+
 Requires:   python3-six
 Requires:   python3-devel
-Requires:   python3-typing_extensions
 Requires:   mpris-qt5-qml-plugin
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
@@ -38,7 +37,6 @@ BuildRequires:  desktop-file-utils
 
 %description
 A native Tidal Player for Sailfish OS written in python
-
 
 %prep
 %setup -q -n %{name}-%{version}
@@ -64,17 +62,21 @@ rm -rf %{buildroot}
 %qmake5_install
 
 # >> install post
+
 mkdir %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/tidalapi
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
 
-cd %{buildroot}%{_datadir}/%{name}/external/python-future
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf  %{buildroot}%{_datadir}/%{name}/external/python-future
+cp -r python/mpegdash  %{buildroot}%{_datadir}/%{name}/python/mpegdash
+cp -r python/isodate  %{buildroot}%{_datadir}/%{name}/python/isodate
+cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
+cp -r python/typing_extensions/typing_extensions.py  %{buildroot}%{_datadir}/%{name}/python/typing_extensions.py
+cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil
 
 rm -rf %{buildroot}/%{_datadir}/%{name}/share
 rm -rf %{buildroot}/%{_datadir}/%{name}/bin
 cd %_builddir
+
 
 # << install post
 
