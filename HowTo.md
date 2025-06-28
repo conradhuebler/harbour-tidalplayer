@@ -105,3 +105,17 @@ git checkout -b favorites
 git push -u origin favorites
 
 git branch -vv
+
+# future features
+
+album.share_url <- share album >
+album.similar <->
+album.type -> (single/ep/lp)
+
+artist.get_other()  <-gets other albums of artist>
+
+general
+some exception handling
+   catch the important exceptions and visualize them to use, maybe re-login button
+quick goto-current playlist from player ?
+

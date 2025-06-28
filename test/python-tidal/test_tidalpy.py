@@ -153,3 +153,18 @@ def test_get_fav_artist(session):
         assert isinstance(artist, tidalapi.artist.Artist)
         print(artist.name)
         print(artist.id)
+
+def test_get_artist_radio(session):
+    tidaler = Tidal()
+    tidaler.initialize("TEST") # it does not work to use the enum
+    tidaler.config = tidalapi.Config(quality=tidalapi.Quality.high_lossless, video_quality=tidalapi.VideoQuality.low)
+    tidaler.session = session
+    artist_id = 5247488  # Example artist ID
+    #artist = session.artist(int(artist_id))
+    #radio_tracks = artist.get_radio()
+    radio_tracks = tidaler.getArtistRadio(artist_id)
+    assert radio_tracks is not None
+    for track in radio_tracks:
+        assert isinstance(track, tidalapi.media.Track)
+        print(track.full_name)
+        print(track.id)

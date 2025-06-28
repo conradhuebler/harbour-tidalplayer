@@ -45,6 +45,7 @@ Item {
     signal cachePlaylist(var playlist_info)
     signal albumofArtist(var album_info)
     signal topTracksofArtist(var track_info)
+    signal radioTrackofArtist(var track_info)
     signal similarArtist(var artist_info)
 
     // signals for search
@@ -177,6 +178,10 @@ Item {
             setHandler('TopTrackofArtist', function(track_info) {
                 tidalApi.topTracksofArtist(track_info)
             })
+
+            setHandler('RadioTrackofArtist', function(track_info) {
+                tidalApi.radioTrackofArtist(track_info)
+            })            
 
             setHandler('AlbumofArtist', function(album_info) {
                 tidalApi.albumofArtist(album_info)
@@ -547,6 +552,11 @@ Item {
         pythonTidal.call("tidal.Tidaler.playArtistTracks", [id, startPlay])
     }
 
+    function playArtistRadio(id, startPlay) {
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        pythonTidal.call("tidal.Tidaler.playArtistRadio", [id, startPlay])
+    }
+
     // Artist Funktionen
     function getArtistInfo(id) {
         pythonTidal.call("tidal.Tidaler.getArtistInfo", [id])
@@ -603,6 +613,10 @@ Item {
 
     function getTopTracksofArtist(artistid) {
         pythonTidal.call('tidal.Tidaler.getTopTracksofArtist', [artistid])
+    }
+
+    function getArtistRadio(artistid) {
+        pythonTidal.call('tidal.Tidaler.getArtistRadio', [artistid])
     }
 
     function getSimiliarArtist(artistid) {

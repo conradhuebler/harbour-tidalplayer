@@ -64,6 +64,7 @@ Item {
             else if (error === MediaPlayer.AccessDenied) errorMsg = qsTr("Error: Access denied to the video")
             else if (error === MediaPlayer.NetworkError) errorMsg = qsTr("Error: Network error")
             console.log(errorMsg)
+            //todo: show notification once
             stop()
             isPlaying = false
         }
