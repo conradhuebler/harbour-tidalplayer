@@ -11,6 +11,24 @@ Item {
     property string type: "current"  // "playlist" oder "current" oder "album" oder "mix" ("tracklist")
     property int currentIndex: playlistManager.currentIndex
     property alias model: listModel
+
+    // Add styling properties
+    property real normalItemHeight: Theme.itemSizeMedium + Theme.paddingMedium
+    property real selectedItemHeight: Theme.itemSizeMedium * 1.5 + Theme.paddingMedium
+    property int normalFontSize: Theme.fontSizeMedium
+    property int selectedFontSize: Theme.fontSizeLarge
+    
+    property color selectedTextColor: Theme.highlightColor
+    property color normalTextColor: Theme.primaryColor
+    property color selectedSecondaryColor: Theme.secondaryHighlightColor
+    property color normalSecondaryColor: Theme.secondaryColor
+    property real highlightOpacity: 0.2
+    
+    // Create a function to determine if item is selected
+    function isItemSelected(index) {
+        return type === "current" && index === root.currentIndex
+    }
+
     Timer {
         id: updateTimer
         interval: 100  // 100ms Verzögerung
@@ -80,15 +98,13 @@ Item {
         delegate: ListItem {
             id: listEntry
             width: parent.width
-            contentHeight: contentRow.height + Theme.paddingMedium
-
-            // Highlight für aktuellen Track
-            highlighted: type === "current" && model.index === root.currentIndex
+            contentHeight: isItemSelected(model.index) ? root.selectedItemHeight : root.normalItemHeight
+            highlighted: isItemSelected(model.index)
 
             Rectangle {
-                visible: type === "current" && model.index === root.currentIndex
+                visible: listEntry.highlighted
                 anchors.fill: parent
-                color: Theme.rgba(Theme.highlightBackgroundColor, 0.2)
+                color: Theme.rgba(Theme.highlightBackgroundColor, highlightOpacity)
                 z: -1
             }
 
@@ -98,15 +114,15 @@ Item {
                     left: parent.left
                     right: parent.right
                     margins: Theme.horizontalPageMargin
+                    verticalCenter: parent.verticalCenter
                 }
                 spacing: Theme.paddingMedium
 
-                // Optionaler Indikator für aktuellen Track
                 Label {
-                    visible: type === "current" && model.index === root.currentIndex
-                    text: "▶"  // oder ein anderes Symbol
-                    color: Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeMedium
+                    visible: listEntry.highlighted
+                    text: "▶"
+                    color: selectedTextColor
+                    font.pixelSize: root.selectedFontSize
                     width: visible ? implicitWidth : 0
                     verticalAlignment: Text.AlignVCenter
                     height: coverImage.height
@@ -114,35 +130,26 @@ Item {
 
                 Image {
                     id: coverImage
-                    width: Theme.itemSizeMedium
-                    height: Theme.itemSizeMedium
+                    width: listEntry.highlighted ? Theme.itemSizeLarge : Theme.itemSizeMedium
+                    height: width
                     fillMode: Image.PreserveAspectCrop
                     source: model.image || ""
                     asynchronous: true
-
-                    Rectangle {
-                        color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-                        anchors.fill: parent
-                        visible: coverImage.status !== Image.Ready
-                    }
+                    
+                    Behavior on width { NumberAnimation { duration: 150 } }
                 }
 
                 Column {
                     width: parent.width - coverImage.width - parent.spacing
-                    spacing: Theme.paddingSmall
+                    spacing: listEntry.highlighted ? Theme.paddingMedium : Theme.paddingSmall
 
                     Label {
                         width: parent.width
                         text: model.title
-                        color: {
-                            if (type === "current" && model.index === root.currentIndex) {
-                                return Theme.highlightColor
-                            }
-                            return listEntry.highlighted ? Theme.highlightColor : Theme.primaryColor
-                        }
-                        font.pixelSize: Theme.fontSizeMedium
-                        truncationMode: TruncationMode.Fade
-                        font.bold: type === "current" && model.index === root.currentIndex
+                        color: listEntry.highlighted ? selectedTextColor : normalTextColor
+                        font.pixelSize: listEntry.highlighted ? root.selectedFontSize : root.normalFontSize
+                        font.bold: listEntry.highlighted
+                        truncationMode: TruncationMode.Elide
                     }
 
                     Row {
@@ -151,19 +158,15 @@ Item {
 
                         Label {
                             text: model.artist
-                            color: {
-                                if (type === "current" && model.index === root.currentIndex) {
-                                    return Theme.secondaryHighlightColor
-                                }
-                                return listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
-                            }
-                            font.pixelSize: Theme.fontSizeSmall
+                            color: listEntry.highlighted ? selectedSecondaryColor : normalSecondaryColor
+                            font.pixelSize: listEntry.highlighted ? root.normalFontSize : Theme.fontSizeSmall
+                            font.bold: listEntry.highlighted
                         }
 
                         Label {
                             text: " • "
-                            color: listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
-                            font.pixelSize: Theme.fontSizeSmall
+                            color: listEntry.highlighted ? selectedSecondaryColor : normalSecondaryColor
+                            font.pixelSize: listEntry.highlighted ? root.normalFontSize : Theme.fontSizeSmall
                         }
 
                         Label {
@@ -171,13 +174,8 @@ Item {
                                 ? Format.formatDuration(model.duration, Formatter.DurationLong)
                                 : Format.formatDuration(model.duration, Formatter.DurationShort)
                             text: dur
-                            color: {
-                                if (type === "current" && model.index === root.currentIndex) {
-                                    return Theme.secondaryHighlightColor
-                                }
-                                return listEntry.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
-                            }
-                            font.pixelSize: Theme.fontSizeSmall
+                            color: listEntry.highlighted ? selectedSecondaryColor : normalSecondaryColor
+                            font.pixelSize: listEntry.highlighted ? root.normalFontSize : Theme.fontSizeSmall
                         }
                     }
                 }

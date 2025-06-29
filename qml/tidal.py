@@ -473,20 +473,41 @@ class Tidal:
                 pyotherside.send("addTracktoPL", track_info['trackid'])
         pyotherside.send("fillFinished", autoPlay)
 
-    def getTopTracks(self, id, max):
-        toptracks = self.session.artist(int(id)).get_top_tracks(max)
-        for track in toptracks:
+    def playArtistRadio(self, id, autoPlay=False):
+        artist = self.session.artist(int(id))
+        for track in artist.get_radio():
             track_info = self.handle_track(track)
             if track_info:
                 pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTrack",
-                    track_info['trackid'],
-                    track_info['title'],
-                    track_info['album'],
-                    track_info['artist'],
-                    track_info['image'],
-                    track_info['duration'])
+                pyotherside.send("addTracktoPL", track_info['trackid'])
+        pyotherside.send("fillFinished", autoPlay)
 
+    # this is kinda duplicate of getTopTracksofArtist
+    #def getTopTracks(self, id, max):
+    #    toptracks = self.session.artist(int(id)).get_top_tracks(max)
+    #    for track in toptracks:
+    #        track_info = self.handle_track(track)
+    #        if track_info:
+    #            pyotherside.send("cacheTrack", track_info)
+    #            pyotherside.send("addTrack",
+    #                track_info['trackid'],
+    #                track_info['title'],
+    #                track_info['album'],
+    #                track_info['artist'],
+    #                track_info['image'],
+    #                track_info['duration'])
+    
+    def getArtistRadio(self, id): # -> Optional[List[Track]]:
+        pyotherside.send('loadingStarted')
+        tracks = self.session.artist(int(id)).get_radio()
+        for ti in tracks:
+            i = self.handle_track(ti)
+            pyotherside.send("cacheTrack", i)
+            pyotherside.send("RadioTrackofArtist", i)
+
+        pyotherside.send('loadingFinished')
+        return tracks  # just for testing
+                
     def getPersonalPlaylists(self):
         pyotherside.send('loadingStarted')
         playlists = self.session.user.playlists()

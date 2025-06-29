@@ -30,7 +30,7 @@ Page {
                 }
             }
             MenuItem {
-                text: minPlayerPanel.open ? "Hide player" : "Show player"
+                text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
             }
         }

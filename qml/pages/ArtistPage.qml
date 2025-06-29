@@ -61,9 +61,26 @@ Page {
             return minPlayerPanel.height * 0.4
         }
 
+
         PullDownMenu {
+
+        MenuItem {
+            text: qsTr("Share")
+            onClicked: {
+                if (artistData) {
+                    var shareText = qsTr("Check out this artist: %1").arg(artistData.name)
+                    var shareUrl = "https://tidal.com/artist/" + artistData.artistid;
+                    var shareData = {
+                        text: shareText,
+                        url: shareUrl
+                    };
+                    Clipboard.text = shareText + "\n" + shareUrl;
+                }
+            }
+        }
+        
             MenuItem {
-                text: minPlayerPanel.open ? "Hide player" : "Show player"
+                text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
             }
         }
@@ -260,18 +277,40 @@ Page {
                 }
 
                 Label {
-                    text: qsTr("Play Artist")
+                    text: qsTr("Play top ") + topTracks.model.count + " " + qsTr(" tracks")
                     font.pixelSize: Theme.fontSizeSmall
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
-                Label {
+                /*Label {
                     text: "  " + topTracks.model.count + " " + qsTr("Tracks")
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: Theme.fontSizeTiny
                     color: Theme.secondaryColor
                     anchors.verticalCenter: parent.verticalCenter
                     visible: opacity > 0
                     Behavior on opacity { NumberAnimation { duration: 150 } } 
+                }*/
+
+                IconButton {
+                    id: playRadioButton
+                    width: Theme.iconSizeMedium
+                    height: Theme.iconSizeMedium
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: Theme.paddingMedium
+                    }
+                    icon.source: "image://theme/icon-m-play"
+                    icon.sourceSize: Qt.size(Theme.iconSizeMedium, Theme.iconSizeMedium)
+                    onClicked: {
+                        playlistManager.clearPlayList()
+                        playlistManager.playArtistRadio(artistId, true)  // true for autoPlay
+                    }
+                }
+
+                Label {
+                    text: qsTr("Play Radio")
+                    font.pixelSize: Theme.fontSizeSmall
+                    anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Item {
@@ -362,6 +401,7 @@ Page {
             tidalApi.getAlbumsofArtist(artistId)
             tidalApi.getTopTracksofArtist(artistId)
             tidalApi.getSimiliarArtist(artistId)
+            //todo: tidalApi.getArtistRadio(artistId)
 
             artistData = cacheManager.getArtistInfo(artistId)
             if (artistData) {

@@ -182,8 +182,8 @@ def test_add_remove_favorite_video(session):
 def test_get_favorite_mixes(session):
     favorites = session.user.favorites
     mixes = favorites.mixes()
-    # assert len(mixes) > 0
-    # assert isinstance(mixes[0], tidalapi.MixV2)
+    assert len(mixes) > 0
+    assert isinstance(mixes[0], tidalapi.MixV2)
 
 
 def add_remove(object_id, add, remove, objects):

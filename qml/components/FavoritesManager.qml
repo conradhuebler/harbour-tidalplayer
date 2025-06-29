@@ -38,12 +38,7 @@ Item {
         }
 
         // Python-Funktionen
-        // i think this one is obsolete, just return from cache in qml
-        function isFavorite(id) {
-            //if(initialised)  call('playlistmanager.PL.AppendTrack', [id], {})
-            // should throw a signal with the result
-        }
-
+ 
         function setArtistFavoriteInfo(id, status) {
             console.log("setArtistFavoriteInfo", id, status)
             if(initialised)  call('tidal.Tidaler.setArtistFavInfo', [id, status], {})
