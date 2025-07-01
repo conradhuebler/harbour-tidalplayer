@@ -71,12 +71,12 @@ Page {
                     margins: Theme.horizontalPageMargin
                 }
                 text: qsTr("Logout")
-                visible: loginTrue
+                visible: tidalApi.loginTrue
                 onClicked: {
                     authManager.clearTokens()
                     token_type.value = "clear"
                     access_token.value = "clear"
-                    loginTrue = false
+                    tidalApi.loginTrue = false
                 }
             }
 
