@@ -123,13 +123,13 @@ Item {
 
             setHandler('playlistManagerLoaded', function()
             {
-                console.log("Playlistmanager module imported successfully")
+                console.log("Playlistmanager loaded")
                 initialised = true
                 updateTimer.start()
             })
 
             importModule('playlistmanager', function() {
-                console.log("Starting playlist manager")
+                console.log("Playlistmanager module imported successfully")
             })
         }
 
