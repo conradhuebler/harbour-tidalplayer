@@ -464,7 +464,7 @@ Item {
     }
 
     function loginIn(tokenType, accessToken, refreshToken, expiryTime) {
-        console.log(accessToken)
+        console.log("loginIn:", accessToken)
         pythonTidal.call('tidal.Tidaler.initialize', [quality])
         pythonTidal.call('tidal.Tidaler.login',
             [tokenType, accessToken, refreshToken, expiryTime])
@@ -474,6 +474,11 @@ Item {
     function genericSearch(text) {
         console.log("generic search", text)
         pythonTidal.call("tidal.Tidaler.genericSearch", [text])
+    }
+
+    function reInit() {
+        console.log("Re-initializing Tidal session")
+        pythonTidal.call('tidal.Tidaler.initialize', [])
     }
 
     function search(searchText) {
@@ -495,7 +500,7 @@ Item {
     function playTrackId(id) {
         console.log(id)
         pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(name) {
-            console.log(name.title)
+//            console.log(name.title)
 // imho this returny onyl track-info (the signal contains track-info and url but retval not)
 /*            if(typeof name === 'undefined')
                 console.log(typeof name)

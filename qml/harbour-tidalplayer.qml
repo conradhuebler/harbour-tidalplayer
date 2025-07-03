@@ -181,12 +181,12 @@ ApplicationWindow
 
     TidalApi {
         id: tidalApi
-
-        onLoginFailed: {
+        // its twice defined here in this file, the second time in connections
+        /*onLoginFailed: {
             authManager.clearTokens()
             console.log("Login failed")
             pageStack.push(Qt.resolvedUrl("pages/Settings.qml"))
-        }
+        }*/
     }
 
 
@@ -359,7 +359,7 @@ ApplicationWindow
         onLoginFailed: {
             authManager.clearTokens()
             console.log("Login failed")
-            pageStack.push(Qt.resolvedUrl("Settings.qml"))
+            pageStack.push(Qt.resolvedUrl("pages/Settings.qml"))
         }
     }
 

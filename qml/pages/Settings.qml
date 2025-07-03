@@ -238,6 +238,26 @@ Page {
                     right: parent.right
                     margins: Theme.horizontalPageMargin
                 }
+                text: qsTr("Re-Init session")
+                visible: tidalApi.loginTrue
+                onClicked: {
+                    //### re-ini - try (1)
+                    //tidalApi.reInitSession()
+                    //### re-init - try (2)
+                    authManager.checkAndLogin()
+                    // seems that tidalApi.ini does not get called
+                    tidalApi.reInit()
+                    // seems that mpris player still needs a PushUpMenu
+                    // on wifi - mobile network switch checkAndLogin() does not suffice
+                    mprisPlayer.setCanControl(true)
+                }
+            }
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
                 text: qsTr("Reset Cache")
                 visible: true
                 onClicked: {
