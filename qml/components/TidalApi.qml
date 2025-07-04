@@ -45,6 +45,7 @@ Item {
     signal cachePlaylist(var playlist_info)
     signal albumofArtist(var album_info)
     signal topTracksofArtist(var track_info)
+    signal radioTrackofArtist(var track_info)
     signal similarArtist(var artist_info)
 
     // signals for search
@@ -177,6 +178,10 @@ Item {
             setHandler('TopTrackofArtist', function(track_info) {
                 tidalApi.topTracksofArtist(track_info)
             })
+
+            setHandler('RadioTrackofArtist', function(track_info) {
+                tidalApi.radioTrackofArtist(track_info)
+            })            
 
             setHandler('AlbumofArtist', function(album_info) {
                 tidalApi.albumofArtist(album_info)
@@ -459,7 +464,7 @@ Item {
     }
 
     function loginIn(tokenType, accessToken, refreshToken, expiryTime) {
-        console.log(accessToken)
+        console.log("loginIn:", accessToken)
         pythonTidal.call('tidal.Tidaler.initialize', [quality])
         pythonTidal.call('tidal.Tidaler.login',
             [tokenType, accessToken, refreshToken, expiryTime])
@@ -469,6 +474,11 @@ Item {
     function genericSearch(text) {
         console.log("generic search", text)
         pythonTidal.call("tidal.Tidaler.genericSearch", [text])
+    }
+
+    function reInit() {
+        console.log("Re-initializing Tidal session")
+        pythonTidal.call('tidal.Tidaler.initialize', [])
     }
 
     function search(searchText) {
@@ -490,7 +500,7 @@ Item {
     function playTrackId(id) {
         console.log(id)
         pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(name) {
-            console.log(name.title)
+//            console.log(name.title)
 // imho this returny onyl track-info (the signal contains track-info and url but retval not)
 /*            if(typeof name === 'undefined')
                 console.log(typeof name)
@@ -545,6 +555,11 @@ Item {
     function playArtistTracks(id, startPlay) {
         var shouldPlay = startPlay === undefined ? true : startPlay
         pythonTidal.call("tidal.Tidaler.playArtistTracks", [id, startPlay])
+    }
+
+    function playArtistRadio(id, startPlay) {
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        pythonTidal.call("tidal.Tidaler.playArtistRadio", [id, startPlay])
     }
 
     // Artist Funktionen
@@ -603,6 +618,10 @@ Item {
 
     function getTopTracksofArtist(artistid) {
         pythonTidal.call('tidal.Tidaler.getTopTracksofArtist', [artistid])
+    }
+
+    function getArtistRadio(artistid) {
+        pythonTidal.call('tidal.Tidaler.getArtistRadio', [artistid])
     }
 
     function getSimiliarArtist(artistid) {

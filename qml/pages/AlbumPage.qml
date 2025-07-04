@@ -67,7 +67,22 @@ Page {
             }
 
             MenuItem {
-                text: minPlayerPanel.open ? "Hide player" : "Show player"
+                text: qsTr("Share")
+                onClicked: {
+                    if (albumData) {
+                        var shareText = qsTr("Check out this album: %1 by %2").arg(albumData.title).arg(albumData.artist);
+                        var shareUrl = "https://tidal.com/album/" + albumData.albumid;
+                        var shareData = {
+                            text: shareText,
+                            url: shareUrl
+                        };
+                        Clipboard.text = shareText + "\n" + shareUrl;
+                    }
+                }
+            }
+
+            MenuItem {
+                text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
             }
         }

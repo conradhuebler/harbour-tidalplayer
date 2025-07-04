@@ -71,12 +71,12 @@ Page {
                     margins: Theme.horizontalPageMargin
                 }
                 text: qsTr("Logout")
-                visible: loginTrue
+                visible: tidalApi.loginTrue
                 onClicked: {
                     authManager.clearTokens()
                     token_type.value = "clear"
                     access_token.value = "clear"
-                    loginTrue = false
+                    tidalApi.loginTrue = false
                 }
             }
 
@@ -231,6 +231,26 @@ Page {
             SectionHeader {
                 text: qsTr("Maintenance")
 
+            }
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
+                text: qsTr("Re-Init session")
+                visible: tidalApi.loginTrue
+                onClicked: {
+                    //### re-ini - try (1)
+                    //tidalApi.reInitSession()
+                    //### re-init - try (2)
+                    authManager.checkAndLogin()
+                    // seems that tidalApi.ini does not get called
+                    tidalApi.reInit()
+                    // seems that mpris player still needs a PushUpMenu
+                    // on wifi - mobile network switch checkAndLogin() does not suffice
+                    mprisPlayer.setCanControl(true)
+                }
             }
             Button {
                 anchors {

@@ -123,13 +123,13 @@ Item {
 
             setHandler('playlistManagerLoaded', function()
             {
-                console.log("Playlistmanager module imported successfully")
+                console.log("Playlistmanager loaded")
                 initialised = true
                 updateTimer.start()
             })
 
             importModule('playlistmanager', function() {
-                console.log("Starting playlist manager")
+                console.log("Playlistmanager module imported successfully")
             })
         }
 
@@ -315,6 +315,14 @@ Item {
         var shouldPlay = startPlay === undefined ? true : startPlay
         console.log("Playlistmanager::playartist", id, startPlay)
         tidalApi.playArtistTracks(id,shouldPlay)
+        currentTrackIndex()
+    }
+
+    function playArtistRadio(id, startPlay) {
+        doFeedback()
+        var shouldPlay = startPlay === undefined ? true : startPlay
+        console.log("Playlistmanager::playartist", id, startPlay)
+        tidalApi.playArtistRadio(id,shouldPlay)
         currentTrackIndex()
     }
 

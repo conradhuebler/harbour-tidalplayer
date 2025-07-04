@@ -1,21 +1,11 @@
 # Preconditions
 just to be able to build and run the solution, it should suffice to have sailfishos sdk and python-tidal installed
 to be able to run tests you will also need python and all the other stuff
+after cloning the repo don't forget to:
+git submodule update --init --recursive
+to download the dependencies. in my case i had errors in two packages. deletion of empty folders and retry fixed it.
 
-## Tidalplayer should be installed on your phone
-in case you run in to issues, here are some hints based on missing packages:
-pkcon install mpris-qt5-qml-plugin
-add lpr repo to install python dependencies:
-sudo zypper ar https://sailfish.openrepos.net/lpr/personal-main.repo
-use zypper search or zypper packages to accept the key of new repo, e.g.:
-sudo zypper search python3
-then install missing packages
-pkcon install python3-python-date.
-pkcon install python3-future
-i did not find this anywher else, so was forced to use easy_install
-devel-su easy_install typing_extensions
-devel-su easy_install isodate
-devel-su easy_install mpegdash
+rest of this files seems currently pretty outdated and i will clean it up later.
 
 ## On linux
 
@@ -105,3 +95,17 @@ git checkout -b favorites
 git push -u origin favorites
 
 git branch -vv
+
+# future features
+
+album.share_url <- share album >
+album.similar <->
+album.type -> (single/ep/lp)
+
+artist.get_other()  <-gets other albums of artist>
+
+general
+some exception handling
+   catch the important exceptions and visualize them to use, maybe re-login button
+quick goto-current playlist from player ?
+

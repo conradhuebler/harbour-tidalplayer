@@ -11,6 +11,45 @@ DockedPanel {
     dock: Dock.Bottom
     property bool isFav: false
 
+    MouseArea {
+        id: swipeArea
+        anchors.fill: parent
+        z: 0  // Same level as background image
+        
+        property real startY: 0
+        property real swipeThreshold: 100
+        
+        preventStealing: true
+        propagateComposedEvents: false
+        
+        onPressed: {
+            startY = mouse.y
+            // Only propagate to children (buttons) of the DockedPanel
+            mouse.accepted = !buttonsRow.contains(Qt.point(mouse.x, mouse.y)) && 
+                            !favButton.contains(favButton.mapFromItem(swipeArea, mouse.x, mouse.y))
+        }
+        
+        onMouseYChanged: {
+            if (Math.abs(mouse.y - startY) > Theme.paddingMedium) {
+                mouse.accepted = true
+            }
+        }
+
+        onReleased: {
+            var delta = startY - mouse.y
+            // console.log("pageStack depth:", pageStack.depth, "delta:", delta)
+            if (delta > swipeThreshold) {
+                // Pop everything but FirstPage
+                while (pageStack.depth > 1) {
+                    pageStack.pop(null, PageStackAction.Immediate)
+                }
+                
+                // Now we're back at FirstPage, show the playlist
+                applicationWindow.mainPage.showPlaylist()
+            }
+        }
+    }    
+
     // Hintergrundbild
     Image {
         id: bgImage

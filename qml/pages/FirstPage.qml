@@ -14,6 +14,11 @@ Page {
     allowedOrientations: Orientation.All
     property int currentIndex : 0
     // To enable PullDownMenu, place our content in a SilicaFlickable
+
+    function showPlaylist() {
+        swipeView.currentIndex = 2
+    }
+
     SilicaFlickable {
         id: flickable
         anchors {
@@ -61,7 +66,7 @@ Page {
                 onClicked: applicationWindow.cancelSleepTimer()
             }
               MenuItem {
-                text: minPlayerPanel.open ? "Hide player" : "Show player"
+                text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
                 onClicked: minPlayerPanel.open = !minPlayerPanel.open
                 anchors.horizontalCenter: parent.horizontalCenter
             }
