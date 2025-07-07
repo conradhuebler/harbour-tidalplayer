@@ -13,7 +13,7 @@ Name:       harbour-tidalplayer
 %{!?qtc_make:%define qtc_make make}
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    Tidal player for Sailfish OS
-Version:    0.2.0
+Version:    0.3.0
 Release:    1
 Group:      Qt/Qt
 License:    LICENSE
@@ -68,6 +68,7 @@ rm -rf %{buildroot}
 mkdir %{buildroot}%{_datadir}/%{name}/python
 cp -r python/*  %{buildroot}%{_datadir}/%{name}/python/
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
+#<<<<<<< HEAD
 ls python/dateutil/*
 ls python/isodate/*
 ls  %{buildroot}%{_datadir}/%{name}/python
@@ -77,6 +78,13 @@ ls  %{buildroot}%{_datadir}/%{name}/python
 #cp -r ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
 #cp -r typing_extensions/typing_extensions.py  %{buildroot}%{_datadir}/%{name}/python/typing_extensions.py
 #cp -r dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil
+
+cp -r python/mpegdash  %{buildroot}%{_datadir}/%{name}/python/mpegdash
+cp -r python/isodate  %{buildroot}%{_datadir}/%{name}/python/isodate
+cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
+cp -r python/typing_extensions  %{buildroot}%{_datadir}/%{name}/python/typing_extensions
+cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil
+#>>>>>>> Fix: downgrade typing extensions for 3.8 compat. bump version, update install
 
 rm -rf %{buildroot}/%{_datadir}/%{name}/share
 rm -rf %{buildroot}/%{_datadir}/%{name}/bin

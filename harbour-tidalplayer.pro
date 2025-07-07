@@ -50,7 +50,7 @@ isodate.path  = $$OUT_PWD/python/isodate
 ratelimit.files = $$files(external/ratelimit/ratelimit/*.py)
 ratelimit.path  = $$OUT_PWD/python/ratelimit
 
-typing.files = $$files(external/typing_extensions/src/*.py)
+typing.files = $$files(external/typing_extensions-4.11.0/src/*.py)
 typing.path  = $$OUT_PWD/python/typing_extensions
 
 dateutil.files = $$files(external/dateutil-2.8.2/dateutil/*.py)
