@@ -63,7 +63,7 @@ Item {
         property bool initialised : false
 
         Component.onCompleted: {
-            addImportPath(Qt.resolvedUrl('.'))
+            addImportPath(Qt.resolvedUrl('../'))
 
             setHandler('printConsole', function(string) {
                 console.log("playlistManager::printConsole" + string)

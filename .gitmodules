@@ -1,12 +1,6 @@
-[submodule "external/isodate"]
-	path = external/isodate
-	url = https://github.com/gweis/isodate
 [submodule "external/mpegdash"]
 	path = external/mpegdash
 	url = https://github.com/sangwonl/python-mpegdash
 [submodule "external/ratelimit"]
 	path = external/ratelimit
 	url = https://github.com/tomasbasham/ratelimit
-[submodule "external/typing_extensions"]
-	path = external/typing_extensions
-	url = https://github.com/python/typing_extensions

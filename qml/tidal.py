@@ -1,6 +1,9 @@
 # This Python file uses the following encoding: utf-8
 
 import sys
+(major, minor, micro, release, serial) = sys.version_info
+sys.path.append("/usr/share/harbour-tidalplayer/lib/python" + str(major) + "." + str(minor) + "/site-packages/");
+
 sys.path.append('/usr/share/harbour-tidalplayer/python/')
 import socket
 import requests

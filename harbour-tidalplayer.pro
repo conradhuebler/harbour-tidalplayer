@@ -34,10 +34,8 @@ OTHER_FILES += harbour-tidalplayer.desktop \
 
 COPIES += tidalpython
 COPIES += mpegdash
-COPIES += isodate
 COPIES += ratelimit
 COPIES += typing
-COPIES += dateutil
 
 tidalpython.files = $$files(external/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
@@ -45,18 +43,26 @@ tidalpython.path  = $$OUT_PWD/python/tidalapi
 mpegdash.files = $$files(external/mpegdash/mpegdash/*.py)
 mpegdash.path  = $$OUT_PWD/python/mpegdash
 
-isodate.files = $$files(external/isodate/src/isodate/*.py)
-isodate.path  = $$OUT_PWD/python/isodate
-
 ratelimit.files = $$files(external/ratelimit/ratelimit/*.py)
 ratelimit.path  = $$OUT_PWD/python/ratelimit
 
-typing.files = $$files(external/typing_extensions/src/*.py)
+typing.files = $$files(external/typing_extensions-4.12.2/src/*.py)
 typing.path  = $$OUT_PWD/python/typing_extensions
 
-dateutil.files = $$files(external/dateutil-2.8.2/dateutil/*.py)
-dateutil.path  = $$OUT_PWD/python/dateutil
+# actually should do this since it's recursive and saves doing the copy file in spec
+libs.path =/usr/share/$${TARGET}/python/dateutil
+libs.files = external/dateutil-2.8.2/dateutil/*
 
-#libs.path = /usr/share/$${TARGET}
-#libs.files = external
-#INSTALLS += libs
+isodate.files = external/isodate-0.6.1/*
+isodate.path  = /usr/share/$${TARGET}/python/isodate
+
+future.path =/usr/share/$${TARGET}/python/python-future
+future.files = external/python-future-1.0.0/*
+
+six.path =/usr/share/$${TARGET}/python/six
+six.files = external/six-1.12.0/*
+
+INSTALLS += six
+INSTALLS += isodate
+INSTALLS += libs
+INSTALLS += future

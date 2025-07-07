@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, List, Mapping, Optional, Union, cast
 from warnings import warn
 
 import dateutil.parser
-from typing_extensions import NoReturn
+from typing import NoReturn
 
 from tidalapi.exceptions import ObjectNotFound, TooManyRequests
 from tidalapi.types import JsonObj

@@ -1,4 +1,20 @@
 import pyotherside
+import sys
+(major, minor, micro, release, serial) = sys.version_info
+sys.path.append("/usr/share/harbour-tidalplayer/lib/python" + str(major) + "." + str(minor) + "/site-packages/");
+
+sys.path.append('/usr/share/harbour-tidalplayer/python/')
+import socket
+import requests
+import json
+import tidalapi
+import pyotherside
+
+from tidalapi.page import PageItem, PageLink
+from tidalapi.mix import Mix
+from tidalapi.media import Quality
+from requests.exceptions import HTTPError, RequestException
+
 
 
 class PlaylistManager:
