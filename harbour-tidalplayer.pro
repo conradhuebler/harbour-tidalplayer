@@ -60,9 +60,13 @@ isodate.path  = /usr/share/$${TARGET}/python/isodate
 future.path =/usr/share/$${TARGET}/python/python-future
 future.files = external/python-future-1.0.0/*
 
+six.path =/usr/share/$${TARGET}/python/six
+six.files = external/six-1.12.0/*
+
 libs.path = /usr/share/$${TARGET}
 libs.files = external
 
+INSTALLS += six
 INSTALLS += isodate
 INSTALLS += libs  
 INSTALLS += future
