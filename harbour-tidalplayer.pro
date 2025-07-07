@@ -44,7 +44,7 @@ tidalpython.path  = $$OUT_PWD/python/tidalapi
 mpegdash.files = $$files(external/mpegdash/mpegdash/*.py)
 mpegdash.path  = $$OUT_PWD/python/mpegdash
 
-isodate.files = $$files(external/isodate/src/isodate/*.py)
+isodate.files = $$files(external/isodate-0.7.2/src/isodate/*.py)
 isodate.path  = $$OUT_PWD/python/isodate
 
 ratelimit.files = $$files(external/ratelimit/ratelimit/*.py)

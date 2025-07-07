@@ -1,0 +1,17 @@
+*.pyc
+isodate.egg-info
+build/
+.installed.cfg
+.pydevproject
+.settings
+.tox
+bin
+develop-eggs
+dist
+parts
+.coverage
+coverage.xml
+htmlcov
+src/isodate/version.py
+.eggs
+.vscode/
