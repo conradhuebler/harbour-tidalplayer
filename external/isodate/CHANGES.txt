@@ -1,0 +1,107 @@
+
+CHANGES
+=======
+
+0.6.1 (2021-12-13)
+------------------
+
+- support python 3.10 ()
+- last version to support py 2.7
+
+
+0.6.0 (2017-10-13)
+------------------
+
+- support incomplete month date (Fabien Loffredo)
+- rely on duck typing when doing duration maths
+- support ':' as separator in fractional time zones (usrenmae)
+
+
+0.5.4 (2015-08-06)
+------------------
+
+- Fix parsing of Periods (Fabien Bochu)
+- Make Duration objects hashable (Geoffrey Fairchild)
+- Add multiplication to duration (Reinoud Elhorst)
+
+
+0.5.1 (2014-11-07)
+------------------
+
+- fixed pickling of Duration objects
+- raise ISO8601Error when there is no 'T' separator in datetime strings (Adrian Coveney)
+
+
+0.5.0 (2014-02-23)
+------------------
+
+- ISO8601Error are subclasses of ValueError now (Michael Hrivnak)
+- improve compatibility across various python variants and versions
+- raise exceptions when using fractional years and months in date
+  maths with durations
+- renamed method todatetime on Duraction objects to totimedelta
+
+
+0.4.9 (2012-10-30)
+------------------
+
+- support pickling FixedOffset instances
+- make sure parsed fractional seconds are in microseconds
+- add leading zeros when formattig microseconds (Jarom Loveridge)
+
+
+0.4.8 (2012-05-04)
+------------------
+
+- fixed incompatibility of unittests with python 2.5 and 2.6 (runs fine on 2.7
+  and 3.2)
+
+
+0.4.7 (2012-01-26)
+------------------
+
+- fixed tzinfo formatting (never pass None into tzinfo.utcoffset())
+
+
+0.4.6 (2012-01-06)
+------------------
+
+- added Python 3 compatibility via 2to3
+
+0.4.5 (2012-01-06)
+------------------
+
+- made setuptools dependency optional
+
+0.4.4 (2011-04-16)
+------------------
+
+- Fixed formatting of microseconds for datetime objects
+
+0.4.3 (2010-10-29)
+------------------
+
+- Fixed problem with %P formating and fractions (supplied by David Brooks)
+
+0.4.2 (2010-10-28)
+------------------
+
+- Implemented unary - for Duration (supplied by David Brooks)
+- Output fractional seconds with '%P' format. (partly supplied by David Brooks)
+
+0.4.1 (2010-10-13)
+------------------
+
+- fixed bug in comparison between timedelta and Duration.
+- fixed precision problem with microseconds (reported by Tommi Virtanen)
+
+0.4.0 (2009-02-09)
+------------------
+
+- added method to parse ISO 8601 time zone strings
+- added methods to create ISO 8601 conforming strings
+
+0.3.0 (2009-1-05)
+------------------
+
+- Initial release

@@ -1,0 +1,92 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Build Engine",
+            "type": "shell",
+            "command": "/home/conrad/SailfishOS_X/bin/sfdk",
+            "args": [
+                "engine",
+                "start"
+            ]
+        },
+        {
+            "label": "Build Init",
+            "type": "shell",
+            "command": "/home/conrad/SailfishOS_X/bin/sfdk",
+            "args": [
+                "-c",
+                "target=SailfishOS-4.6.0.13-aarch64",
+                "build-init",
+                "${workspaceFolder}"
+            ],
+            "dependsOn": "Start Build Engine"
+        },
+        {
+            "label": "Build SFOS App",
+            "type": "shell",
+            "command": "/home/conrad/SailfishOS_X/bin/sfdk",
+            "args": [
+                "-c",
+                "target=SailfishOS-4.6.0.13-aarch64",
+                "make"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/SFOS-build"
+            },
+            "dependsOn": "Build Init",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Package RPM",
+            "type": "shell",
+            "command": "/home/conrad/SailfishOS_X/bin/sfdk",
+            "args": [
+                "-c",
+                "target=SailfishOS-4.6.0.13-aarch64",
+                "-c",
+                "device=Rephone",
+                "package"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/SFOS-build"
+            },
+            "dependsOn": "Build SFOS App"
+        },
+        {
+            "label": "Deploy and Install",
+            "type": "shell",
+            "command": "/home/conrad/SailfishOS_X/bin/sfdk",
+            "args": [
+                "-c",
+                "target=SailfishOS-4.6.0.13-aarch64",
+                "-c",
+                "device=Rephone",
+                "deploy",
+                "--installer"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/SFOS-build"
+            },
+            "dependsOn": "Package RPM"
+        },
+        {
+            "label": "Build and Deploy",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Start Build Engine",
+                "Build Init",
+                "Build SFOS App",
+                "Package RPM",
+                "Deploy and Install"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

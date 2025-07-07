@@ -2,6 +2,15 @@
 
 import sys
 import os
+(major, minor, micro, release, serial) = sys.version_info
+sys.path.append("/usr/share/harbour-tidalplayer/lib/python" + str(major) + "." + str(minor) + "/site-packages/");
+
+sys.path.append('/usr/share/harbour-tidalplayer/python/')
+import socket
+import requests
+import json
+import tidalapi
+import pyotherside
 
 # Debug function for controlled logging synchronized with QML debug levels
 def debug_log(message, level=1, force=False):
