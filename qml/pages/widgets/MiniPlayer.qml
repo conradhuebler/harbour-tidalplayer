@@ -162,13 +162,12 @@ DockedPanel {
 
                 IconButton {
                     id: playButton
-                    icon.source: mediaController.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
-                    onClicked:
-                    {
-                        if (mediaController.mediaPlayer.playbackState === 1) {
-                            mediaController.pause()
-                        } else if(mediaController.mediaPlayer.playbackState === 2) {
-                            mediaController.play()
+                    icon.source: mediaHandler.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
+                    onClicked: {
+                        if (mediaHandler.isPlaying) {
+                            mediaHandler.pause()
+                        } else {
+                            mediaHandler.play()
                         }
                     }
                 }
@@ -264,13 +263,14 @@ DockedPanel {
 
 
     Connections {
-        target: mediaController
+        target: mediaHandler
 
         onPlaybackStateChanged: {
-            if(mediaController.playbackState === 1)
+            if (mediaHandler.playbackState === Audio.PlayingState) {
                 playButton.icon.source = "image://theme/icon-m-pause"
-            else if(mediaController.playbackState === 2)
+            } else {
                 playButton.icon.source = "image://theme/icon-m-play"
+            }
         }
 
         /*
@@ -285,17 +285,20 @@ DockedPanel {
             //nextButton.enabled = playlistManager.canNext
             progressSlider.visible = true
         }*/
-        onCurrentPosition: {
-        if (!progressSlider.pressed) {  // Nur updaten wenn der Slider nicht gedrückt ist
-            progressSlider.value = position
+        onPositionChanged: {
+            if (!progressSlider.pressed && mediaHandler.duration > 0) {
+                progressSlider.value = (mediaHandler.position / mediaHandler.duration) * 100
+            }
         }
-    }
     }
 
     Connections {
         target: progressSlider
         onReleased: {
-            mediaController.seek(progressSlider.value/100*mediaController.duration)
+            if (mediaHandler.duration > 0) {
+                var seekPosition = (progressSlider.value / 100) * mediaHandler.duration
+                mediaHandler.seek(seekPosition)
+            }
         }
     }
 

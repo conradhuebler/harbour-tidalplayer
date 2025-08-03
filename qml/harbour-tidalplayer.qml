@@ -33,6 +33,7 @@ ApplicationWindow
         property bool hide_player: false
         property bool auto_load_playlist: true
         property bool stay_logged_in: false
+        property bool useNewHomescreen: false
 
         property bool recentList: true
         property bool yourList: true //shows currently popular playlists
@@ -99,6 +100,12 @@ ApplicationWindow
     ConfigurationValue {
         id: stayLoggedInConfig
         key : "/stayLoggedIn"
+        defaultValue: false
+    }
+
+    ConfigurationValue {
+        id: useNewHomescreen
+        key : "/useNewHomescreen"
         defaultValue: false
     }
 
@@ -329,6 +336,7 @@ ApplicationWindow
             hidePlayerOnFinished.value = applicationWindow.settings.hide_player
             autoLoadPlaylist.value = applicationWindow.settings.auto_load_playlist
             stayLoggedInConfig.value = applicationWindow.settings.stay_logged_in
+            useNewHomescreen.value = applicationWindow.settings.useNewHomescreen
 
             recentListConfig.value = applicationWindow.settings.recentList
             yourListConfig.value = applicationWindow.settings.yourList
@@ -377,6 +385,7 @@ ApplicationWindow
         applicationWindow.settings.hide_player = hidePlayerOnFinished.value
         applicationWindow.settings.auto_load_playlist = autoLoadPlaylist.value
         applicationWindow.settings.stay_logged_in = stayLoggedInConfig.value
+        applicationWindow.settings.useNewHomescreen = useNewHomescreen.value
         tidalApi.quality = audioQuality.value
 
         // PERFORMANCE: Critical initialization first

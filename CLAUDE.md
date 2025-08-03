@@ -299,3 +299,216 @@ Timer {
 - Use QML Profiler to identify bottlenecks before/after changes
 - Consider backwards compatibility with older Sailfish OS versions
 - Monitor memory usage during development with system tools
+
+---
+
+## 🎨 Homescreen Personalization System
+
+### Current Status: PLANNING PHASE
+**Next Phase**: Implementation of configurable, cached homescreen with drag-and-drop reordering
+
+### Core Concepts
+
+#### 1. **Instant Start with Cache-First Loading**
+```qml
+Component.onCompleted: {
+    // 1. Load cached homescreen content immediately (0ms)
+    homescreenManager.loadCachedContent()
+    
+    // 2. Start async refresh in background (100ms delay)
+    homescreenManager.startBackgroundRefresh()
+    
+    // 3. Progressive section updates as new data arrives
+    homescreenManager.enableProgressiveUpdates()
+}
+```
+
+#### 2. **Configurable Section System**
+**Current Sections (8 types):**
+- Recently played
+- Popular playlists  
+- Top Artists
+- Top Albums
+- Top Tracks
+- Personal Playlists
+- Custom Mixes
+- Personal Radio Stations
+
+**Configuration Properties:**
+```javascript
+sectionConfig: {
+    "recent": { 
+        enabled: true, 
+        order: 0, 
+        priority: "high",
+        maxItems: 10,
+        refreshInterval: 300000  // 5min
+    },
+    "popular": { 
+        enabled: true, 
+        order: 1, 
+        priority: "medium",
+        maxItems: 8,
+        refreshInterval: 600000  // 10min
+    }
+    // ... etc for all sections
+}
+```
+
+### Architecture Plan
+
+#### Phase 1: Core Infrastructure (Priority: HIGH)
+1. **HomescreenManager.qml** - Central coordination
+   ```qml
+   Item {
+       property var sectionConfigs: ({})
+       property var cachedContent: ({})
+       property var loadingStates: ({})
+       
+       function loadCachedContent()
+       function startBackgroundRefresh()
+       function reorderSections(fromIndex, toIndex)
+       function toggleSection(sectionId, enabled)
+   }
+   ```
+
+2. **ConfigurableSection.qml** - Reusable section component
+   ```qml
+   Item {
+       property string sectionId
+       property var config
+       property bool loading: false
+       property bool cached: false
+       
+       // Drag & Drop support
+       property bool draggable: true
+       
+       // Cache integration  
+       function loadFromCache()
+       function refreshContent()
+   }
+   ```
+
+3. **SectionCache.qml** - Content caching system
+   ```qml
+   Item {
+       property int maxAge: 3600000  // 1 hour
+       property var cache: ({})
+       
+       function storeSection(sectionId, content)
+       function loadSection(sectionId)
+       function isExpired(sectionId)
+       function cleanExpired()
+   }
+   ```
+
+#### Phase 2: Drag & Drop Reordering (Priority: HIGH)
+```qml
+// DraggableSection.qml
+MouseArea {
+    property bool dragging: false
+    property int originalIndex
+    property int targetIndex
+    
+    drag.target: sectionContainer
+    
+    onPressed: {
+        dragging = true
+        originalIndex = model.index
+        // Visual feedback
+        sectionContainer.z = 10
+        sectionContainer.scale = 1.05
+    }
+    
+    onReleased: {
+        if (targetIndex !== originalIndex) {
+            homescreenManager.reorderSections(originalIndex, targetIndex)
+        }
+        dragging = false
+        sectionContainer.z = 0
+        sectionContainer.scale = 1.0
+    }
+}
+```
+
+#### Phase 3: Progressive Loading System (Priority: HIGH)
+```javascript
+// Loading Priority Queue
+loadingQueue: [
+    { section: "recent", priority: 1, cached: true },
+    { section: "favorites", priority: 2, cached: true },
+    { section: "popular", priority: 3, cached: false },
+    // ... etc
+]
+
+// Progressive loader
+Timer {
+    interval: 200  // 200ms between section loads
+    repeat: true
+    running: loadingQueue.length > 0
+    onTriggered: {
+        var next = loadingQueue.shift()
+        loadSection(next.section, next.cached)
+    }
+}
+```
+
+#### Phase 4: Advanced Personalization UI (Priority: MEDIUM)
+1. **Homescreen Settings Page**
+   - Section visibility toggles
+   - Drag handles for reordering
+   - Content size sliders
+   - Refresh interval controls
+
+2. **Smart Defaults**
+   - Auto-detect user preferences
+   - Suggest optimal section order
+   - Adaptive refresh intervals
+
+### Implementation Files Structure
+```
+qml/components/homescreen/
+├── HomescreenManager.qml       # Central coordinator
+├── ConfigurableSection.qml     # Reusable section
+├── SectionCache.qml           # Content caching
+├── DragDropHandler.qml        # Drag & drop logic
+└── LoadingStrategy.qml        # Progressive loading
+
+qml/pages/
+├── PersonalConfigurable.qml   # New configurable personal page
+└── HomescreenSettings.qml     # Configuration UI
+```
+
+### Performance Benefits
+- **Instant startup**: Cached content shows immediately
+- **Smart loading**: High-priority sections first
+- **Reduced API calls**: Intelligent refresh intervals
+- **Smooth interactions**: 60fps drag & drop
+- **Memory efficient**: LRU cache management
+
+### User Experience Goals
+1. **0ms perceived load time** - Cached content shows instantly
+2. **Intuitive customization** - Drag sections to reorder
+3. **Personal relevance** - Show what matters to each user
+4. **Performance aware** - Respect device capabilities
+
+### Configuration Storage
+```javascript
+// Store in Nemo.Configuration
+homescreenConfig: {
+    sectionOrder: ["recent", "favorites", "popular", "mixes"],
+    sectionVisibility: { "recent": true, "ads": false },
+    refreshIntervals: { "recent": 300000, "popular": 900000 },
+    cacheSettings: { maxAge: 3600000, maxSections: 20 }
+}
+```
+
+### Next Implementation Steps:
+1. Create HomescreenManager.qml infrastructure
+2. Implement SectionCache with LRU eviction  
+3. Add drag & drop reordering to existing sections
+4. Build progressive loading system
+5. Create homescreen configuration UI
+6. Integrate with existing Personal.qml
+
+**Status**: Ready for implementation - comprehensive plan documented for future sessions

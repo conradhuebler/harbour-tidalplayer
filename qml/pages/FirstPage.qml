@@ -109,7 +109,11 @@ Page {
                   anchors.left: parent.left
                   anchors.right: parent.right
                   anchors.bottom: miniPlayerPanel.top
-                  property var carouselPages: ["Personal.qml", "Search.qml", "TrackList.qml"]
+                  property var carouselPages: [
+                      applicationWindow.settings.useNewHomescreen ? "PersonalConfigurable.qml" : "Personal.qml", 
+                      "Search.qml", 
+                      "TrackList.qml"
+                  ]
                   property int initialPage: 0
                   model: carouselPages.length
                   Component.onCompleted: currentIndex = initialPage

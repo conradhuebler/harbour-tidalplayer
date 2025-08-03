@@ -85,6 +85,20 @@ Page {
             }
 
             SectionHeader {
+                text: qsTr("Interface")
+            }
+
+            TextSwitch {
+                text: qsTr("New Homescreen")
+                description: qsTr("Use configurable homescreen with drag & drop sections")
+                checked: applicationWindow.settings.useNewHomescreen || false
+                onCheckedChanged: {
+                    applicationWindow.settings.useNewHomescreen = checked
+                    useNewHomescreen.value = checked
+                }
+            }
+
+            SectionHeader {
                 text: qsTr("Playback")
                 visible: tidalApi.loginTrue
             }
