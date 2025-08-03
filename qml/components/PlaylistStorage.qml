@@ -144,6 +144,11 @@ Item {
 
     // Beim Laden
     function loadCurrentPlaylistState() {
+        // Check if auto-load is enabled
+        if (!applicationWindow.settings.auto_load_playlist) {
+            console.log("Auto-load playlist disabled, skipping")
+            return
+        }
 
         playlistTitle = "_current"
         var db = getDatabase();
@@ -161,23 +166,18 @@ Item {
             }
         });
 
-        console.log("Loading current playlist ", currentPlaylist)
-        console.log("Loading current playlist ", trackIds)
-        console.log("Loading current playlist ", position)
+        console.log("Loading current playlist, tracks:", trackIds ? trackIds.length : 0, "position:", position)
 
-        if (trackIds === undefined) return;
+        if (trackIds === undefined || trackIds.length === 0) return;
 
-        if (currentPlaylist && trackIds.length > 0) {
-            playlistManager.clearPlayList()
-            for (var i = 0; i < trackIds.length; i++) {
-                playlistManager.appendTrackSilent(trackIds[i])
-            }
-            // Position wiederherstellen
-            playlistManager.currentIndex = position
-            if(applicationWindow.settings.resume_playback)
-                playlistManager.playPosition(position);
-        }
-
+        // OPTIMIZED: Use batch loading instead of one-by-one
+        playlistManager.clearPlayList()
+        playlistManager.appendTracksBatch(trackIds)
+        
+        // Position wiederherstellen
+        playlistManager.currentIndex = position
+        if(applicationWindow.settings.resume_playback)
+            playlistManager.playPosition(position);
     }
     Component.onCompleted: {
         initDatabase();

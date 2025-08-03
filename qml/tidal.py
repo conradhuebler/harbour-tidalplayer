@@ -65,7 +65,9 @@ class Tidal:
 
                         if self.session.check_login() is True:
                             pyotherside.send("printConsole", "New token", self.session.access_token)
-                            pyotherside.send("oauth_refresh", self.session.access_token)
+                            # Send all token info including new expiry time
+                            pyotherside.send("oauth_refresh", self.session.access_token, 
+                                            self.session.refresh_token, self.session.expiry_time)
                             pyotherside.send("oauth_login_success")
                             pyotherside.send("printConsole", "Login success")
                         else:

@@ -24,7 +24,6 @@ OTHER_FILES += harbour-tidalplayer.desktop \
         qml/pages/Personal.qml\
         qml/pages/Settings.qml\
         qml/tidal.py \
-        qml/playlistmanager.py \
         qml/pages/dialogs/Account.qml \
         qml/pages/dialogs/OAuth.qml \
         rpm/harbour-tidalplayer.changes.in\

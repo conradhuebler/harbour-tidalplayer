@@ -31,6 +31,7 @@ ApplicationWindow
         property string audio_quality : ""
         property bool resume_playback : false
         property bool hide_player: false
+        property bool auto_load_playlist: true
 
         property bool recentList: true
         property bool yourList: true //shows currently popular playlists
@@ -86,6 +87,12 @@ ApplicationWindow
         id: hidePlayerOnFinished
         key : "/hidePlayerOnFinished"
         defaultValue: false
+    }
+
+    ConfigurationValue {
+        id: autoLoadPlaylist
+        key : "/autoLoadPlaylist"
+        defaultValue: true
     }
 
     ConfigurationValue {
@@ -354,7 +361,8 @@ ApplicationWindow
             authManager.updateTokens(type, token, rtoken, date)
         }
         onOAuthRefresh: {
-            authManager.refreshTokens(token)
+            // AuthManager.refreshTokens is now called directly from TidalApi.qml handler
+            console.log("OAuth refresh signal received:", token)
         }
         onLoginFailed: {
             authManager.clearTokens()
@@ -423,6 +431,7 @@ ApplicationWindow
             audioQuality.value = applicationWindow.settings.audio_quality
             resumePlayback.value = applicationWindow.settings.resume_playback
             hidePlayerOnFinished.value = applicationWindow.settings.hide_player
+            autoLoadPlaylist.value = applicationWindow.settings.auto_load_playlist
 
             recentListConfig.value = applicationWindow.settings.recentList
             yourListConfig.value = applicationWindow.settings.yourList
@@ -446,6 +455,7 @@ ApplicationWindow
         applicationWindow.settings.audio_quality = audioQuality.value
         applicationWindow.settings.resume_playback = resumePlayback.value
         applicationWindow.settings.hide_player = hidePlayerOnFinished.value
+        applicationWindow.settings.auto_load_playlist = autoLoadPlaylist.value
         tidalApi.quality = audioQuality.value
 
         applicationWindow.settings.recentList = recentListConfig.value
@@ -473,6 +483,7 @@ ApplicationWindow
         audioQuality.value = applicationWindow.settings.audio_quality
         resumePlayback.value = applicationWindow.settings.resume_playback
         hidePlayerOnFinished.value = applicationWindow.settings.hide_player
+        autoLoadPlaylist.value = applicationWindow.settings.auto_load_playlist
 
         recentListConfig.value = applicationWindow.settings.recentList
         yourListConfig.value = applicationWindow.settings.yourList

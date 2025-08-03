@@ -124,6 +124,17 @@ Page {
                 }
             }
 
+            TextSwitch {
+                id: autoLoadPlaylist
+                visible: tidalApi.loginTrue
+                text: qsTr("Auto-load last playlist")
+                description: qsTr("Automatically load the last playlist on startup")
+                checked: applicationWindow.settings.auto_load_playlist
+                onClicked: {
+                    applicationWindow.settings.auto_load_playlist = autoLoadPlaylist.checked
+                }
+            }
+
             SectionHeader {
                 text: qsTr("Home")
                 visible: tidalApi.loginTrue

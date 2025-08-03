@@ -147,10 +147,12 @@ Item {
                 tidalApi.oAuthSuccess(type, token, rtoken, date)
             })
 
-            setHandler('oauth_refresh', function(token) {
-                console.log("Got new token from session")
-                console.log(token)
+            setHandler('oauth_refresh', function(token, rtoken, expiry) {
+                console.log("Got refreshed token from session")
+                console.log("token:", token, "rtoken:", rtoken, "expiry:", expiry)
                 tidalApi.oAuthRefresh(token)
+                // Update AuthManager with all token info
+                authManager.refreshTokens(token, rtoken, expiry)
             })
 
             // Debug Handler

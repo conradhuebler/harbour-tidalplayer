@@ -1,0 +1,301 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is a native Tidal Music Player for Sailfish OS, built with QML/Qt and Python. The app uses PyOtherSide to bridge QML UI with Python backend that interfaces with the Tidal API.
+
+## Build and Development Commands
+
+### Building
+```bash
+# Build the project using qmake
+qmake
+make
+
+# Build RPM package (Sailfish OS)
+rpmbuild --define "_topdir $(pwd)/rpm" -ba rpm/harbour-tidalplayer.spec
+```
+
+### Prerequisites
+- Sailfish OS SDK
+- Python 3.x with required dependencies
+- PyOtherSide QML plugin
+- Git submodules must be initialized: `git submodule update --init --recursive`
+
+### Dependencies Installation
+The project requires specific Python packages available through OpenRepos:
+- Python3-requests  
+- Python3-future
+- Python3-dateutil
+- MPRIS Qt5 QML plugin
+
+## Architecture
+
+### Core Components
+
+**Python Backend (`qml/tidal.py`)**
+- Main Tidal API client class
+- Handles authentication (OAuth), search, playback URL generation
+- Communicates with QML via PyOtherSide signals
+- Location: `qml/tidal.py`
+
+**QML Bridge (`qml/components/TidalApi.qml`)**  
+- PyOtherSide interface between QML and Python
+- Signal handlers for Python→QML communication
+- Exposes Python functions to QML UI
+- Location: `qml/components/TidalApi.qml`
+
+**Media Controller (`qml/components/MediaController.qml`)**
+- QtMultimedia MediaPlayer wrapper
+- MPRIS integration for system media controls
+- Handles playback state and auto-advance logic
+- Location: `qml/components/MediaController.qml`
+
+**Playlist Management (`qml/components/PlaylistManager.qml`)**
+- Track queue management
+- Current/next/previous track logic
+- Integration with PlaylistStorage for persistence
+- Location: `qml/components/PlaylistManager.qml`
+
+### Key Architecture Patterns
+
+1. **Signal-Based Communication**: Python backend sends signals via PyOtherSide, QML components handle them and emit Qt signals
+2. **Caching System**: Track/album/artist metadata cached in TidalCache component
+3. **OAuth Authentication**: Full OAuth flow with token refresh handling
+4. **Modular QML Components**: Separate components for different responsibilities (auth, media, playlists, etc.)
+
+### External Dependencies
+- `external/python-tidal/`: Custom Tidal API client (patched version)
+- `external/dateutil-2.8.2/`: Python dateutil library
+- `external/mpegdash/`: MPEG-DASH support
+- `external/isodate/`: ISO date parsing
+- `external/ratelimit/`: API rate limiting
+
+## Important Files
+
+- `harbour-tidalplayer.pro`: Qt project file with build configuration
+- `qml/harbour-tidalplayer.qml`: Main application window and global state
+- `qml/tidal.py`: Core Python API client
+- `rpm/harbour-tidalplayer.spec`: RPM packaging specification
+- Line 114 of `external/python-tidal/tidalapi/user.py` is removed during packaging (see spec file)
+
+## Development Notes
+
+- The app uses a patched version of tidalapi v0.7.1 due to compatibility issues
+- OAuth tokens are stored using Nemo.Configuration
+- MPRIS integration provides system-wide media controls
+- The build process copies Python dependencies to the output directory
+- Testing requires physical Sailfish OS device or emulator with proper dependencies
+
+## Performance Optimization TODOs
+
+### 🔥 Critical Optimizations (High Priority - Immediate Impact)
+
+#### 1. Batch Signal Emissions (40-60% Performance Gain)
+**Location**: `qml/tidal.py` - Lines with pyotherside.send()
+**Problem**: 124 individual pyotherside.send() calls create excessive bridge overhead
+**Solution**: Implement batch signaling for search results and API responses
+```python
+# Instead of individual sends for each search result:
+for track in result["tracks"]:
+    pyotherside.send("foundTrack", track_info)
+
+# Use batch sending:
+all_tracks = [self.handle_track(track) for track in result["tracks"]]
+pyotherside.send("foundTracks", all_tracks)
+```
+**Files to modify**: `qml/tidal.py`, `qml/components/TidalApi.qml`
+
+#### 2. Virtual Scrolling for Large Lists (50-70% Smoother UI)
+**Location**: All ListView components in pages/
+**Problem**: Large playlists/search results cause UI stuttering
+**Solution**: Implement virtual scrolling with cacheBuffer and reuseItems
+```qml
+ListView {
+    cacheBuffer: height * 2     // Only render visible + buffer
+    reuseItems: true           // Reuse delegates for performance
+    asynchronous: true         // Async delegate creation
+}
+```
+**Files to modify**: `qml/pages/TrackList.qml`, `qml/pages/Search.qml`, playlist views
+
+#### 3. Fix Memory Leaks in Cache (Prevents Crashes)
+**Location**: `qml/components/TidalCache.qml:6-10`
+**Problem**: In-memory caches never release old entries, causing memory growth
+**Solution**: Implement LRU cache with size limits
+```qml
+property var lruCache: new Map()
+property int maxCacheSize: 1000
+
+function addToCache(key, value) {
+    if (lruCache.size >= maxCacheSize) {
+        let firstKey = lruCache.keys().next().value
+        lruCache.delete(firstKey)
+    }
+    lruCache.set(key, value)
+}
+```
+**Files to modify**: `qml/components/TidalCache.qml`
+
+#### 4. Lazy Page Loading (60% Faster Startup)
+**Location**: `qml/pages/FirstPage.qml:119-134`
+**Problem**: All carousel pages load synchronously at startup
+**Solution**: Load pages only when needed with async Loaders
+```qml
+Loader {
+    asynchronous: true
+    active: SwipeView.isCurrentItem || SwipeView.isNextItem || SwipeView.isPreviousItem
+    source: "Page.qml"
+}
+```
+**Files to modify**: `qml/pages/FirstPage.qml`, carousel implementations
+
+### ⚡ High-Impact Optimizations (Medium Priority)
+
+#### 5. Async-First API Pattern (30-50% UI Responsiveness)
+**Location**: `qml/components/TidalApi.qml:523` and similar call_sync locations
+**Problem**: Synchronous API calls block UI thread
+**Solution**: Replace all call_sync with async alternatives
+```qml
+// Replace:
+var result = pythonTidal.call_sync("tidal.Tidaler.getTrackInfo", [id])
+
+// With:
+function getTrackInfoAsync(id, callback) {
+    pythonTidal.call("tidal.Tidaler.getTrackInfo", [id], callback)
+}
+```
+**Files to modify**: `qml/components/TidalApi.qml`, `qml/components/PlaylistManager.qml`
+
+#### 6. Database Query Batching (25% Query Performance)
+**Location**: `qml/components/TidalCache.qml:375-404`
+**Problem**: Individual database queries for each cache operation
+**Solution**: Implement prepared statements and batch operations
+```sql
+-- Instead of individual queries:
+SELECT * FROM cache WHERE id = ?
+
+-- Use batch queries:
+SELECT * FROM cache WHERE id IN (?, ?, ?, ?)
+```
+**Files to modify**: `qml/components/TidalCache.qml`, `qml/components/PlaylistStorage.qml`
+
+#### 7. Request Deduplication (30% Network Efficiency)
+**Location**: All API request locations
+**Problem**: Multiple identical requests can be in-flight simultaneously
+**Solution**: Implement request queue management
+```qml
+property var pendingRequests: ({})
+
+function requestWithDeduplication(url, callback) {
+    if (pendingRequests[url]) {
+        pendingRequests[url].push(callback)
+        return
+    }
+    pendingRequests[url] = [callback]
+    // Make actual request...
+}
+```
+**Files to modify**: `qml/components/TidalApi.qml`
+
+#### 8. Incremental Cache Cleanup (Eliminates Periodic Freezes)
+**Location**: `qml/components/TidalCache.qml:471-512`
+**Problem**: Cache cleanup rebuilds entire cache objects, causing UI freezes
+**Solution**: Implement incremental cleanup with timers
+```qml
+Timer {
+    interval: 1000  // Clean 100 items every second
+    repeat: true
+    property int cleanupIndex: 0
+    onTriggered: cleanupCacheChunk(cleanupIndex++, 100)
+}
+```
+**Files to modify**: `qml/components/TidalCache.qml`
+
+### 🚀 Performance Boosters (Lower Priority - Polish)
+
+#### 9. Progressive Cache Loading (40% Perceived Startup Speed)
+**Location**: `qml/components/TidalCache.qml:14-17`
+**Problem**: Entire cache loads at startup, blocking initial render
+**Solution**: Load cache in chunks with Timer
+```qml
+Timer {
+    interval: 50
+    repeat: true
+    property int loadIndex: 0
+    onTriggered: {
+        loadCacheChunk(loadIndex++, 100) // 100 items per chunk
+        if (loadIndex * 100 > totalCacheSize) stop()
+    }
+}
+```
+**Files to modify**: `qml/components/TidalCache.qml`
+
+#### 10. Image Preloading & Caching (Smooth Scrolling)
+**Location**: All Image components in delegates
+**Problem**: Images load on-demand causing scroll stutter
+**Solution**: Implement preloading for adjacent items
+```qml
+Image {
+    asynchronous: true
+    cache: true
+    fillMode: Image.PreserveAspectCrop
+    
+    Component.onCompleted: preloadAdjacentImages()
+}
+```
+**Files to modify**: All page components with image delegates
+
+#### 11. Optimized Track Info Bulk Loading
+**Location**: `qml/components/TidalCache.qml:181-212`
+**Problem**: Individual track info requests for each cache miss
+**Solution**: Implement bulk track info loading
+```qml
+function getTrackInfoBulk(trackIds) {
+    let uncachedIds = trackIds.filter(id => !isInCache(id))
+    if (uncachedIds.length > 0) {
+        pythonTidal.call("tidal.Tidaler.getTrackInfoBulk", uncachedIds)
+    }
+}
+```
+**Files to modify**: `qml/components/TidalCache.qml`, `qml/tidal.py`
+
+#### 12. Configuration Loading Optimization
+**Location**: `qml/harbour-tidalplayer.qml:448-474`
+**Problem**: All settings load synchronously at startup
+**Solution**: Defer non-critical settings loading
+```qml
+Timer {
+    interval: 100
+    onTriggered: loadNonCriticalSettings()
+}
+```
+**Files to modify**: `qml/harbour-tidalplayer.qml`
+
+### 📊 Expected Overall Performance Impact
+- **Startup Time**: 50-70% improvement
+- **UI Responsiveness**: 40-60% improvement  
+- **Memory Usage**: 30-50% reduction
+- **Network Efficiency**: 25-40% improvement
+- **Battery Life**: 15-25% improvement (due to reduced CPU usage)
+
+### 🔧 Quick Wins (1-2 Hours Each)
+1. **Virtual Scrolling** for major list views - Immediate UI smoothness
+2. **Async Loaders** for FirstPage carousel - Faster startup
+3. **LRU Cache** implementation - Memory leak prevention
+4. **Batch Playlist Loading** - Already partially implemented, extend to other areas
+
+### Implementation Priority
+1. Start with **Batch Signal Emissions** (highest impact, foundational)
+2. Implement **Virtual Scrolling** (immediate user-visible improvement)
+3. Add **LRU Cache** (prevents long-term issues)
+4. **Lazy Page Loading** (startup performance)
+5. Continue with async patterns and network optimizations
+
+### Notes for Implementation
+- Test each optimization individually to measure actual impact
+- Use QML Profiler to identify bottlenecks before/after changes
+- Consider backwards compatibility with older Sailfish OS versions
+- Monitor memory usage during development with system tools

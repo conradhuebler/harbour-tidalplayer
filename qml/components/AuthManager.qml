@@ -11,23 +11,43 @@ Item {
 
     // Funktionen zum Token-Management
     function updateTokens(type, token, rtoken, expiry) {
-        console.log("Update tokens")
-        var currentUnixTime = Math.floor(new Date().getTime() / 1000)
-        var oneWeekLater = currentUnixTime + 604800
-
+        console.log("Update tokens", "expiry from server:", expiry)
+        
         applicationWindow.settings.token_type = type
         applicationWindow.settings.access_token = token
         applicationWindow.settings.refresh_token = rtoken
-        applicationWindow.settings.expiry_time = oneWeekLater
+        
+        // Convert expiry to Unix timestamp if it's a string
+        var expiryTime = expiry
+        if (typeof expiry === "string") {
+            var expiryDate = new Date(expiry)
+            expiryTime = Math.floor(expiryDate.getTime() / 1000)
+            console.log("Converted expiry date to timestamp:", expiry, "->", expiryTime)
+        } else if (typeof expiry === "number") {
+            expiryTime = expiry
+        }
+        
+        applicationWindow.settings.expiry_time = expiryTime
+        updateSettings()
     }
 
-    function refreshTokens(token) {
-        console.log("Update tokens", token)
-        var currentUnixTime = Math.floor(new Date().getTime() / 1000)
-        var oneWeekLater = currentUnixTime + 604800
-
-        applicationWindow.settings.access_token= token
-        applicationWindow.settings.expiry_time= oneWeekLater
+    function refreshTokens(token, rtoken, expiry) {
+        console.log("Refresh tokens", "new_token:", token, "new_expiry:", expiry)
+        
+        applicationWindow.settings.access_token = token
+        if (rtoken) applicationWindow.settings.refresh_token = rtoken
+        
+        if (expiry) {
+            // Convert expiry to Unix timestamp if it's a string
+            var expiryTime = expiry
+            if (typeof expiry === "string") {
+                var expiryDate = new Date(expiry)
+                expiryTime = Math.floor(expiryDate.getTime() / 1000)
+                console.log("Converted refresh expiry date to timestamp:", expiry, "->", expiryTime)
+            }
+            applicationWindow.settings.expiry_time = expiryTime
+        }
+        updateSettings()
     }
 
     function checkAndLogin() {
@@ -40,10 +60,10 @@ Item {
                                 applicationWindow.settings.expiry_time)
             } else {
             // Token abgelaufen, mit Refresh Token versuchen
-            console.log("old token invalid");
+            console.log("old token invalid, attempting refresh");
             tidalApi.loginIn(applicationWindow.settings.token_type,
-                                applicationWindow.settings.refresh_token,
-                                applicationWindow.settings.refresh_token,
+                                applicationWindow.settings.refresh_token,  // Als access_token für refresh
+                                applicationWindow.settings.refresh_token,  // Als refresh_token
                                 applicationWindow.settings.expiry_time)
         }
 
