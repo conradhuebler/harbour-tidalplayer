@@ -24,10 +24,10 @@ Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
 Requires:   python3-requests
-
+#Requires:   python-dateutil
 Requires:   python3-six
 Requires:   python3-devel
-Requires:   mpris-qt5-qml-plugin
+Requires:   amber-mpris
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
@@ -37,6 +37,7 @@ BuildRequires:  desktop-file-utils
 
 %description
 A native Tidal Player for Sailfish OS written in python
+
 
 %prep
 %setup -q -n %{name}-%{version}

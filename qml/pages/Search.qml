@@ -1,7 +1,5 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import QtMultimedia 5.6
-import Sailfish.Media 1.0
 import "widgets"
 import "stuff"
 

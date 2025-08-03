@@ -10,3 +10,6 @@ Name=Tidal Player
 # Remember to comment out the following line, if you do not want to use
 # a different app name in German locale (de).
 Name[de]=Tidal Player
+[X-Sailjail]
+ApplicationName=TidalPlayer
+Permissions=Internet;Audio

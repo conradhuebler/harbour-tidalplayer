@@ -2,7 +2,7 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import io.thp.pyotherside 1.5
 import QtMultimedia 5.6
-import org.nemomobile.mpris 1.0
+import Amber.Mpris 1.0
 import Nemo.Configuration 1.0
 
 import "components"
@@ -243,89 +243,12 @@ ApplicationWindow
     }
 
 
-    MediaController
+    MediaHandler
     {
-        id: mediaController
+        id: mediaController  // Keep same ID for compatibility
     }
 
-// MPRIS Player
-    MprisPlayer {
-        id: mprisPlayer
-
-        // Bereits vorhandene Eigenschaften
-        canControl: true
-        canGoNext: true
-        canGoPrevious: true
-        canPause: true
-        canPlay: true
-        canSeek: true
-
-        serviceName: "tidalplayer"
-        identity: "Tidal Music Player"
-
-        // Zusätzliche wichtige Eigenschaften
-        canQuit: true
-        canSetFullscreen: false
-        canRaise: true
-        hasTrackList: true
-        loopStatus: Mpris.None
-        shuffle: false
-        volume: mediaController.volume
-        position: mediaController.position * 1000 // MPRIS verwendet Mikrosekunden
-
-        // Aktualisierte Metadaten-Funktion
-        function updateTrack(track, artist, album) {
-            var metadata = {}
-
-            // Pflichtfelder
-            metadata[Mpris.metadataToString(Mpris.Title)] = track
-            metadata[Mpris.metadataToString(Mpris.Artist)] = [artist] // Array von Künstlern
-            metadata[Mpris.metadataToString(Mpris.Album)] = album
-
-            // Zusätzliche wichtige Metadaten
-            metadata[Mpris.metadataToString(Mpris.Length)] = mediaController.current_track_duration * 1000000 // Mikrosekunden
-            metadata[Mpris.metadataToString(Mpris.TrackNumber)] = playlistManager.currentIndex + 1
-
-            if (mediaController.current_track_image !== "") {
-                metadata[Mpris.metadataToString(Mpris.ArtUrl)] = mediaController.current_track_image
-            }
-
-            // Eindeutige ID für den Track
-            metadata[Mpris.metadataToString(Mpris.TrackId)] = "/org/mpris/MediaPlayer2/track/" +
-                playlistManager.currentIndex
-
-            mprisPlayer.metadata = metadata
-        }
-
-        // Zusätzliche MPRIS-Signalhandler
-        onRaiseRequested: {
-            // App in den Vordergrund bringen
-            window.raise()
-        }
-
-        onQuitRequested: {
-            // App beenden
-            Qt.quit()
-        }
-
-        onVolumeRequested: {
-            // Lautstärke ändern
-            mediaPlayer.volume = volume
-        }
-
-        onSeekRequested: {
-            // Position ändern (offset ist in Mikrosekunden)
-            var newPos = mediaPlayer.position + (offset / 1000000)
-            if (newPos < 0) newPos = 0
-            if (newPos > mediaPlayer.duration) newPos = mediaPlayer.duration
-            mediaPlayer.seek(newPos)
-        }
-
-        onSetPositionRequested: {
-            // Absolute Position setzen (position ist in Mikrosekunden)
-            mediaPlayer.seek(position / 1000000)
-        }
-    }
+    // MPRIS Player is now handled in MediaHandler
 
     initialPage: Component {
         FirstPage {
@@ -389,41 +312,7 @@ ApplicationWindow
     }
 
 
-    Connections
-    {
-        target: mprisPlayer
-        onPlayRequested :
-        {
-            mediaController.play()
-        }
-
-        onPauseRequested :
-        {
-            mediaController.pause()
-        }
-
-        onPlayPauseRequested :
-        {
-            if (mediaController.playbackState == 1)
-            {
-                mediaController.pause()
-            }
-            else if(mediaController.playbackState == 2){
-                mediaController.play()
-            }
-        }
-
-        onNextRequested :
-        {
-            mediaController.blockAutoNext = true
-            playlistManager.nextTrackClicked()
-        }
-
-        onPreviousRequested :
-        {
-            playlistManager.previousTrackClicked()
-        }
-    }
+    // MPRIS connections are now handled internally in MediaHandler
 
     Connections
     {
@@ -492,7 +381,7 @@ ApplicationWindow
 
         // PERFORMANCE: Critical initialization first
         authManager.checkAndLogin()
-        mprisPlayer.setCanControl(true)
+        // MPRIS is now initialized in MediaHandler
         
         // PERFORMANCE: Defer non-critical settings loading
         deferredInitTimer.start()
