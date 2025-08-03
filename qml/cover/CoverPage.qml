@@ -91,6 +91,28 @@ CoverBackground {
             wrapMode: Text.Wrap
             text: qsTr("No track playing")
         }
+
+        // Sleep Timer Display
+        Label {
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            font.pixelSize: Theme.fontSizeExtraSmall
+            color: Theme.highlightColor
+            visible: application && application.remainingMinutes > 0
+            text: visible ? qsTr("🕐 Sleep: %1").arg(formatSleepTime(application.remainingMinutes)) : ""
+            
+            // Live update
+            Timer {
+                interval: 60000  // Update every minute
+                running: parent.visible
+                repeat: true
+                onTriggered: {
+                    if (application && application.remainingMinutes > 0) {
+                        parent.text = qsTr("🕐 Sleep: %1").arg(formatSleepTime(application.remainingMinutes))
+                    }
+                }
+            }
+        }
     }
 
     Row {
@@ -179,6 +201,21 @@ CoverBackground {
             titleLabel.text = trackinfo.title
             artist_albumLabel.text = trackinfo.artist + "\n" + trackinfo.album
             coverImage.source = trackinfo.image
+        }
+    }
+
+    // Format sleep time for display
+    function formatSleepTime(minutes) {
+        if (minutes < 60) {
+            return qsTr("%1m").arg(minutes)
+        } else {
+            var hours = Math.floor(minutes / 60)
+            var mins = minutes % 60
+            if (mins === 0) {
+                return qsTr("%1h").arg(hours)
+            } else {
+                return qsTr("%1h %2m").arg(hours).arg(mins)
+            }
         }
     }
 

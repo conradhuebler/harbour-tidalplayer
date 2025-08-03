@@ -40,6 +40,11 @@ Item {
     property string current_track_image: ""
     property int current_track_duration: 0
 
+    // Custom signals (avoid duplicate names)
+    signal mediaPositionChanged()
+    signal mediaDurationChanged()
+    signal mediaPlaybackStateChanged()
+
     // Audio player with playlist support
     Audio {
         id: audioPlayer
@@ -114,6 +119,15 @@ Item {
             if (duration > 0) {
                 track_duration = duration
             }
+            mediaHandler.mediaDurationChanged()
+        }
+
+        onPositionChanged: {
+            mediaHandler.mediaPositionChanged()
+        }
+
+        onPlaybackStateChanged: {
+            mediaHandler.mediaPlaybackStateChanged()
         }
     }
 

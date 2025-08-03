@@ -98,6 +98,48 @@ Page {
                 }
             }
 
+            ComboBox {
+                label: qsTr("Default Play Action")
+                description: qsTr("What happens when you tap on a track/album")
+                
+                menu: ContextMenu {
+                    MenuItem { 
+                        text: qsTr("Replace Playlist & Play")
+                        property string value: "replace"
+                    }
+                    MenuItem { 
+                        text: qsTr("Add to Playlist & Play") 
+                        property string value: "append"
+                    }
+                    MenuItem { 
+                        text: qsTr("Play Now (Keep Playlist)")
+                        property string value: "playnow"
+                    }
+                    MenuItem { 
+                        text: qsTr("Add to Queue")
+                        property string value: "queue"
+                    }
+                }
+                
+                currentIndex: {
+                    var action = applicationWindow.settings.defaultPlayAction || "replace"
+                    switch (action) {
+                        case "replace": return 0
+                        case "append": return 1
+                        case "playnow": return 2
+                        case "queue": return 3
+                        default: return 0
+                    }
+                }
+                
+                onCurrentItemChanged: {
+                    if (currentItem) {
+                        applicationWindow.settings.defaultPlayAction = currentItem.value
+                        defaultPlayAction.value = currentItem.value
+                    }
+                }
+            }
+
             SectionHeader {
                 text: qsTr("Playback")
                 visible: tidalApi.loginTrue
@@ -150,6 +192,19 @@ Page {
                 checked: applicationWindow.settings.auto_load_playlist
                 onClicked: {
                     applicationWindow.settings.auto_load_playlist = autoLoadPlaylist.checked
+                }
+            }
+
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
+                text: qsTr("Sleep Timer")
+                visible: tidalApi.loginTrue
+                onClicked: {
+                    pageStack.push(Qt.resolvedUrl("../dialogs/SleepTimerDialog.qml"))
                 }
             }
 

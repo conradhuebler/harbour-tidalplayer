@@ -179,115 +179,181 @@ SilicaListView {
                     }
                 }
 
-                menu: ContextMenu {
-                    width: delegateItem.width  // same with as item
-                    x: (delegateItem.width - width) / 2 // center menue item
-                    opacity: 1
-                    backgroundColor: Theme.rgba(Theme.secondaryHighlightColor, 1.0)
-                    MenuItem {
-                        text: {
-                        switch(model.type) {
-                            case 0:
-                                "N.A"
-                            case 1: // Track
-                                "Play Track"
-                                break
-                            case 2: // Album
-                                "Play Album"
-                                break
-                            case 3: // Artist
-                                "Play Artist Radio"
-                                break
-                            case 4: // Playlist
-                                "Play Playlist"
-                                break
-
-                            case 5: // Mix
-                                "Play Video n.a."
-                                break;
-
-                            case 6: // Mix
-                                "Play Mix"
-                                break;
+                menu: Component {
+                    ContextMenu {
+                        width: delegateItem.width
+                        x: (delegateItem.width - width) / 2
+                        opacity: 1
+                        backgroundColor: Theme.rgba(Theme.secondaryHighlightColor, 1.0)
+                        
+                        // Advanced Play Menu Items
+                        MenuItem {
+                            text: qsTr("Replace Playlist & Play")
+                            onClicked: executeAdvancedPlay("replace")
+                        }
+                        
+                        MenuItem {
+                            text: qsTr("Add to Playlist & Play") 
+                            onClicked: executeAdvancedPlay("append")
+                        }
+                        
+                        MenuItem {
+                            text: qsTr("Play Now (Keep Playlist)")
+                            onClicked: executeAdvancedPlay("playnow")
+                        }
+                        
+                        MenuItem {
+                            text: qsTr("Add to Queue")
+                            onClicked: executeAdvancedPlay("queue")
+                        }
+                        
+                        MenuItem {
+                            text: "─────────────"
+                            enabled: false
+                        }
+                        
+                        MenuItem {
+                            text: {
+                                switch(model.type) {
+                                    case typeTrack: return qsTr("View Album")
+                                    case typeAlbum: return qsTr("View Album")
+                                    case typeArtist: return qsTr("View Artist")
+                                    case typePlaylist: return qsTr("View Playlist")
+                                    case typeMix: return qsTr("View Mix")
+                                    default: return qsTr("View Details")
+                                }
+                            }
+                            onClicked: openDetailPage()
+                        }
+                        
+                        // Helper functions for the menu
+                        function executeAdvancedPlay(action) {
+                            var contentInfo = getContentInfo()
+                            var contentType = getContentType()
+                            
+                            if (advancedPlayManager) {
+                                switch(contentType) {
+                                    case "track":
+                                        advancedPlayManager.executeTrackAction(contentInfo.id, action)
+                                        break
+                                    case "album":
+                                        advancedPlayManager.executeAlbumAction(contentInfo, action)
+                                        break
+                                    case "artist":
+                                        advancedPlayManager.executeArtistAction(contentInfo, action)
+                                        break
+                                    case "playlist":
+                                        advancedPlayManager.executePlaylistAction(contentInfo, action)
+                                        break
+                                    case "mix":
+                                        advancedPlayManager.executeMixAction(contentInfo, action)
+                                        break
+                                }
                             }
                         }
-
-                        opacity: 1
-                        onClicked: {
+                        
+                        function openDetailPage() {
+                            var contentInfo = getContentInfo()
+                            var contentType = getContentType()
+                            
+                            switch(contentType) {
+                                case "album":
+                                    pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
+                                        "albumId": contentInfo.id,
+                                        "albumTitle": contentInfo.title,
+                                        "albumImage": contentInfo.image
+                                    })
+                                    break
+                                case "artist":
+                                    pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"), {
+                                        "artistId": contentInfo.id,
+                                        "artistName": contentInfo.title,
+                                        "artistImage": contentInfo.image
+                                    })
+                                    break
+                                case "playlist":
+                                    pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"), {
+                                        "playlistId": contentInfo.id,
+                                        "playlistTitle": contentInfo.title,
+                                        "playlistImage": contentInfo.image
+                                    })
+                                    break
+                                case "mix":
+                                    pageStack.push(Qt.resolvedUrl("../MixPage.qml"), {
+                                        "mixId": contentInfo.id,
+                                        "mixTitle": contentInfo.title,
+                                        "mixImage": contentInfo.image
+                                    })
+                                    break
+                            }
+                        }
+                        
+                        function getContentInfo() {
+                            return {
+                                id: model.trackid || model.albumid || model.artistid || model.playlistid || model.mixid,
+                                title: model.title,
+                                name: model.title,
+                                image: model.image
+                            }
+                        }
+                        
+                        function getContentType() {
                             switch(model.type) {
-                            case 1: // Track
-                                //playlistManager.clearPlayList()
-                                playlistManager.playTrack(model.trackid)
-                                break
-                            case 2: // Album
-                                playlistManager.clearPlayList()
-                                playlistManager.playAlbum(model.albumid)
-                                break
-                            case 3: // Artist
-                                playlistManager.clearPlayList()
-                                playlistManager.playArtistTracks(model.artistid, true)  // true for autoPlay                            
-                                // Todo
-                                break
-                            case 4: // Playlist
-                                playlistManager.clearPlayList()
-                                console.log("Play Playlist", model.playlistid, model.title)
-                                playlistManager.playPlaylist(model.playlistid, true) 
-                                break
-                            case 5: // Video
-                                break
-                            case 6: // Mix
-                                playlistManager.clearPlayList()
-                                console.log("Play Mix", model.mixid, model.title)
-                                playlistManager.playMix(model.mixid,true)
-                            break;
+                                case typeTrack: return "track"
+                                case typeAlbum: return "album"
+                                case typeArtist: return "artist"
+                                case typePlaylist: return "playlist"
+                                case typeMix: return "mix"
+                                default: return "unknown"
                             }
                         }
                     }
                 }
 
                 onClicked: {
-                switch(model.type) {
-                    case 1: // Track
-                        //pageStack.push(Qt.resolvedUrl("../TrackPage.qml"),
-                        //{
-                        //    "albumId": model.albumid
-                        //})e
-                        break
-                    case 2: // Album
-                        pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"),
-                        {
-                            "albumId" :model.albumid
-                        })
-
-                        break
-                    case 3: // Artist
-                        pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"),
-                        {
-                            "artistId" :model.artistid
-                        })
-                        break
-                    case 4: // Playlist
-                        console.log("Playlist", model.playlistid, model.title)
-                        // id exists, name is undefined
-                        pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"),
-                        {
-                            "playlistId" :model.playlistid,
-                            "playlistTitle" : model.title
-                        })
-                        break
-                    case 5: // Video
-                        break
-                    case 6: // Mix
-                        console.log("Mix", model.mixid, model.title)
-                        // id exists, name is undefined
-                        pageStack.push(Qt.resolvedUrl("../MixPage.qml"),
-                        {
-                            "playlistId" :model.mixid,
-                            "playlistTitle" : model.title
-                        })
-                        break
-                }
-
+                    // Single click opens info page (for homescreen)
+                    console.log("HorizontalList: Opening info page for", model.title)
+                    
+                    switch(model.type) {
+                        case typeAlbum:
+                            pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
+                                "albumId": model.albumid,
+                                "albumTitle": model.title,
+                                "albumImage": model.image
+                            })
+                            break
+                        case typeArtist:
+                            pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"), {
+                                "artistId": model.artistid,
+                                "artistName": model.title,
+                                "artistImage": model.image
+                            })
+                            break
+                        case typePlaylist:
+                            pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"), {
+                                "playlistId": model.playlistid,
+                                "playlistTitle": model.title,
+                                "playlistImage": model.image
+                            })
+                            break
+                        case typeMix:
+                            pageStack.push(Qt.resolvedUrl("../MixPage.qml"), {
+                                "mixId": model.mixid,
+                                "mixTitle": model.title,
+                                "mixImage": model.image
+                            })
+                            break
+                        case typeTrack:
+                            // For tracks, we could show album page
+                            if (model.albumid) {
+                                pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
+                                    "albumId": model.albumid,
+                                    "albumTitle": model.title,
+                                    "albumImage": model.image
+                                })
+                            }
+                            break
+                    }
                 }
             }
 

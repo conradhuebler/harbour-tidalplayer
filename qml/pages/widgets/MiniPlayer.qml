@@ -162,12 +162,12 @@ DockedPanel {
 
                 IconButton {
                     id: playButton
-                    icon.source: mediaHandler.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
+                    icon.source: mediaController.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
                     onClicked: {
-                        if (mediaHandler.isPlaying) {
-                            mediaHandler.pause()
+                        if (mediaController.isPlaying) {
+                            mediaController.pause()
                         } else {
-                            mediaHandler.play()
+                            mediaController.play()
                         }
                     }
                 }
@@ -224,7 +224,7 @@ DockedPanel {
                             id: playedTime
                             property string pos: {
                                 if ((mediaController.position / 1000) > 3599)
-                                    return Format.formatDuration(minPlayer.position / 1000, Formatter.DurationLong)
+                                    return Format.formatDuration(mediaController.position / 1000, Formatter.DurationLong)
                                 else
                                     return Format.formatDuration(mediaController.position / 1000, Formatter.DurationShort)
                             }
@@ -236,7 +236,7 @@ DockedPanel {
                             id: playTime
                             property string dur: {
                                 if ((mediaController.duration / 1000) > 3599)
-                                    return Format.formatDuration(minPlayer.duration / 1000, Formatter.DurationLong)
+                                    return Format.formatDuration(mediaController.duration / 1000, Formatter.DurationLong)
                                 else
                                     return Format.formatDuration(mediaController.duration / 1000, Formatter.DurationShort)
                             }
@@ -263,10 +263,10 @@ DockedPanel {
 
 
     Connections {
-        target: mediaHandler
+        target: mediaController
 
         onPlaybackStateChanged: {
-            if (mediaHandler.playbackState === Audio.PlayingState) {
+            if (mediaController.playbackState === Audio.PlayingState) {
                 playButton.icon.source = "image://theme/icon-m-pause"
             } else {
                 playButton.icon.source = "image://theme/icon-m-play"
@@ -286,8 +286,8 @@ DockedPanel {
             progressSlider.visible = true
         }*/
         onPositionChanged: {
-            if (!progressSlider.pressed && mediaHandler.duration > 0) {
-                progressSlider.value = (mediaHandler.position / mediaHandler.duration) * 100
+            if (!progressSlider.pressed && mediaController.duration > 0) {
+                progressSlider.value = (mediaController.position / mediaController.duration) * 100
             }
         }
     }
@@ -295,9 +295,9 @@ DockedPanel {
     Connections {
         target: progressSlider
         onReleased: {
-            if (mediaHandler.duration > 0) {
-                var seekPosition = (progressSlider.value / 100) * mediaHandler.duration
-                mediaHandler.seek(seekPosition)
+            if (mediaController.duration > 0) {
+                var seekPosition = (progressSlider.value / 100) * mediaController.duration
+                mediaController.seek(seekPosition)
             }
         }
     }

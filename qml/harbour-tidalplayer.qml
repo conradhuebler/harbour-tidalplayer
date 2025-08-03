@@ -34,6 +34,7 @@ ApplicationWindow
         property bool auto_load_playlist: true
         property bool stay_logged_in: false
         property bool useNewHomescreen: false
+        property string defaultPlayAction: "replace"
 
         property bool recentList: true
         property bool yourList: true //shows currently popular playlists
@@ -110,6 +111,12 @@ ApplicationWindow
     }
 
     ConfigurationValue {
+        id: defaultPlayAction
+        key : "/defaultPlayAction"
+        defaultValue: "replace"
+    }
+
+    ConfigurationValue {
         id: recentListConfig
         key : "/recentList"
         defaultValue: true
@@ -164,6 +171,8 @@ ApplicationWindow
     }
 
     property int remainingMinutes: 0
+    property string timerAction: "pause"
+    property bool timerNotificationShown: false
 
     property var sleepTimer: Timer {
         id: sleepTimer
@@ -171,31 +180,148 @@ ApplicationWindow
         repeat: true
         onTriggered: {
             remainingMinutes--
+            
+            // Show notification when 5 minutes remaining
+            if (remainingMinutes === 5 && !timerNotificationShown) {
+                timerNotificationShown = true
+                showSystemMessage(qsTr("Sleep Timer"), qsTr("5 minutes remaining"))
+            }
+            
+            // Show final countdown notifications
+            if (remainingMinutes === 1) {
+                showSystemMessage(qsTr("Sleep Timer"), qsTr("1 minute remaining"))
+            }
+            
             if (remainingMinutes <= 0) {
                 stop()
-                mediaController.pause()
                 remainingMinutes = 0
+                timerNotificationShown = false
+                executeTimerAction()
             }
         }
     }
 
-    // Funktion zum Starten des Timers
-    function startSleepTimer(minutes) {
-        console.log(minutes)
+    // Enhanced function to start timer with action
+    function startSleepTimer(minutes, action) {
+        console.log("Starting sleep timer:", minutes, "minutes, action:", action || "pause")
         if (minutes > 0) {
             remainingMinutes = minutes
+            timerAction = action || "pause"
+            timerNotificationShown = false
             sleepTimer.start()
-            // Optional: Benachrichtigung anzeigen
-            //notification.notify(qsTr("Sleep timer set"),
-            //    qsTr("Playback will stop in %1")
-            //    .arg(Format.formatDuration(minutes * 60, Formatter.DurationLong)))
+            
+            // Show start notification
+            var actionText = ""
+            switch (timerAction) {
+                case "pause": actionText = qsTr("pause playback"); break
+                case "stop": actionText = qsTr("stop playback"); break
+                case "fade": actionText = qsTr("fade out and pause"); break
+                case "close": actionText = qsTr("close application"); break
+                default: actionText = qsTr("pause playback")
+            }
+            
+            showSystemMessage(qsTr("Sleep Timer Started"), 
+                             qsTr("Will %1 in %2").arg(actionText).arg(formatTimerDuration(minutes)))
         }
     }
 
-    // Funktion zum Abbrechen des Timers
+    // Function to cancel timer
     function cancelSleepTimer() {
-        sleepTimer.stop()
-        remainingMinutes = 0
+        if (sleepTimer.running) {
+            sleepTimer.stop()
+            remainingMinutes = 0
+            timerNotificationShown = false
+            showSystemMessage(qsTr("Sleep Timer"), qsTr("Timer cancelled"))
+        }
+    }
+
+    // Execute the selected action when timer expires
+    function executeTimerAction() {
+        console.log("Executing timer action:", timerAction)
+        
+        switch (timerAction) {
+            case "stop":
+                mediaController.stop()
+                showSystemMessage(qsTr("Sleep Timer"), qsTr("Playback stopped"))
+                break
+                
+            case "fade":
+                // Implement fade out over 10 seconds
+                fadeOutTimer.start()
+                showSystemMessage(qsTr("Sleep Timer"), qsTr("Fading out..."))
+                break
+                
+            case "close":
+                showSystemMessage(qsTr("Sleep Timer"), qsTr("Closing application"))
+                Qt.quit()
+                break
+                
+            case "pause":
+            default:
+                mediaController.pause()
+                showSystemMessage(qsTr("Sleep Timer"), qsTr("Playback paused"))
+                break
+        }
+    }
+
+    // Fade out timer for smooth volume reduction
+    Timer {
+        id: fadeOutTimer
+        interval: 200  // Update every 200ms
+        repeat: true
+        property real originalVolume: 1.0
+        property int fadeSteps: 0
+        property int maxFadeSteps: 50  // 10 seconds total (50 * 200ms)
+        
+        onTriggered: {
+            if (fadeSteps === 0) {
+                originalVolume = mediaController.volume || 1.0
+            }
+            
+            fadeSteps++
+            var newVolume = originalVolume * (1.0 - (fadeSteps / maxFadeSteps))
+            
+            if (newVolume <= 0.0 || fadeSteps >= maxFadeSteps) {
+                mediaController.pause()
+                mediaController.volume = originalVolume  // Restore volume for next play
+                stop()
+                fadeSteps = 0
+                showSystemMessage(qsTr("Sleep Timer"), qsTr("Playback paused"))
+            } else {
+                mediaController.volume = newVolume
+            }
+        }
+    }
+
+    // Format duration for timer display
+    function formatTimerDuration(minutes) {
+        if (minutes < 60) {
+            return qsTr("%1 minutes").arg(minutes)
+        } else {
+            var hours = Math.floor(minutes / 60)
+            var mins = minutes % 60
+            if (mins === 0) {
+                return qsTr("%n hour(s)", "", hours)
+            } else {
+                return qsTr("%1 hours %2 minutes").arg(hours).arg(mins)
+            }
+        }
+    }
+
+    // Show system message/notification
+    function showSystemMessage(title, message) {
+        console.log("System message:", title, "-", message)
+        // Create a simple notification banner
+        var component = Qt.createComponent("components/NotificationBanner.qml")
+        if (component.status === Component.Ready) {
+            var banner = component.createObject(applicationWindow, {
+                "title": title,
+                "message": message
+            })
+            if (banner) {
+                banner.show()
+            }
+        }
     }
 
 
@@ -253,6 +379,10 @@ ApplicationWindow
     MediaHandler
     {
         id: mediaController  // Keep same ID for compatibility
+    }
+
+    AdvancedPlayManager {
+        id: advancedPlayManager
     }
 
     // MPRIS Player is now handled in MediaHandler
@@ -337,6 +467,7 @@ ApplicationWindow
             autoLoadPlaylist.value = applicationWindow.settings.auto_load_playlist
             stayLoggedInConfig.value = applicationWindow.settings.stay_logged_in
             useNewHomescreen.value = applicationWindow.settings.useNewHomescreen
+            defaultPlayAction.value = applicationWindow.settings.defaultPlayAction
 
             recentListConfig.value = applicationWindow.settings.recentList
             yourListConfig.value = applicationWindow.settings.yourList
@@ -386,6 +517,7 @@ ApplicationWindow
         applicationWindow.settings.auto_load_playlist = autoLoadPlaylist.value
         applicationWindow.settings.stay_logged_in = stayLoggedInConfig.value
         applicationWindow.settings.useNewHomescreen = useNewHomescreen.value
+        applicationWindow.settings.defaultPlayAction = defaultPlayAction.value
         tidalApi.quality = audioQuality.value
 
         // PERFORMANCE: Critical initialization first
