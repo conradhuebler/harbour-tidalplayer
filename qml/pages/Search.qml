@@ -113,6 +113,9 @@ Item {
             clip: true
             height: parent.height
             contentHeight: height
+            
+            // PERFORMANCE: Virtual scrolling optimizations for search results
+            cacheBuffer: height * 3        // Search results might be longer, cache more
             model: ListModel { id: listModel }
 
             delegate: SearchResultDelegate {
@@ -159,6 +162,31 @@ Item {
         onFoundVideo:
         {
             listModel.append(createVideoItem(video_info))
+        }
+
+        // PERFORMANCE: Batch signal handlers for improved search performance
+        onFoundTracksBatch: {
+            tracks_array.forEach(function(track) {
+                listModel.append(createTrackItem(track))
+            })
+        }
+        
+        onFoundAlbumsBatch: {
+            albums_array.forEach(function(album) {
+                listModel.append(createAlbumItem(album))
+            })
+        }
+        
+        onFoundArtistsBatch: {
+            artists_array.forEach(function(artist) {
+                listModel.append(createArtistItem(artist))
+            })
+        }
+        
+        onFoundPlaylistsBatch: {
+            playlists_array.forEach(function(playlist) {
+                listModel.append(createPlaylistItem(playlist))
+            })
         }
 
     }

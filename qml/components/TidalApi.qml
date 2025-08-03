@@ -54,6 +54,12 @@ Item {
     signal foundAlbum(var album_info)
     signal foundArtist(var artist_info)
     signal foundVideo(var video_info)
+    
+    // PERFORMANCE: Batch signals for improved search performance
+    signal foundTracksBatch(var tracks_array)
+    signal foundPlaylistsBatch(var playlists_array)
+    signal foundAlbumsBatch(var albums_array)
+    signal foundArtistsBatch(var artists_array)
 
     // signal for favorites
     signal favTracks(var track_info)
@@ -221,6 +227,41 @@ Item {
                 tidalApi.foundVideo(video_info)
             })
 
+            // PERFORMANCE: Batch signal handlers - emit batch signals directly
+            setHandler('foundTracksBatch', function(tracks_array) {
+                console.log("Received tracks batch:", tracks_array.length, "tracks")
+                tidalApi.foundTracksBatch(tracks_array)
+            })
+
+            setHandler('foundArtistsBatch', function(artists_array) {
+                console.log("Received artists batch:", artists_array.length, "artists")
+                tidalApi.foundArtistsBatch(artists_array)
+            })
+
+            setHandler('foundAlbumsBatch', function(albums_array) {
+                console.log("Received albums batch:", albums_array.length, "albums")
+                tidalApi.foundAlbumsBatch(albums_array)
+            })
+
+            setHandler('foundPlaylistsBatch', function(playlists_array) {
+                console.log("Received playlists batch:", playlists_array.length, "playlists")
+                tidalApi.foundPlaylistsBatch(playlists_array)
+            })
+
+            setHandler('foundVideosBatch', function(videos_array) {
+                console.log("Received videos batch:", videos_array.length, "videos")
+                for (var i = 0; i < videos_array.length; i++) {
+                    tidalApi.foundVideo(videos_array[i])
+                }
+            })
+
+            setHandler('foundMixesBatch', function(mixes_array) {
+                console.log("Received mixes batch:", mixes_array.length, "mixes")
+                for (var i = 0; i < mixes_array.length; i++) {
+                    tidalApi.foundMix(mixes_array[i])
+                }
+            })
+
 
             setHandler('FavAlbums', function(album_info) {
                 tidalApi.favAlbums(album_info)
@@ -335,8 +376,21 @@ Item {
             })
 
             setHandler('playlist_replace', function(playlist) {
-                playlistManager.clearList()
+                playlistManager.clearPlayList()
                 searchResults(playlist)
+            })
+            
+            setHandler('mix_replace', function(mix_data) {
+                console.log("Mix replace received, clearing playlist and adding", mix_data.tracks.length, "tracks")
+                playlistManager.clearPlayList()
+                // Add all tracks to playlist
+                var trackIds = []
+                for (var i = 0; i < mix_data.tracks.length; i++) {
+                    trackIds.push(mix_data.tracks[i].trackid)
+                }
+                playlistManager.appendTracksBatch(trackIds)
+                
+                // Auto-start if needed - handled by play_track signal separately
             })
 
             // Response Loading started

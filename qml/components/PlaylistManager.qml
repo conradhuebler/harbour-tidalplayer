@@ -237,11 +237,8 @@ Item {
     }
 
     function generateList() {
-        console.log('Generate current database')
-        clearList()
-        for (var i = 0; i < playlist.length; i++) {
-            containsTrack(playlist[i])
-        }
+        console.log('Generate current playlist view, size:', playlist.length)
+        // Just trigger list changed - TrackList will populate itself via updateTimer
         listChanged()
     }
 
@@ -345,9 +342,29 @@ Item {
         return playlistStorage.getPlaylistInfo()
     }
 
+    // Login state connection to trigger auto-load after login
+    Connections {
+        target: tidalApi
+        onLoginSuccess: {
+            console.log('Login successful, attempting auto-load playlist')
+            // Small delay to ensure all settings are loaded
+            autoLoadTimer.start()
+        }
+    }
+    
+    Timer {
+        id: autoLoadTimer
+        interval: 500  // 500ms delay after login
+        repeat: false
+        onTriggered: {
+            playlistStorage.loadCurrentPlaylistState()
+        }
+    }
+
     // Component lifecycle
     Component.onCompleted: {
         console.log('Pure QML PlaylistManager loaded')
-        updateTimer.start()
+        // Don't auto-load immediately - wait for login success instead
+        // updateTimer.start()
     }
 }

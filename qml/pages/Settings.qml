@@ -44,11 +44,15 @@ Page {
             }
 
             TextSwitch {
+                id: stayLoggedIn
                 visible: tidalApi.loginTrue
                 text: qsTr("Stay logged in")
-                description: qsTr("Keep your session active")
-                // Verbinde dies mit deiner Konfiguration
-                checked: false
+                description: qsTr("Prevent automatic logout on token errors")
+                checked: applicationWindow.settings.stay_logged_in
+                onClicked: {
+                    applicationWindow.settings.stay_logged_in = stayLoggedIn.checked
+                    console.log("Stay logged in setting:", stayLoggedIn.checked)
+                }
             }
 
             Button {

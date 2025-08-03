@@ -119,8 +119,12 @@ Page {
                   delegate: Loader {
                       width: swipeView.itemWidth
                       height: swipeView.height
-                      source: swipeView.carouselPages[index]
                       asynchronous: true
+                      
+                      // PERFORMANCE: For 3-page carousel, keep all pages loaded to prevent content loss
+                      // Could optimize further with more sophisticated caching later
+                      active: true
+                      source: active ? swipeView.carouselPages[index] : ""
 
                     onLoaded: {
                     if (index === 2) { // TrackList
@@ -129,6 +133,15 @@ Page {
                         if (playlistManager.size > 0) {
                             playlistManager.generateList()
                         }
+                    }
+                }
+                
+                // Debug: Log when pages are loaded/unloaded
+                onActiveChanged: {
+                    if (active) {
+                        console.log("Lazy loading page index:", index, swipeView.carouselPages[index])
+                    } else {
+                        console.log("Lazy unloading page index:", index)
                     }
                 }
             }

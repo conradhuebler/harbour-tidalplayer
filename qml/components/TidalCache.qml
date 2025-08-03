@@ -3,17 +3,78 @@ import QtQuick.LocalStorage 2.0
 
 Item {
 id: root
+    // PERFORMANCE: LRU Cache Implementation - prevents memory leaks
+    property int maxCacheSize: 1000           // Max items per cache type
+    property int maxCacheAge: 24 * 3600000    // Max age in milliseconds
+    
+    // Cache objects with LRU tracking
     property var trackCache: ({})
     property var albumCache: ({})
     property var artistCache: ({})
     property var playlistCache: ({})
     property var mixCache: ({})
+    
+    // LRU access order tracking (most recent first)
+    property var trackAccessOrder: []
+    property var albumAccessOrder: []
+    property var artistAccessOrder: []
+    property var playlistAccessOrder: []
+    property var mixAccessOrder: []
+    
     property var db
-    property int maxCacheAge: 24 * 3600000
+
+    // PERFORMANCE: LRU Cache Management Functions
+    function addToLRU(cache, accessOrder, key, value) {
+        // Remove from current position if exists
+        var index = accessOrder.indexOf(key)
+        if (index > -1) {
+            accessOrder.splice(index, 1)
+        }
+        
+        // Add to front (most recent)
+        accessOrder.unshift(key)
+        cache[key] = value
+        
+        // Enforce size limit
+        while (accessOrder.length > maxCacheSize) {
+            var oldestKey = accessOrder.pop()
+            delete cache[oldestKey]
+            console.log("LRU: Evicted cache entry:", oldestKey)
+        }
+    }
+    
+    function touchLRU(accessOrder, key) {
+        // Move accessed item to front
+        var index = accessOrder.indexOf(key)
+        if (index > -1) {
+            accessOrder.splice(index, 1)
+            accessOrder.unshift(key)
+        }
+    }
+    
+
+    // PERFORMANCE: Cache stats logging timer
+    Timer {
+        interval: 300000  // 5 minutes
+        running: true
+        repeat: true
+        onTriggered: {
+            var stats = getCacheStats()
+            console.log("Cache stats:", JSON.stringify(stats))
+            
+            // Optional: Cleanup if total cache gets too large
+            if (stats.total > maxCacheSize * 4) {
+                console.log("Cache getting large, considering cleanup...")
+            }
+        }
+    }
 
     Component.onCompleted: {
         initDatabase()
         loadCache()
+        
+        // Log initial cache stats
+        console.log("TidalCache initialized with LRU, max size per type:", maxCacheSize)
     }
 
     // Verbindungen zu den Python-Signalen
@@ -407,7 +468,9 @@ id: root
 
     // Cache-Speicherfunktionen
     function saveTrackToCache(trackData) {
-        trackCache[trackData.trackid] = trackData
+        // PERFORMANCE: Use LRU cache instead of unlimited growth
+        addToLRU(trackCache, trackAccessOrder, trackData.trackid, trackData)
+        
         db.transaction(function(tx) {
             tx.executeSql('INSERT OR REPLACE INTO tracks(id, data, timestamp) VALUES(?, ?, ?)',
                 [trackData.trackid, JSON.stringify(trackData), trackData.timestamp])
@@ -415,7 +478,9 @@ id: root
     }
 
     function saveAlbumToCache(albumData) {
-        albumCache[albumData.albumid] = albumData
+        // PERFORMANCE: Use LRU cache
+        addToLRU(albumCache, albumAccessOrder, albumData.albumid, albumData)
+        
         db.transaction(function(tx) {
             tx.executeSql('INSERT OR REPLACE INTO albums(id, data, timestamp) VALUES(?, ?, ?)',
                 [albumData.albumid, JSON.stringify(albumData), albumData.timestamp])
@@ -423,7 +488,9 @@ id: root
     }
 
     function saveArtistToCache(artistData) {
-        artistCache[artistData.artistid] = artistData
+        // PERFORMANCE: Use LRU cache
+        addToLRU(artistCache, artistAccessOrder, artistData.artistid, artistData)
+        
         db.transaction(function(tx) {
             tx.executeSql('INSERT OR REPLACE INTO artists(id, data, timestamp) VALUES(?, ?, ?)',
                 [artistData.artistid, JSON.stringify(artistData), artistData.timestamp])
@@ -431,7 +498,9 @@ id: root
     }
 
     function savePlaylistToCache(playlistData) {
-        playlistCache[playlistData.playlistid] = playlistData
+        // PERFORMANCE: Use LRU cache
+        addToLRU(playlistCache, playlistAccessOrder, playlistData.playlistid, playlistData)
+        
         db.transaction(function(tx) {
             tx.executeSql('INSERT OR REPLACE INTO playlists(id, data, timestamp) VALUES(?, ?, ?)',
                 [playlistData.playlistid, JSON.stringify(playlistData), playlistData.timestamp])
@@ -439,32 +508,55 @@ id: root
     }
 
     function saveMixToCache(mixData) {
-        mixCache[mixData.mixid] = mixData
+        // PERFORMANCE: Use LRU cache
+        addToLRU(mixCache, mixAccessOrder, mixData.mixid, mixData)
+        
         db.transaction(function(tx) {
             tx.executeSql('INSERT OR REPLACE INTO mixes(id, data, timestamp) VALUES(?, ?, ?)',
                 [mixData.mixid, JSON.stringify(mixData), mixData.timestamp])
         })
     }
 
-    // Getter-Funktionen
+    // Getter-Funktionen with LRU touch
     function getTrack(id) {
-        return trackCache[id] || null
+        var track = trackCache[id] || null
+        if (track) {
+            // PERFORMANCE: Update LRU access order
+            touchLRU(trackAccessOrder, id)
+        }
+        return track
     }
 
     function getAlbum(id) {
-        return albumCache[id] || null
+        var album = albumCache[id] || null
+        if (album) {
+            touchLRU(albumAccessOrder, id)
+        }
+        return album
     }
 
     function getArtist(id) {
-        return artistCache[id] || null
+        var artist = artistCache[id] || null
+        if (artist) {
+            touchLRU(artistAccessOrder, id)
+        }
+        return artist
     }
 
     function getPlaylist(id) {
-        return playlistCache[id] || null
+        var playlist = playlistCache[id] || null
+        if (playlist) {
+            touchLRU(playlistAccessOrder, id)
+        }
+        return playlist
     }
 
     function getMix(id) {
-        return mixCache[id] || null
+        var mix = mixCache[id] || null
+        if (mix) {
+            touchLRU(mixAccessOrder, id)
+        }
+        return mix
     }        
 
     // Cache bereinigen

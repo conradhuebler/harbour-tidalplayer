@@ -145,6 +145,7 @@ Item {
     // Beim Laden
     function loadCurrentPlaylistState() {
         // Check if auto-load is enabled
+        console.log("loadCurrentPlaylistState called, auto_load_playlist:", applicationWindow.settings.auto_load_playlist, "resume_playback:", applicationWindow.settings.resume_playback)
         if (!applicationWindow.settings.auto_load_playlist) {
             console.log("Auto-load playlist disabled, skipping")
             return
@@ -176,8 +177,11 @@ Item {
         
         // Position wiederherstellen
         playlistManager.currentIndex = position
-        if(applicationWindow.settings.resume_playback)
+        console.log("Setting currentIndex to:", position, "resume_playback:", applicationWindow.settings.resume_playback)
+        if(applicationWindow.settings.resume_playback) {
+            console.log("Resuming playback at position:", position)
             playlistManager.playPosition(position);
+        }
     }
     Component.onCompleted: {
         initDatabase();

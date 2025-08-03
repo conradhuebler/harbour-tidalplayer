@@ -77,10 +77,17 @@ Item {
     }
 
     function clearTokens() {
+        // Check if user wants to stay logged in
+        if (applicationWindow.settings.stay_logged_in) {
+            console.log("Stay logged in is enabled - not clearing tokens")
+            return
+        }
+        
+        console.log("Clearing authentication tokens")
         applicationWindow.settings.token_type = ""
         applicationWindow.settings.access_token = ""
         applicationWindow.settings.refresh_token = ""
         applicationWindow.settings.expiry_time = ""
-        //isLoggedIn = false
+        updateSettings()
     }
 }

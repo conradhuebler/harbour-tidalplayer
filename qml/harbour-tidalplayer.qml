@@ -32,6 +32,7 @@ ApplicationWindow
         property bool resume_playback : false
         property bool hide_player: false
         property bool auto_load_playlist: true
+        property bool stay_logged_in: false
 
         property bool recentList: true
         property bool yourList: true //shows currently popular playlists
@@ -93,6 +94,12 @@ ApplicationWindow
         id: autoLoadPlaylist
         key : "/autoLoadPlaylist"
         defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: stayLoggedInConfig
+        key : "/stayLoggedIn"
+        defaultValue: false
     }
 
     ConfigurationValue {
@@ -432,6 +439,7 @@ ApplicationWindow
             resumePlayback.value = applicationWindow.settings.resume_playback
             hidePlayerOnFinished.value = applicationWindow.settings.hide_player
             autoLoadPlaylist.value = applicationWindow.settings.auto_load_playlist
+            stayLoggedInConfig.value = applicationWindow.settings.stay_logged_in
 
             recentListConfig.value = applicationWindow.settings.recentList
             yourListConfig.value = applicationWindow.settings.yourList
@@ -445,8 +453,31 @@ ApplicationWindow
         }
     }
 
+    // PERFORMANCE: Defer non-critical initialization
+    Timer {
+        id: deferredInitTimer
+        interval: 100  // 100ms delay
+        running: false
+        repeat: false
+        onTriggered: {
+            // Load non-critical settings after initial UI render
+            applicationWindow.settings.recentList = recentListConfig.value
+            applicationWindow.settings.yourList = yourListConfig.value
+            applicationWindow.settings.topartistList = topartistListConfig.value
+            applicationWindow.settings.topalbumsList = topalbumsListConfig.value
+            applicationWindow.settings.toptrackList = toptrackListConfig.value
+            applicationWindow.settings.personalPlaylistList = personalPlaylistListConfig.value
+            applicationWindow.settings.dailyMixesList = dailyMixesListConfig.value
+            applicationWindow.settings.radioMixesList = radioMixesListConfig.value
+            applicationWindow.settings.topArtistsList = topArtistsListConfig.value
+            
+            console.log("Deferred settings loaded")
+        }
+    }
+
     Component.onCompleted:
     {
+        // CRITICAL settings - load immediately
         applicationWindow.settings.token_type = token_type.value
         applicationWindow.settings.access_token = access_token.value
         applicationWindow.settings.refresh_token = refresh_token.value
@@ -456,21 +487,15 @@ ApplicationWindow
         applicationWindow.settings.resume_playback = resumePlayback.value
         applicationWindow.settings.hide_player = hidePlayerOnFinished.value
         applicationWindow.settings.auto_load_playlist = autoLoadPlaylist.value
+        applicationWindow.settings.stay_logged_in = stayLoggedInConfig.value
         tidalApi.quality = audioQuality.value
 
-        applicationWindow.settings.recentList = recentListConfig.value
-        applicationWindow.settings.yourList = yourListConfig.value
-        applicationWindow.settings.topartistList = topartistListConfig.value
-        applicationWindow.settings.topalbumsList = topalbumsListConfig.value
-        applicationWindow.settings.toptrackList = toptrackListConfig.value
-        applicationWindow.settings.personalPlaylistList = personalPlaylistListConfig.value
-
-        applicationWindow.settings.dailyMixesList = dailyMixesListConfig.value
-        applicationWindow.settings.radioMixesList = radioMixesListConfig.value
-        applicationWindow.settings.topArtistsList = topArtistsListConfig.value
-
+        // PERFORMANCE: Critical initialization first
         authManager.checkAndLogin()
         mprisPlayer.setCanControl(true)
+        
+        // PERFORMANCE: Defer non-critical settings loading
+        deferredInitTimer.start()
     }
 
     Component.onDestruction:
@@ -484,6 +509,7 @@ ApplicationWindow
         resumePlayback.value = applicationWindow.settings.resume_playback
         hidePlayerOnFinished.value = applicationWindow.settings.hide_player
         autoLoadPlaylist.value = applicationWindow.settings.auto_load_playlist
+        stayLoggedInConfig.value = applicationWindow.settings.stay_logged_in
 
         recentListConfig.value = applicationWindow.settings.recentList
         yourListConfig.value = applicationWindow.settings.yourList

@@ -62,6 +62,9 @@ Item {
         anchors.bottomMargin: miniPlayerPanel.height * 0.4
         // highlightFollowsCurrentItem: true //introduced by Pawel for removing of tracks
 
+        // PERFORMANCE: Virtual scrolling optimizations
+        cacheBuffer: height * 2        // Cache 2 screens worth of content
+        
         // Add smooth scrolling properties
         highlightRangeMode: ListView.ApplyRange
         highlightMoveDuration: 1000  // Duration of the scroll animation in milliseconds

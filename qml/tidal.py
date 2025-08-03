@@ -275,52 +275,71 @@ class Tidal:
         pyotherside.send('loadingStarted')
         result = self.session.search(text)
 
-        # Tracks verarbeiten
+        # OLD: Individual signals (many bridge calls)
+        # NEW: Batch processing for better performance
+        search_results = {
+            "tracks": [],
+            "artists": [],
+            "albums": [],
+            "playlists": [],
+            "videos": [],
+            "mixes": []
+        }
+
+        # Batch process tracks
         if "tracks" in result:
             for track in result["tracks"]:
                 if track_info := self.handle_track(track):
-                    #search_results["tracks"].append(track_info)
+                    search_results["tracks"].append(track_info)
                     self.send_object("cacheTrack", track_info)
-                    self.send_object("foundTrack", track_info)
 
-        # Artists verarbeiten
+        # Batch process artists
         if "artists" in result:
             for artist in result["artists"]:
                 if artist_info := self.handle_artist(artist):
-                    #search_results["artists"].append(artist_info)
+                    search_results["artists"].append(artist_info)
                     self.send_object("cacheArtist", artist_info)
-                    self.send_object("foundArtist", artist_info)
 
-        # Albums verarbeiten
+        # Batch process albums
         if "albums" in result:
             for album in result["albums"]:
                 if album_info := self.handle_album(album):
-                    #search_results["albums"].append(album_info)
+                    search_results["albums"].append(album_info)
                     self.send_object("cacheAlbum", album_info)
-                    self.send_object("foundAlbum", album_info)
 
+        # Batch process playlists
         if "playlists" in result:
             for playlist in result["playlists"]:
                 if playlist_info := self.handle_playlist(playlist):
-                    #search_results["playlists"].append(playlist_info)
-                    self.send_object("foundPlaylist", playlist_info)
+                    search_results["playlists"].append(playlist_info)
 
+        # Batch process videos
         if "videos" in result:
             for video in result["videos"]:
                 if video_info := self.handle_video(video):
-                    #search_results["videos"].append(video_info)
-                    self.send_object("foundVideo", video_info)
+                    search_results["videos"].append(video_info)
 
+        # Batch process mixes
         if "mixes" in result:
             for mix in result["mixes"]:
                 if mix_info := self.handle_mix(mix):
-                    #search_results["videos"].append(video_info)
-                    self.send_object("foundMix", mix_info)
+                    search_results["mixes"].append(mix_info)
 
-        # Gesamtergebnis senden
-        #self.send_object("search_results", search_results)
+        # PERFORMANCE: Send all results in batches instead of individually
+        if search_results["tracks"]:
+            pyotherside.send("foundTracksBatch", search_results["tracks"])
+        if search_results["artists"]:
+            pyotherside.send("foundArtistsBatch", search_results["artists"])
+        if search_results["albums"]:
+            pyotherside.send("foundAlbumsBatch", search_results["albums"])
+        if search_results["playlists"]:
+            pyotherside.send("foundPlaylistsBatch", search_results["playlists"])
+        if search_results["videos"]:
+            pyotherside.send("foundVideosBatch", search_results["videos"])
+        if search_results["mixes"]:
+            pyotherside.send("foundMixesBatch", search_results["mixes"])
+
         pyotherside.send('loadingFinished')
-        # mainly for testing, i do return ..
         return result
 
     def getMixInfo(self, id):
@@ -401,19 +420,33 @@ class Tidal:
         finally:
             pyotherside.send('loadingFinished')
 
-    def playMix(self, id,autoPlay=False):
-        pyotherside.send('loadingStarted')
-        mix = self.session.mix(id)
-        mix_info = self.handle_mix(mix)
-        if mix_info:
-            for track in mix.items(): #tracks():
-                track_info = self.handle_track(track)
-                if track_info:
-                    pyotherside.send("cacheTrack", track_info)
-                    pyotherside.send("addTracktoPL", track_info['trackid'])
-
-        pyotherside.send("fillFinished", autoPlay)
-        pyotherside.send('loadingFinished')
+    def playMix(self, id, autoPlay=False):
+        try:
+            pyotherside.send('loadingStarted')
+            mix = self.session.mix(id)
+            mix_info = self.handle_mix(mix)
+            
+            if mix_info:
+                tracks = []
+                for track in mix.items():
+                    if track_info := self.handle_track(track):
+                        pyotherside.send("cacheTrack", track_info)
+                        tracks.append(track_info)
+                
+                # Send mix replacement signal (like playlist)
+                self.send_object("mix_replace", {
+                    "mix": mix_info,
+                    "tracks": tracks
+                })
+                
+                # Start playback if requested
+                if autoPlay and tracks:
+                    self.send_object("play_track", tracks[0])
+                    
+            pyotherside.send('loadingFinished')
+        except Exception as e:
+            self.send_object("error", {"message": str(e)})
+            pyotherside.send('loadingFinished')
 
 #  not sure if this method is used at all
     def playPlaylist(self, id):
