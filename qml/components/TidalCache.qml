@@ -22,6 +22,17 @@ id: root
     property var mixAccessOrder: []
     
     property var db
+    
+    // PERFORMANCE: Database batching properties
+    property var pendingWrites: []
+    property bool batchWriteInProgress: false
+    property int batchSize: 50           // Process 50 writes per batch
+    property int batchTimeout: 2000      // Batch timeout in milliseconds
+    
+    // PERFORMANCE: Incremental cleanup properties
+    property bool cleanupInProgress: false
+    property int cleanupBatchSize: 25    // Clean 25 entries per batch
+    property var cleanupQueue: []        // Queue of cleanup operations
 
     // PERFORMANCE: LRU Cache Management Functions
     function addToLRU(cache, accessOrder, key, value) {
@@ -62,10 +73,177 @@ id: root
             var stats = getCacheStats()
             console.log("Cache stats:", JSON.stringify(stats))
             
-            // Optional: Cleanup if total cache gets too large
-            if (stats.total > maxCacheSize * 4) {
-                console.log("Cache getting large, considering cleanup...")
+            // PERFORMANCE: Trigger incremental cleanup if cache gets large
+            if (stats.total > maxCacheSize * 3) {
+                console.log("Cache getting large, starting incremental cleanup...")
+                startIncrementalCleanup()
             }
+        }
+    }
+    
+    // PERFORMANCE: Database batch write timer
+    Timer {
+        id: batchWriteTimer
+        interval: batchTimeout
+        running: false
+        repeat: false
+        onTriggered: {
+            if (pendingWrites.length > 0) {
+                processBatchWrites()
+            }
+        }
+    }
+    
+    // PERFORMANCE: Incremental cleanup timer
+    Timer {
+        id: incrementalCleanupTimer
+        interval: 100  // 100ms between cleanup batches
+        running: false
+        repeat: true
+        onTriggered: {
+            if (cleanupQueue.length === 0) {
+                running = false
+                cleanupInProgress = false
+                console.log("PERFORMANCE: Incremental cleanup completed")
+                return
+            }
+            
+            processCleanupBatch()
+        }
+    }
+
+    // PERFORMANCE: Database batch processing functions
+    function queueWrite(table, data) {
+        pendingWrites.push({
+            table: table,
+            data: data,
+            timestamp: Date.now()
+        })
+        
+        // Start batch timer if not running
+        if (!batchWriteTimer.running) {
+            batchWriteTimer.start()
+        }
+        
+        // Process immediately if batch is full
+        if (pendingWrites.length >= batchSize) {
+            batchWriteTimer.stop()
+            processBatchWrites()
+        }
+    }
+    
+    function processBatchWrites() {
+        if (batchWriteInProgress || pendingWrites.length === 0) return
+        
+        batchWriteInProgress = true
+        var writesToProcess = pendingWrites.splice(0, batchSize)
+        
+        console.log("PERFORMANCE: Processing", writesToProcess.length, "database writes in batch")
+        
+        db.transaction(function(tx) {
+            for (var i = 0; i < writesToProcess.length; i++) {
+                var write = writesToProcess[i]
+                try {
+                    // Extract correct ID field based on table
+                    var id = write.data.trackid || write.data.albumid || write.data.artistid || 
+                             write.data.playlistid || write.data.mixid
+                    tx.executeSql('INSERT OR REPLACE INTO ' + write.table + '(id, data, timestamp) VALUES(?, ?, ?)',
+                        [id, JSON.stringify(write.data), write.timestamp])
+                } catch (e) {
+                    console.error("Batch write error:", e, "for table:", write.table)
+                }
+            }
+        })
+        
+        batchWriteInProgress = false
+        
+        // Process remaining writes if any
+        if (pendingWrites.length > 0) {
+            batchWriteTimer.start()
+        }
+    }
+    
+    // PERFORMANCE: Incremental cleanup functions
+    function startIncrementalCleanup() {
+        if (cleanupInProgress) {
+            console.log("PERFORMANCE: Cleanup already in progress, skipping")
+            return
+        }
+        
+        console.log("PERFORMANCE: Starting incremental cache cleanup")
+        cleanupInProgress = true
+        cleanupQueue = []
+        
+        // Queue all cache types for cleanup
+        var cacheTypes = [
+            {name: 'tracks', cache: trackCache, accessOrder: trackAccessOrder},
+            {name: 'albums', cache: albumCache, accessOrder: albumAccessOrder},
+            {name: 'artists', cache: artistCache, accessOrder: artistAccessOrder},
+            {name: 'playlists', cache: playlistCache, accessOrder: playlistAccessOrder},
+            {name: 'mixes', cache: mixCache, accessOrder: mixAccessOrder}
+        ]
+        
+        for (var i = 0; i < cacheTypes.length; i++) {
+            var cacheType = cacheTypes[i]
+            var keys = Object.keys(cacheType.cache)
+            
+            // Split keys into batches
+            for (var j = 0; j < keys.length; j += cleanupBatchSize) {
+                var batch = keys.slice(j, j + cleanupBatchSize)
+                cleanupQueue.push({
+                    type: cacheType.name,
+                    cache: cacheType.cache,
+                    accessOrder: cacheType.accessOrder,
+                    keys: batch
+                })
+            }
+        }
+        
+        incrementalCleanupTimer.start()
+    }
+    
+    function processCleanupBatch() {
+        if (cleanupQueue.length === 0) return
+        
+        var batch = cleanupQueue.shift()
+        var now = Date.now()
+        var expiredKeys = []
+        
+        // Check which keys are expired
+        for (var i = 0; i < batch.keys.length; i++) {
+            var key = batch.keys[i]
+            var item = batch.cache[key]
+            if (item && (now - item.timestamp) > maxCacheAge) {
+                expiredKeys.push(key)
+            }
+        }
+        
+        if (expiredKeys.length > 0) {
+            console.log("PERFORMANCE: Cleaning", expiredKeys.length, "expired", batch.type, "entries")
+            
+            // Remove from cache and access order
+            for (var j = 0; j < expiredKeys.length; j++) {
+                var expiredKey = expiredKeys[j]
+                delete batch.cache[expiredKey]
+                
+                var orderIndex = batch.accessOrder.indexOf(expiredKey)
+                if (orderIndex > -1) {
+                    batch.accessOrder.splice(orderIndex, 1)
+                }
+            }
+            
+            // Queue database cleanup
+            queueDatabaseCleanup(batch.type, expiredKeys)
+        }
+    }
+    
+    function queueDatabaseCleanup(tableName, expiredKeys) {
+        // Use batch write system for database cleanup
+        for (var i = 0; i < expiredKeys.length; i++) {
+            queueWrite(tableName + '_delete', {
+                id: expiredKeys[i],
+                operation: 'DELETE'
+            })
         }
     }
 
@@ -74,7 +252,7 @@ id: root
         loadCache()
         
         // Log initial cache stats
-        console.log("TidalCache initialized with LRU, max size per type:", maxCacheSize)
+        console.log("TidalCache initialized with LRU + DB batching, max size per type:", maxCacheSize)
     }
 
     // Verbindungen zu den Python-Signalen
@@ -466,55 +644,45 @@ id: root
         cleanOldCache()
     }
 
-    // Cache-Speicherfunktionen
+    // Cache-Speicherfunktionen - Now with Database Batching
     function saveTrackToCache(trackData) {
         // PERFORMANCE: Use LRU cache instead of unlimited growth
         addToLRU(trackCache, trackAccessOrder, trackData.trackid, trackData)
         
-        db.transaction(function(tx) {
-            tx.executeSql('INSERT OR REPLACE INTO tracks(id, data, timestamp) VALUES(?, ?, ?)',
-                [trackData.trackid, JSON.stringify(trackData), trackData.timestamp])
-        })
+        // PERFORMANCE: Queue write instead of immediate transaction
+        queueWrite('tracks', trackData)
     }
 
     function saveAlbumToCache(albumData) {
         // PERFORMANCE: Use LRU cache
         addToLRU(albumCache, albumAccessOrder, albumData.albumid, albumData)
         
-        db.transaction(function(tx) {
-            tx.executeSql('INSERT OR REPLACE INTO albums(id, data, timestamp) VALUES(?, ?, ?)',
-                [albumData.albumid, JSON.stringify(albumData), albumData.timestamp])
-        })
+        // PERFORMANCE: Queue write instead of immediate transaction
+        queueWrite('albums', albumData)
     }
 
     function saveArtistToCache(artistData) {
         // PERFORMANCE: Use LRU cache
         addToLRU(artistCache, artistAccessOrder, artistData.artistid, artistData)
         
-        db.transaction(function(tx) {
-            tx.executeSql('INSERT OR REPLACE INTO artists(id, data, timestamp) VALUES(?, ?, ?)',
-                [artistData.artistid, JSON.stringify(artistData), artistData.timestamp])
-        })
+        // PERFORMANCE: Queue write instead of immediate transaction
+        queueWrite('artists', artistData)
     }
 
     function savePlaylistToCache(playlistData) {
         // PERFORMANCE: Use LRU cache
         addToLRU(playlistCache, playlistAccessOrder, playlistData.playlistid, playlistData)
         
-        db.transaction(function(tx) {
-            tx.executeSql('INSERT OR REPLACE INTO playlists(id, data, timestamp) VALUES(?, ?, ?)',
-                [playlistData.playlistid, JSON.stringify(playlistData), playlistData.timestamp])
-        })
+        // PERFORMANCE: Queue write instead of immediate transaction
+        queueWrite('playlists', playlistData)
     }
 
     function saveMixToCache(mixData) {
         // PERFORMANCE: Use LRU cache
         addToLRU(mixCache, mixAccessOrder, mixData.mixid, mixData)
         
-        db.transaction(function(tx) {
-            tx.executeSql('INSERT OR REPLACE INTO mixes(id, data, timestamp) VALUES(?, ?, ?)',
-                [mixData.mixid, JSON.stringify(mixData), mixData.timestamp])
-        })
+        // PERFORMANCE: Queue write instead of immediate transaction
+        queueWrite('mixes', mixData)
     }
 
     // Getter-Funktionen with LRU touch
@@ -559,48 +727,10 @@ id: root
         return mix
     }        
 
-    // Cache bereinigen
+    // PERFORMANCE: Non-blocking cache cleanup - triggers incremental cleanup
     function cleanOldCache() {
-        var now = Date.now()
-        db.transaction(function(tx) {
-            // Alte Einträge aus allen Tabellen löschen
-            tx.executeSql('DELETE FROM tracks WHERE timestamp < ?', [now - maxCacheAge])
-            tx.executeSql('DELETE FROM albums WHERE timestamp < ?', [now - maxCacheAge])
-            tx.executeSql('DELETE FROM artists WHERE timestamp < ?', [now - maxCacheAge])
-            tx.executeSql('DELETE FROM playlists WHERE timestamp < ?', [now - maxCacheAge])
-            tx.executeSql('DELETE FROM mixes WHERE timestamp < ?', [now - maxCacheAge])
-
-            // Cache-Objekte aktualisieren
-            var rs = tx.executeSql('SELECT * FROM tracks')
-            trackCache = ({})
-            for(var i = 0; i < rs.rows.length; i++) {
-                trackCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
-            }
-
-            rs = tx.executeSql('SELECT * FROM albums')
-            albumCache = ({})
-            for(i = 0; i < rs.rows.length; i++) {
-                albumCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
-            }
-
-            rs = tx.executeSql('SELECT * FROM artists')
-            artistCache = ({})
-            for(i = 0; i < rs.rows.length; i++) {
-                artistCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
-            }
-
-            rs = tx.executeSql('SELECT * FROM playlists')
-            playlistCache = ({})
-            for(i = 0; i < rs.rows.length; i++) {
-                playlistCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
-            }
-
-            rs = tx.executeSql('SELECT * FROM mixes')
-            mixCache = ({})
-            for(i = 0; i < rs.rows.length; i++) {
-                mixCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
-            }    
-        })
+        console.log("PERFORMANCE: Triggering incremental cache cleanup instead of blocking cleanup")
+        startIncrementalCleanup()
     }
 
     // Cache-Statistiken

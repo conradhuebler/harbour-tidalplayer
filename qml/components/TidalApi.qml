@@ -98,11 +98,49 @@ Item {
 
     property bool albums: true
     property bool artists: true
+    
+    // PERFORMANCE: Async-First API properties
+    property bool loading: false
+    property var pendingRequests: ({})  // Track pending requests by ID
+    property int requestCounter: 0      // Generate unique request IDs
+    
+    // Request queue for batching
+    property var requestQueue: []
+    property bool processingQueue: false
+    
+    // PERFORMANCE: Request Deduplication
+    property var activeRequests: ({})      // Track active requests by signature
+    property var requestCache: ({})        // Cache recent request results
+    property int cacheTimeout: 30000       // 30 seconds cache timeout
     property bool tracks: true
     property bool playlists: true
 
     property bool loginTrue: false
-    property bool loading: false
+    
+    // PERFORMANCE: Request processing timer
+    Timer {
+        id: requestProcessingTimer
+        interval: 10  // 10ms between requests to prevent blocking
+        repeat: false
+        running: false
+        onTriggered: {
+            if (requestQueue.length > 0) {
+                var request = requestQueue.shift()
+                console.log("Processing async request:", request.method)
+                pythonTidal.call(request.method, request.params)
+                // Continue processing if more requests
+                if (requestQueue.length > 0) {
+                    start()
+                }
+            } else {
+                processingQueue = false
+                if (Object.keys(pendingRequests).length === 0) {
+                    loading = false
+                }
+            }
+        }
+    }
+  //  property bool loading: false
 
     property string playlist_track: ""
     property string playlist_artist: ""
@@ -526,10 +564,141 @@ Item {
             [tokenType, accessToken, refreshToken, expiryTime])
     }
 
-    // Search Funktionen
+    // PERFORMANCE: Request Deduplication functions
+    function generateRequestSignature(method, params) {
+        return method + ":" + JSON.stringify(params || [])
+    }
+    
+    function isRequestCached(signature) {
+        var cached = requestCache[signature]
+        if (cached && (Date.now() - cached.timestamp) < cacheTimeout) {
+            return cached.result
+        }
+        return null
+    }
+    
+    function cacheRequestResult(signature, result) {
+        requestCache[signature] = {
+            result: result,
+            timestamp: Date.now()
+        }
+        
+        // Clean old cache entries
+        cleanRequestCache()
+    }
+    
+    function cleanRequestCache() {
+        var now = Date.now()
+        for (var sig in requestCache) {
+            if ((now - requestCache[sig].timestamp) > cacheTimeout) {
+                delete requestCache[sig]
+            }
+        }
+    }
+
+    // PERFORMANCE: Async-First API Management
+    function generateRequestId() {
+        return ++requestCounter
+    }
+    
+    function queueRequest(method, params, callback) {
+        var signature = generateRequestSignature(method, params)
+        
+        // PERFORMANCE: Check if result is cached
+        var cachedResult = isRequestCached(signature)
+        if (cachedResult) {
+            console.log("DEDUP: Using cached result for:", signature)
+            if (callback) {
+                // Use Qt.callLater to call callback asynchronously
+                Qt.callLater(callback, cachedResult)
+            }
+            return -1  // Cached request ID
+        }
+        
+        // PERFORMANCE: Check if request is already active
+        if (activeRequests[signature]) {
+            console.log("DEDUP: Request already active, attaching callback:", signature)
+            if (callback) {
+                activeRequests[signature].callbacks.push(callback)
+            }
+            return activeRequests[signature].id
+        }
+        
+        // New request
+        var requestId = generateRequestId()
+        var request = {
+            id: requestId,
+            method: method,
+            params: params || [],
+            callback: callback,
+            callbacks: callback ? [callback] : [],
+            timestamp: Date.now(),
+            signature: signature
+        }
+        
+        // Mark as active
+        activeRequests[signature] = request
+        
+        requestQueue.push(request)
+        pendingRequests[requestId] = request
+        
+        // Process queue if not already processing
+        if (!processingQueue) {
+            processRequestQueue()
+        }
+        
+        return requestId
+    }
+    
+    function processRequestQueue() {
+        if (processingQueue || requestQueue.length === 0) return
+        
+        processingQueue = true
+        loading = true
+        
+        // Start the dedicated request processing timer
+        requestProcessingTimer.start()
+    }
+    
+    function completeRequest(requestId, result) {
+        if (pendingRequests[requestId]) {
+            var request = pendingRequests[requestId]
+            
+            // PERFORMANCE: Cache the result for deduplication
+            if (request.signature) {
+                cacheRequestResult(request.signature, result)
+                
+                // Remove from active requests
+                delete activeRequests[request.signature]
+                
+                // Call all callbacks for deduplicated requests
+                for (var i = 0; i < request.callbacks.length; i++) {
+                    if (request.callbacks[i]) {
+                        request.callbacks[i](result)
+                    }
+                }
+            } else if (request.callback) {
+                request.callback(result)
+            }
+            
+            delete pendingRequests[requestId]
+            
+            // Check if all requests completed
+            if (Object.keys(pendingRequests).length === 0) {
+                loading = false
+            }
+        }
+    }
+
+    // Search Funktionen - Now Async-First
     function genericSearch(text) {
-        console.log("generic search", text)
-        pythonTidal.call("tidal.Tidaler.genericSearch", [text])
+        console.log("ASYNC: generic search", text)
+        // Clear previous results immediately for instant feedback
+        searchResults({tracks: [], albums: [], artists: [], playlists: []})
+        
+        return queueRequest("tidal.Tidaler.genericSearch", [text], function(result) {
+            console.log("Search completed for:", text)
+        })
     }
 
     function reInit() {
@@ -589,10 +758,12 @@ Item {
         return returnValue
     }
 
-    // Album Funktionen
+    // Album Funktionen - Now Async-First
     function getAlbumTracks(id) {
-        console.log("Get album tracks", id)
-        pythonTidal.call("tidal.Tidaler.getAlbumTracks", [id])
+        console.log("ASYNC: Get album tracks", id)
+        return queueRequest("tidal.Tidaler.getAlbumTracks", [id], function(result) {
+            console.log("Album tracks loaded for:", id)
+        })
     }
 
     function getAlbumInfo(id) {
