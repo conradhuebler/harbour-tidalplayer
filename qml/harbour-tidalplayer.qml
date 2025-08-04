@@ -45,6 +45,9 @@ ApplicationWindow
         property bool dailyMixesList: true // custom mixes
         property bool radioMixesList: true // personal radio stations
         property bool topArtistsList: true // your top artists (most played)
+        property bool enableTrackPreloading: false // dual audio player for seamless transitions
+        property int crossfadeMode: 1 // crossfade mode: 0=No Fade, 1=Timer, 2=Buffer Crossfade, 3=Buffer Fade-Out
+        property int crossfadeTimeMs: 1000 // crossfade time in milliseconds
     }
 
     // Configuration Storage
@@ -168,6 +171,24 @@ ApplicationWindow
         id: topArtistsListConfig
         key : "/topArtistsList"
         defaultValue: true
+    }
+    
+    ConfigurationValue {
+        id: enableTrackPreloadingConfig
+        key : "/enableTrackPreloading"
+        defaultValue: false
+    }
+    
+    ConfigurationValue {
+        id: crossfadeModeConfig
+        key : "/crossfadeMode"
+        defaultValue: 1  // Default: Timer Fade
+    }
+    
+    ConfigurationValue {
+        id: crossfadeTimeMsConfig
+        key : "/crossfadeTimeMs"
+        defaultValue: 1000  // Default: 1 second
     }
 
     property int remainingMinutes: 0
@@ -341,7 +362,27 @@ ApplicationWindow
         id: playlistManager
         onCurrentTrackChanged: {
             if (track) {
-                tidalApi.playTrackId(track)
+                console.log("PlaylistManager: Track changed to", track, "- preloading enabled:", mediaController.preloadingEnabled)
+                
+                // Enhanced: Use crossfade system if preloading enabled
+                if (mediaController.preloadingEnabled) {
+                    var trackInfo = cacheManager.getTrackInfo(track)
+                    if (trackInfo && trackInfo.url) {
+                        console.log("PlaylistManager: Using crossfade for track", track, "with cached URL")
+                        if (!mediaController.switchToTrackImmediately(trackInfo.url, track)) {
+                            // Fallback to normal API
+                            console.log("PlaylistManager: Crossfade failed, using normal playback")
+                            tidalApi.playTrackId(track)
+                        }
+                    } else {
+                        console.log("PlaylistManager: No cached URL for track", track, "- requesting via crossfade system")
+                        // Request URL via crossfade system - will load in background while current plays
+                        mediaController.requestTrackForCrossfade(track)
+                    }
+                } else {
+                    // Preloading disabled, use normal API
+                    tidalApi.playTrackId(track)
+                }
             }
         }
 
@@ -444,7 +485,16 @@ ApplicationWindow
         target: playlistManager
         onCurrentId:
         {
-            tidalApi.playTrackId(id)
+            console.log("PlaylistManager: CurrentId signal for", id, "- preloading enabled:", mediaController.preloadingEnabled)
+            
+            // Skip if preloading enabled - handled by onCurrentTrackChanged to avoid duplicates
+            if (mediaController.preloadingEnabled) {
+                console.log("PlaylistManager: Skipping currentId processing - handled by onCurrentTrackChanged")
+                return
+            } else {
+                // Preloading disabled, use normal API
+                tidalApi.playTrackId(id)
+            }
         }
     }
 
@@ -478,6 +528,9 @@ ApplicationWindow
             dailyMixesListConfig.value = applicationWindow.settings.dailyMixesList
             radioMixesListConfig.value = applicationWindow.settings.radioMixesList
             topArtistsListConfig.value = applicationWindow.settings.topArtistsList
+            enableTrackPreloadingConfig.value = applicationWindow.settings.enableTrackPreloading
+            crossfadeModeConfig.value = applicationWindow.settings.crossfadeMode
+            crossfadeTimeMsConfig.value = applicationWindow.settings.crossfadeTimeMs
         }
     }
 
@@ -518,6 +571,9 @@ ApplicationWindow
         applicationWindow.settings.stay_logged_in = stayLoggedInConfig.value
         applicationWindow.settings.useNewHomescreen = useNewHomescreen.value
         applicationWindow.settings.defaultPlayAction = defaultPlayAction.value
+        applicationWindow.settings.enableTrackPreloading = enableTrackPreloadingConfig.value
+        applicationWindow.settings.crossfadeMode = crossfadeModeConfig.value
+        applicationWindow.settings.crossfadeTimeMs = crossfadeTimeMsConfig.value
         tidalApi.quality = audioQuality.value
 
         // PERFORMANCE: Critical initialization first
@@ -551,6 +607,9 @@ ApplicationWindow
         dailyMixesListConfig.value = applicationWindow.settings.dailyMixesList
         radioMixesListConfig.value = applicationWindow.settings.radioMixesList
         topArtistsListConfig.value = applicationWindow.settings.topArtistsList
+        enableTrackPreloadingConfig.value = applicationWindow.settings.enableTrackPreloading
+        crossfadeModeConfig.value = applicationWindow.settings.crossfadeMode
+        crossfadeTimeMsConfig.value = applicationWindow.settings.crossfadeTimeMs
     }
 
 }

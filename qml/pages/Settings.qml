@@ -174,6 +174,80 @@ Page {
             }
 
             TextSwitch {
+                id: enableTrackPreloading
+                visible: tidalApi.loginTrue
+                text: qsTr("Enable Track Pre-loading")
+                description: qsTr("Load next track in background for seamless playback (experimental)")
+                checked: applicationWindow.settings.enableTrackPreloading || false
+                onClicked: {
+                    applicationWindow.settings.enableTrackPreloading = enableTrackPreloading.checked
+                    console.log("Settings: Track preloading toggle clicked:", enableTrackPreloading.checked ? "enabled" : "disabled")
+                    console.log("Settings: applicationWindow.settings.enableTrackPreloading =", applicationWindow.settings.enableTrackPreloading)
+                }
+            }
+
+            ComboBox {
+                id: crossfadeMode
+                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false)
+                label: qsTr("Crossfade Mode")
+                description: qsTr("How tracks transition during seamless playback")
+                
+                menu: ContextMenu {
+                    MenuItem { 
+                        text: qsTr("No Fade Out")
+                        property int value: 0
+                    }
+                    MenuItem { 
+                        text: qsTr("Timer Fade Out") 
+                        property int value: 1
+                    }
+                    MenuItem { 
+                        text: qsTr("Buffer-Dependent Crossfade")
+                        property int value: 2
+                    }
+                    MenuItem { 
+                        text: qsTr("Buffer Fade-Out Only")
+                        property int value: 3
+                    }
+                }
+                
+                currentIndex: {
+                    var mode = applicationWindow.settings.crossfadeMode || 1
+                    switch (mode) {
+                        case 0: return 0
+                        case 1: return 1
+                        case 2: return 2
+                        case 3: return 3
+                        default: return 1
+                    }
+                }
+                
+                onCurrentItemChanged: {
+                    if (currentItem) {
+                        applicationWindow.settings.crossfadeMode = currentItem.value
+                        console.log("Settings: Crossfade mode changed to:", currentItem.value)
+                    }
+                }
+            }
+
+            Slider {
+                id: crossfadeTime
+                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false) && (applicationWindow.settings.crossfadeMode === 1)
+                width: parent.width
+                label: qsTr("Fade Out Time")
+                minimumValue: 200
+                maximumValue: 5000
+                stepSize: 100
+                value: applicationWindow.settings.crossfadeTimeMs || 1000
+                valueText: value + " ms"
+                
+                onValueChanged: {
+                    applicationWindow.settings.crossfadeTimeMs = value
+                    console.log("Settings: Crossfade time changed to:", value + "ms")
+                }
+            }
+
+            TextSwitch {
                 id: hidePlayerOnFinished
                 visible: tidalApi.loginTrue
                 text: qsTr("Hide player on finished")

@@ -91,6 +91,10 @@ Item {
     signal albumTrackAdded(var track_info)
     signal mixTrackAdded(var track_info)
     
+    // Claude Generated: Preload and crossfade signals
+    signal preloadUrlReady(string trackId, string url)
+    signal crossfadeUrlReady(string trackId, string url)
+    
 
     // Properties für die Suche
     property string artistsResults
@@ -405,6 +409,31 @@ Item {
             })
 
             setHandler('playback_info', function(info) {
+                console.log("TidalApi: playback_info received - preload:", root.pendingPreloadId, "crossfade:", root.pendingCrossfadeId)
+                
+                // Get track ID (could be either .id or .trackid)
+                var trackId = info.track.id || info.track.trackid
+                
+                // Check if this is a preload request
+                if (root.pendingPreloadId && trackId && trackId.toString() === root.pendingPreloadId.toString()) {
+                    console.log("TidalApi: Processing preload response for track", trackId)
+                    // Emit preload signal instead of normal playback
+                    preloadUrlReady(trackId.toString(), info.url)
+                    root.pendingPreloadId = "" // Clear the flag
+                    return
+                }
+                
+                // Check if this is a crossfade request
+                if (root.pendingCrossfadeId && trackId && trackId.toString() === root.pendingCrossfadeId.toString()) {
+                    console.log("TidalApi: Processing crossfade response for track", trackId)
+                    // Emit crossfade signal instead of normal playback
+                    crossfadeUrlReady(trackId.toString(), info.url)
+                    root.pendingCrossfadeId = "" // Clear the flag
+                    return
+                }
+                
+                // Normal playback handling
+                console.log("TidalApi: Processing normal playback for track", trackId)
                 mediaController.playUrl(info.url)
                 currentPlayback(info.track)
                 tidalApi.current_track_title = info.track.title
@@ -771,6 +800,36 @@ Item {
                 console.log(typeof name)*/
         })
     }
+
+    // Claude Generated: Track URL fetching for preloading
+    function getTrackUrlForPreload(id) {
+        console.log("TidalApi.getTrackUrlForPreload called with:", id)
+        
+        // Set a flag to indicate this is a preload request
+        root.pendingPreloadId = id.toString()
+        console.log("TidalApi: Set pendingPreloadId to:", root.pendingPreloadId)
+        
+        pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(result) {
+            console.log("TidalApi: Preload URL received for track", id)
+        })
+    }
+    
+    // Claude Generated: Track URL fetching for crossfade
+    function getTrackUrlForCrossfade(id) {
+        console.log("TidalApi.getTrackUrlForCrossfade called with:", id)
+        
+        // Set a flag to indicate this is a crossfade request
+        root.pendingCrossfadeId = id.toString()
+        console.log("TidalApi: Set pendingCrossfadeId to:", root.pendingCrossfadeId)
+        
+        pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(result) {
+            console.log("TidalApi: Crossfade URL received for track", id)
+        })
+    }
+    
+    // Claude Generated: Track request tracking
+    property string pendingPreloadId: ""
+    property string pendingCrossfadeId: ""
 
     function getTrackInfo(id) {
         if (typeof id === 'string') {

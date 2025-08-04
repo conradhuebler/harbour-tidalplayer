@@ -15,23 +15,114 @@ Item {
     property string artwork_url
     property int track_duration
 
-    property alias audio_player: audioPlayer
-    property alias playlist: playlistItem
+    property alias playlist: dualAudioManager.playlist
+    
+    // Track Preloading properties - Claude Generated  
+    property bool preloadingEnabled: applicationWindow.settings.enableTrackPreloading || false
+    property string nextTrackUrl: ""
+    property string nextTrackId: ""
+    property bool preloadInProgress: false
+    property bool expectingPreloadResponse: false
+    
+    // Debug: Monitor preloading state changes
+    onPreloadingEnabledChanged: {
+        console.log("MediaHandler: preloadingEnabled changed to:", preloadingEnabled)
+    }
+    
+    // Dual Audio Manager for seamless transitions - Claude Generated
+    DualAudioManager {
+        id: dualAudioManager
+        preloadingEnabled: mediaHandler.preloadingEnabled
+        crossfadeMode: applicationWindow.settings.crossfadeMode || 1  // Default: Timer Fade
+        crossfadeTimeMs: applicationWindow.settings.crossfadeTimeMs || 1000  // Default: 1 second
+        playerVolume: player_volume
+        trackVolume: track_volume
+        
+        onPositionChanged: {
+            mediaHandler.mediaPositionChanged()
+            
+            // Debug every 30 seconds to avoid spam
+            if (Math.floor(position) % 30 === 0 && Math.floor(position) > 0) {
+                var timeLeft = (duration - position) / 1000
+                console.log("MediaHandler: Position debug - timeLeft:", timeLeft + "s", "preloadInProgress:", preloadInProgress)
+            }
+            
+            // Trigger preload when 10 seconds left
+            if (preloadingEnabled && !preloadInProgress && duration > 0) {
+                var timeLeft = (duration - position) / 1000
+                if (timeLeft <= 10 && timeLeft > 0) {
+                    console.log("MediaHandler: 10 seconds left, attempting preload")
+                    tryPreloadNextTrack()
+                }
+            }
+        }
+        
+        onDurationChanged: {
+            if (duration > 0) {
+                track_duration = duration
+            }
+            mediaHandler.mediaDurationChanged()
+        }
+        
+        onPlaybackStateChanged: {
+            mediaHandler.mediaPlaybackStateChanged()
+            
+            // Update MPRIS status based on playback state
+            if (state === Audio.PlayingState) {
+                mprisPlayer.playbackStatus = Mpris.Playing
+            } else if (state === Audio.PausedState) {
+                mprisPlayer.playbackStatus = Mpris.Paused
+            } else if (state === Audio.StoppedState) {
+                mprisPlayer.playbackStatus = Mpris.Stopped
+            }
+        }
+        
+        onTrackFinished: {
+            // Try seamless transition first
+            if (!blockAutoNext && playlistManager.canNext) {
+                if (dualAudioManager.switchToPreloadedTrack()) {
+                    console.log("MediaHandler: Seamless transition successful")
+                    playlistManager.nextTrack()
+                    updateTrackInfoFromPlaylist()
+                } else {
+                    console.log("MediaHandler: Auto-advancing to next track (normal)")
+                    playlistManager.nextTrack()
+                }
+            } else if (!blockAutoNext) {
+                console.log("MediaHandler: Playlist finished")
+                playlistManager.playlistFinished()
+            }
+        }
+        
+        onPlayerError: {
+            console.error("MediaHandler: Playback error:", error)
+            mprisPlayer.playbackStatus = Mpris.Stopped
+        }
+        
+        onTrackInfoChanged: {
+            console.log("MediaHandler: Track info changed, updating...")
+            updateTrackInfoFromPlaylist()
+        }
+    }
+    
+    // Active player reference for compatibility
+    readonly property var activePlayer: dualAudioManager.activePlayer
+    readonly property var audio_player: activePlayer
     
     // Playback state
-    property bool player_available: playlistItem.itemCount > 0
+    property bool player_available: playlist.itemCount > 0
     property double player_volume: 1.0
     property double track_volume: 1.0
     property bool blockAutoNext: false
     
     // Compatibility properties for existing code
-    property alias position: audioPlayer.position
-    property alias duration: audioPlayer.duration
-    property alias volume: audioPlayer.volume
-    property alias playbackState: audioPlayer.playbackState
-    property alias status: audioPlayer.status
-    property alias source: audioPlayer.source
-    property bool isPlaying: audioPlayer.playbackState === Audio.PlayingState
+    readonly property real position: dualAudioManager.activePlayer ? dualAudioManager.activePlayer.position : 0
+    readonly property real duration: dualAudioManager.activePlayer ? dualAudioManager.activePlayer.duration : 0
+    property real volume: dualAudioManager.activePlayer ? dualAudioManager.activePlayer.volume : 0
+    readonly property int playbackState: dualAudioManager.activePlayer ? dualAudioManager.activePlayer.playbackState : Audio.StoppedState
+    readonly property int status: dualAudioManager.activePlayer ? dualAudioManager.activePlayer.status : Audio.UnknownStatus
+    readonly property string source: dualAudioManager.currentTrackUrl
+    readonly property bool isPlaying: dualAudioManager.activePlayer ? (dualAudioManager.activePlayer.playbackState === Audio.PlayingState) : false
     
     // Current track info (compatibility) - separate properties to avoid binding conflicts
     property string current_track_title: ""
@@ -44,92 +135,7 @@ Item {
     signal mediaPositionChanged()
     signal mediaDurationChanged()
     signal mediaPlaybackStateChanged()
-
-    // Audio player with playlist support
-    Audio {
-        id: audioPlayer
-        
-        playlist: Playlist {
-            id: playlistItem
-            playbackMode: Playlist.Sequential
-
-            onCurrentItemSourceChanged: {
-                console.log('MediaHandler: Track changed to:', currentItemSource)
-                media_source = currentItemSource || ""
-                
-                // Get track info from playlist manager
-                if (playlistManager.currentIndex >= 0) {
-                    var trackId = playlistManager.requestPlaylistItem(playlistManager.currentIndex)
-                    var trackInfo = cacheManager.getTrackInfo(trackId)
-                    if (trackInfo) {
-                        track_id = trackId
-                        track_name = trackInfo.title || ""
-                        album_name = trackInfo.album || ""
-                        artist_name = trackInfo.artist || ""
-                        artwork_url = trackInfo.image || ""
-                        track_duration = trackInfo.duration || 0
-                    }
-                }
-            }
-
-            onItemInserted: function(start_index, end_index) {
-                console.log('MediaHandler: Items inserted:', start_index, '-', end_index)
-            }
-
-            onItemRemoved: function(start_index, end_index) {
-                if (itemCount === 0) {
-                    track_id = ""
-                    track_name = ""
-                    album_name = ""
-                    artist_name = ""
-                    artwork_url = ""
-                    track_duration = 0
-                }
-            }
-        }
-
-        // Playback state handlers
-        onPlaying: {
-            mprisPlayer.playbackStatus = Mpris.Playing
-        }
-
-        onPaused: {
-            mprisPlayer.playbackStatus = Mpris.Paused
-        }
-
-        onStopped: {
-            mprisPlayer.playbackStatus = Mpris.Stopped
-            
-            // Auto-advance to next track unless blocked
-            if (!blockAutoNext && playlistManager.canNext) {
-                console.log("MediaHandler: Auto-advancing to next track")
-                playlistManager.nextTrack()
-            } else if (!blockAutoNext) {
-                console.log("MediaHandler: Playlist finished")
-                playlistManager.playlistFinished()
-            }
-        }
-
-        onError: {
-            console.error("MediaHandler: Playback error:", error, errorString)
-            mprisPlayer.playbackStatus = Mpris.Stopped
-        }
-
-        onDurationChanged: {
-            if (duration > 0) {
-                track_duration = duration
-            }
-            mediaHandler.mediaDurationChanged()
-        }
-
-        onPositionChanged: {
-            mediaHandler.mediaPositionChanged()
-        }
-
-        onPlaybackStateChanged: {
-            mediaHandler.mediaPlaybackStateChanged()
-        }
-    }
+    signal currentTrackChanged(var trackInfo)
 
     // MPRIS integration using Amber.Mpris
     MprisPlayer {
@@ -145,7 +151,7 @@ Item {
         canGoPrevious: playlistManager.canPrev
         canPause: player_available
         canPlay: player_available
-        canSeek: audioPlayer.seekable
+        canSeek: dualAudioManager.activePlayer ? dualAudioManager.activePlayer.seekable : false
         canQuit: false
         canRaise: true
         hasTrackList: true
@@ -156,47 +162,94 @@ Item {
 
         // MPRIS control handlers
         onPauseRequested: {
-            audioPlayer.pause()
+            dualAudioManager.pause()
         }
 
         onPlayRequested: {
-            audioPlayer.play()
+            dualAudioManager.play()
         }
 
         onPlayPauseRequested: {
-            if (audioPlayer.playbackState === Audio.PlayingState) {
-                audioPlayer.pause() 
+            if (isPlaying) {
+                dualAudioManager.pause() 
             } else {
-                audioPlayer.play()
+                dualAudioManager.play()
             }
         }
 
         onStopRequested: {
-            audioPlayer.stop()
+            dualAudioManager.stop()
         }
 
         onNextRequested: {
             console.log('MPRIS: Next requested')
             blockAutoNext = true
+            
+            // Enhanced: Try immediate switch if preloading enabled
+            if (preloadingEnabled && playlistManager.canNext) {
+                var nextIndex = playlistManager.currentIndex + 1
+                if (nextIndex < playlistManager.size) {
+                    var nextTrackId = playlistManager.requestPlaylistItem(nextIndex)
+                    if (nextTrackId) {
+                        var nextTrackInfo = cacheManager.getTrackInfo(nextTrackId)
+                        if (nextTrackInfo && nextTrackInfo.url) {
+                            var bufferProgress = getInactivePlayerBufferProgress()
+                            console.log('MPRIS: Next - buffer progress:', bufferProgress)
+                            
+                            if (switchToTrackImmediately(nextTrackInfo.url, nextTrackId)) {
+                                console.log('MPRIS: Next - seamless switch successful')
+                                playlistManager.nextTrack()
+                                blockAutoNext = false
+                                return
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Fallback to normal next
             playlistManager.nextTrackClicked()
         }
 
         onPreviousRequested: {
             console.log('MPRIS: Previous requested')
+            
+            // Enhanced: Try immediate switch if preloading enabled
+            if (preloadingEnabled && playlistManager.canPrev) {
+                var prevIndex = playlistManager.currentIndex - 1
+                if (prevIndex >= 0) {
+                    var prevTrackId = playlistManager.requestPlaylistItem(prevIndex)
+                    if (prevTrackId) {
+                        var prevTrackInfo = cacheManager.getTrackInfo(prevTrackId)
+                        if (prevTrackInfo && prevTrackInfo.url) {
+                            var bufferProgress = getInactivePlayerBufferProgress()
+                            console.log('MPRIS: Previous - buffer progress:', bufferProgress)
+                            
+                            if (switchToTrackImmediately(prevTrackInfo.url, prevTrackId)) {
+                                console.log('MPRIS: Previous - seamless switch successful')
+                                playlistManager.previousTrack()
+                                return
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Fallback to normal previous
             playlistManager.previousTrackClicked()
         }
 
         onSeekRequested: {
-            var newPos = audioPlayer.position + (offset / 1000000)  // Convert microseconds
-            if (newPos >= 0 && newPos <= audioPlayer.duration) {
-                audioPlayer.seek(newPos)
+            var newPos = position + (offset / 1000000)  // Convert microseconds
+            if (newPos >= 0 && newPos <= duration) {
+                dualAudioManager.seek(newPos)
             }
         }
 
         onSetPositionRequested: {
             var seekPos = position / 1000000  // Convert microseconds to milliseconds
-            if (seekPos >= 0 && seekPos <= audioPlayer.duration) {
-                audioPlayer.seek(seekPos)
+            if (seekPos >= 0 && seekPos <= duration) {
+                dualAudioManager.seek(seekPos)
             }
         }
     }
@@ -225,65 +278,279 @@ Item {
     }
 
     onPlayer_volumeChanged: {
-        audioPlayer.volume = player_volume * track_volume
+        dualAudioManager.playerVolume = player_volume
     }
 
     onTrack_volumeChanged: {
-        audioPlayer.volume = player_volume * track_volume
+        dualAudioManager.trackVolume = track_volume
     }
 
     // Public API functions
     function play() {
-        audioPlayer.play()
+        dualAudioManager.play()
     }
 
     function pause() {
-        audioPlayer.pause()
+        dualAudioManager.pause()
     }
 
     function stop() {
-        audioPlayer.stop()
+        dualAudioManager.stop()
     }
 
     function seek(position) {
-        if (audioPlayer.seekable) {
-            audioPlayer.seek(position)
-        }
+        dualAudioManager.seek(position)
     }
 
     function setSource(url) {
         console.log("MediaHandler: Setting source:", url)
         media_source = url
-        // Clear playlist and add single item
-        playlistItem.clear()
-        if (url) {
-            playlistItem.addItem(url)
-        }
+        dualAudioManager.setSource(url)
     }
 
     function playUrl(url) {
-        console.log("MediaHandler: Playing URL:", url)
+        console.log("MediaHandler: Playing URL:", url, "- preloading enabled:", preloadingEnabled)
         blockAutoNext = true
         setSource(url)
         play()
         blockAutoNext = false
+        
+        // Reset preload state when new track starts
+        console.log("MediaHandler: Resetting preload state for new track")
+        resetPreloadState()
+    }
+    
+    // Enhanced: Play track with immediate switching capability
+    function playTrackWithImmediateSwitch(trackId, url) {
+        console.log("MediaHandler: Playing track with immediate switch:", trackId)
+        
+        // Try immediate switch first if preloading enabled
+        if (preloadingEnabled && switchToTrackImmediately(url, trackId)) {
+            console.log("MediaHandler: Track played via immediate switch")
+            return true
+        } else {
+            // Fallback to normal URL playing
+            console.log("MediaHandler: Using normal playback for track")
+            playUrl(url)
+            return false
+        }
     }
 
     // Playlist management
     function clearPlaylist() {
-        playlistItem.clear()
+        dualAudioManager.clearPlaylist()
     }
 
     function addToPlaylist(url) {
-        playlistItem.addItem(url)
+        dualAudioManager.addToPlaylist(url)
     }
 
     function replacePlaylist(urls) {
-        playlistItem.clear()
-        for (var i = 0; i < urls.length; i++) {
-            playlistItem.addItem(urls[i])
+        dualAudioManager.replacePlaylist(urls)
+    }
+
+    // Preload Functions - Claude Generated
+    /**
+     * Attempts to preload the next track in background
+     */
+    function tryPreloadNextTrack() {
+        console.log("MediaHandler: tryPreloadNextTrack called - enabled:", preloadingEnabled, "inProgress:", preloadInProgress)
+        
+        if (!preloadingEnabled || preloadInProgress) {
+            console.log("MediaHandler: Preload skipped - not enabled or already in progress")
+            return
+        }
+        
+        // Get next track ID from playlist manager
+        var nextIndex = playlistManager.currentIndex + 1
+        console.log("MediaHandler: Current index:", playlistManager.currentIndex, "Next index:", nextIndex, "Playlist size:", playlistManager.size)
+        
+        if (nextIndex >= playlistManager.size) {
+            console.log("MediaHandler: No next track to preload")
+            return
+        }
+        
+        var nextTrackId = playlistManager.requestPlaylistItem(nextIndex)
+        console.log("MediaHandler: Next track ID:", nextTrackId, "Current track ID:", track_id)
+        
+        if (!nextTrackId || nextTrackId === track_id) {
+            console.log("MediaHandler: Invalid or same track ID, skipping preload")
+            return
+        }
+        
+        console.log("MediaHandler: Starting preload for track", nextTrackId)
+        preloadInProgress = true
+        expectingPreloadResponse = true
+        mediaHandler.nextTrackId = nextTrackId
+        
+        // Request URL for next track
+        tidalApi.getTrackUrlForPreload(nextTrackId)
+    }
+    
+    /**
+     * Sets the preloaded URL in the DualAudioManager
+     */
+    function setPreloadUrl(url) {
+        if (!preloadingEnabled || !preloadInProgress) {
+            return
+        }
+        
+        console.log("MediaHandler: Starting preload in DualAudioManager:", url)
+        nextTrackUrl = url
+        
+        // Use DualAudioManager's preload functionality
+        if (dualAudioManager.startPreload(nextTrackId, url)) {
+            console.log("MediaHandler: Preload started successfully")
+        } else {
+            console.log("MediaHandler: Failed to start preload")
+            resetPreloadState()
         }
     }
+    
+    /**
+     * Sets the crossfade URL and initiates crossfade
+     */
+    function setCrossfadeUrl(url, trackId) {
+        if (!preloadingEnabled) {
+            console.log("MediaHandler: Crossfade not enabled, falling back to normal playback")
+            playUrl(url)
+            return
+        }
+        
+        console.log("MediaHandler: Starting crossfade in DualAudioManager:", url, "for track", trackId)
+        
+        // Use DualAudioManager's crossfade functionality
+        if (dualAudioManager.crossfadeToTrack(url, trackId)) {
+            console.log("MediaHandler: Crossfade started successfully")
+            // Update track info will be handled by the crossfade completion
+        } else {
+            console.log("MediaHandler: Failed to start crossfade, using normal playback")
+            playUrl(url)
+        }
+    }
+    
+    /**
+     * Resets preload state
+     */
+    function resetPreloadState() {
+        preloadInProgress = false
+        nextTrackUrl = ""
+        nextTrackId = ""
+        expectingPreloadResponse = false
+        dualAudioManager.resetPreloadState()
+    }
+    
+    /**
+     * Updates track info from current playlist position or crossfade track
+     */
+    function updateTrackInfoFromPlaylist() {
+        var trackId = ""
+        
+        // Use crossfade track ID if available, otherwise use playlist
+        if (dualAudioManager.currentTrackId) {
+            trackId = dualAudioManager.currentTrackId
+            console.log("MediaHandler: Using crossfade track ID:", trackId)
+        } else if (playlistManager.currentIndex >= 0) {
+            trackId = playlistManager.requestPlaylistItem(playlistManager.currentIndex)
+            console.log("MediaHandler: Using playlist track ID:", trackId)
+        }
+        
+        if (trackId) {
+            var trackInfo = cacheManager.getTrackInfo(trackId)
+            if (trackInfo) {
+                track_id = trackId
+                track_name = trackInfo.title || ""
+                album_name = trackInfo.album || ""
+                artist_name = trackInfo.artist || ""
+                artwork_url = trackInfo.image || ""
+                track_duration = trackInfo.duration || 0
+                
+                // Update compatibility properties
+                current_track_title = track_name
+                current_track_artist = artist_name
+                current_track_album = album_name
+                current_track_image = artwork_url
+                current_track_duration = track_duration
+                
+                console.log("MediaHandler: Updated track info for", track_name, "by", artist_name)
+                
+                // Emit signal for MiniPlayer and other components
+                currentTrackChanged({
+                    trackid: trackId,
+                    track_num: playlistManager.currentIndex + 1,
+                    title: track_name,
+                    artist: artist_name,
+                    album: album_name,
+                    image: artwork_url,
+                    duration: track_duration
+                })
+            }
+        }
+    }
+
+    // Handle preload and crossfade responses - Claude Generated
+    Connections {
+        target: tidalApi
+        onPreloadUrlReady: {
+            console.log("MediaHandler: Preload URL ready - expecting:", expectingPreloadResponse, "trackId:", trackId, "nextTrackId:", nextTrackId)
+            if (expectingPreloadResponse && trackId.toString() === nextTrackId.toString()) {
+                console.log("MediaHandler: Received preload URL for track", trackId, "URL:", url)
+                setPreloadUrl(url)
+                expectingPreloadResponse = false
+            } else {
+                console.log("MediaHandler: Unexpected preload response for track", trackId, "(expected:", nextTrackId, ")")
+            }
+        }
+        
+        onCrossfadeUrlReady: {
+            console.log("MediaHandler: Crossfade URL ready - expecting:", expectingCrossfadeResponse, "trackId:", trackId, "crossfadeTrackId:", crossfadeTrackId)
+            if (expectingCrossfadeResponse && trackId.toString() === crossfadeTrackId.toString()) {
+                console.log("MediaHandler: Received crossfade URL for track", trackId, "URL:", url)
+                setCrossfadeUrl(url, trackId)
+                expectingCrossfadeResponse = false
+            } else {
+                console.log("MediaHandler: Unexpected crossfade response for track", trackId, "(expected:", crossfadeTrackId, ")")
+            }
+        }
+    }
+
+    // Enhanced: Immediate track switching for Next/Previous/Selection - Claude Generated
+    function switchToTrackImmediately(url, trackId) {
+        console.log("MediaHandler: Attempting immediate track switch to", trackId)
+        
+        // Use DualAudioManager's crossfade switching for seamless transitions
+        if (dualAudioManager.crossfadeToTrack(url, trackId)) {
+            console.log("MediaHandler: Crossfade switch initiated")
+            // Update track info after successful switch
+            updateTrackInfoFromPlaylist()
+            return true
+        } else {
+            console.log("MediaHandler: Crossfade switch not possible, falling back to normal loading")
+            return false
+        }
+    }
+    
+    function getInactivePlayerBufferProgress() {
+        return dualAudioManager.getInactivePlayerBufferProgress()
+    }
+    
+    // Enhanced: Request track for crossfade - load URL in background while current plays
+    function requestTrackForCrossfade(trackId) {
+        console.log("MediaHandler: Requesting track for crossfade:", trackId)
+        
+        // Set up crossfade request - track will switch when URL is ready
+        crossfadeTrackId = trackId
+        expectingCrossfadeResponse = true
+        
+        // Request URL but handle as crossfade instead of normal playback
+        tidalApi.getTrackUrlForCrossfade(trackId)
+        
+        return true
+    }
+    
+    // Properties for crossfade requests
+    property string crossfadeTrackId: ""
+    property bool expectingCrossfadeResponse: false
 
     // Helper functions
     function seconds_to_minutes_seconds(total_seconds) {
@@ -295,6 +562,7 @@ Item {
 
     Component.onCompleted: {
         console.log("MediaHandler: Initialized with Amber.Mpris")
+        console.log("MediaHandler: Track preloading setting:", preloadingEnabled)
         
         // Set up property bindings after component creation to avoid conflicts
         current_track_title = Qt.binding(function() { return track_name })

@@ -204,7 +204,7 @@ DockedPanel {
                         minimumValue: 0
                         maximumValue: 100
                         enabled: mediaController.duration > 0
-                        visible: false
+                        visible: mediaController.duration > 0 && mediaController.isPlaying
                         height: Theme.paddingMedium
                     }
                     Connections {
@@ -303,15 +303,13 @@ DockedPanel {
     }
 
     Connections {
-        target: tidalApi
-         onCurrentPlayback:
-         {
-            mediaTitle.text = trackinfo.track_num + " - " + trackinfo.title + " - " + trackinfo.album + " - " + trackinfo.artist
-            bgImage.source = trackinfo.image
+        target: mediaController
+        onCurrentTrackChanged: {
+            mediaTitle.text = trackInfo.track_num + " - " + trackInfo.title + " - " + trackInfo.album + " - " + trackInfo.artist
+            bgImage.source = trackInfo.image
             nextButton.enabled = playlistManager.canNext
             progressSlider.visible = true
-            //mprisPlayer.updateTrack(title, artist, album)
-            miniPlayerPanel.isFav = favManager.isFavorite(trackinfo.trackid)
+            miniPlayerPanel.isFav = favManager.isFavorite(trackInfo.trackid)
         }
     }
 
