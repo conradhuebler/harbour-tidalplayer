@@ -45,16 +45,14 @@ Item {
             case "replace":
                 console.log("AdvancedPlayManager: Replace playlist with track", trackId)
                 playlistManager.clearPlayList()
-                playlistManager.addTrack(trackId)
-                playlistManager.playTrack(trackId)
-                tidalApi.playTrackId(trackId)
+                playlistManager.appendTrack(trackId)
+                playlistManager.playPosition(0)  // Play the first (and only) track
                 break
                 
             case "append":
                 console.log("AdvancedPlayManager: Append track and play", trackId)
                 playlistManager.appendTrack(trackId)
-                playlistManager.playTrack(trackId)
-                tidalApi.playTrackId(trackId)
+                playlistManager.playPosition(playlistManager.size - 1)  // Play the just-added track
                 break
                 
             case "playnow":

@@ -411,7 +411,10 @@ Item {
                 tidalApi.current_track_artist = info.track.artist
                 tidalApi.current_track_album = info.track.album
                 tidalApi.current_track_image = info.track.image
-
+                
+                // Reset deduplication flag when track successfully starts
+                tidalApi.trackPlayInProgress = false
+                trackPlayTimeoutTimer.stop()
             })
 
             setHandler('playlist_replace', function(playlist) {
@@ -722,9 +725,43 @@ Item {
         }
     }
 
+    // WORKAROUND: Track play deduplication 
+    // TODO: Find root cause of duplicate playTrackId() calls
+    // Symptoms: Same track ID called twice in rapid succession, causing:
+    // - Double API requests to Python backend
+    // - Double URL loading and MediaHandler calls  
+    // - Slower track loading performance
+    property string lastPlayedTrackId: ""
+    property bool trackPlayInProgress: false
+    
+    // Fallback timer to reset deduplication flag
+    Timer {
+        id: trackPlayTimeoutTimer
+        interval: 5000  // 5 seconds
+        repeat: false
+        onTriggered: {
+            console.log("TidalApi: Resetting trackPlayInProgress flag (timeout)")
+            trackPlayInProgress = false
+        }
+    }
+    
     // Track Funktionen
     function playTrackId(id) {
-        console.log(id)
+        console.log("TidalApi.playTrackId called with:", id)
+        
+        // WORKAROUND: Prevent duplicate plays for same track
+        // TODO: This shouldn't be necessary - find why playTrackId is called twice
+        if (id === lastPlayedTrackId && trackPlayInProgress) {
+            console.log("TidalApi: WORKAROUND - Ignoring duplicate playTrackId call for", id, "(already in progress)")
+            return
+        }
+        
+        lastPlayedTrackId = id
+        trackPlayInProgress = true
+        
+        // Fallback: Reset flag after 5 seconds if no playback_info received
+        trackPlayTimeoutTimer.restart()
+        
         pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(name) {
 //            console.log(name.title)
 // imho this returny onyl track-info (the signal contains track-info and url but retval not)
