@@ -52,23 +52,24 @@ Item {
                 
             case "append":
                 console.log("AdvancedPlayManager: Append track and play", trackId)
-                playlistManager.addTrack(trackId)
+                playlistManager.appendTrack(trackId)
                 playlistManager.playTrack(trackId)
                 tidalApi.playTrackId(trackId)
                 break
                 
             case "playnow":
                 console.log("AdvancedPlayManager: Play track now, keep playlist", trackId)
-                // Store current playlist position
-                var currentPos = playlistManager.currentIndex
-                tidalApi.playTrackId(trackId)
-                // Playlist remains unchanged, will return to current position after track
+                // Insert track after current position and play immediately
+                var currentIndex = playlistManager.currentIndex
+                playlistManager.currentIndex = currentIndex  // Set position for insertTrack
+                playlistManager.insertTrack(trackId)
+                playlistManager.playPosition(currentIndex + 1)
                 break
                 
             case "queue":
                 console.log("AdvancedPlayManager: Queue track", trackId)
-                playlistManager.addTrack(trackId)
-                // Don't start playing
+                // Add to end of playlist without playing
+                playlistManager.appendTrack(trackId)
                 break
         }
         
@@ -81,32 +82,38 @@ Item {
         
         switch (action) {
             case "replace":
-                console.log("AdvancedPlayManager: Replace playlist with album")
+                console.log("AdvancedPlayManager: Replace playlist with album", albumInfo.id)
                 playlistManager.clearPlayList()
-                // Request album tracks and add them
-                tidalApi.getAlbumTracks(albumInfo.id)
+                playlistManager.playAlbum(albumInfo.id, true)
                 break
                 
             case "append":
-                console.log("AdvancedPlayManager: Append album tracks")
-                // Request album tracks and add to end
-                tidalApi.getAlbumTracks(albumInfo.id)
+                console.log("AdvancedPlayManager: Append album and play", albumInfo.id)
+                playlistManager.playAlbum(albumInfo.id, true)
                 break
                 
             case "playnow":
-                console.log("AdvancedPlayManager: Play album now, keep playlist")
-                // Play first track of album immediately
+                console.log("AdvancedPlayManager: Play album now, keep playlist", albumInfo.id)
+                // For play now, we need to insert tracks after current position
+                // We'll use a special approach: request tracks and insert them when they arrive
+                pendingPlayNowAction = {
+                    type: "album",
+                    albumInfo: albumInfo
+                }
                 tidalApi.getAlbumTracks(albumInfo.id)
                 break
                 
             case "queue":
-                console.log("AdvancedPlayManager: Queue album tracks")
-                tidalApi.getAlbumTracks(albumInfo.id)
+                console.log("AdvancedPlayManager: Queue album", albumInfo.id)
+                playlistManager.playAlbum(albumInfo.id, false)
                 break
         }
         
         playAlbum(albumInfo, action)
     }
+    
+    // Only need pending action for "play now" functionality
+    property var pendingPlayNowAction: null
     
     // Execute play action for playlist
     function executePlaylistAction(playlistInfo, action) {
@@ -114,24 +121,29 @@ Item {
         
         switch (action) {
             case "replace":
-                console.log("AdvancedPlayManager: Replace with playlist")
+                console.log("AdvancedPlayManager: Replace playlist with playlist", playlistInfo.id)
                 playlistManager.clearPlayList()
-                tidalApi.getPlaylistTracks(playlistInfo.id)
+                playlistManager.playPlaylist(playlistInfo.id, true)
                 break
                 
             case "append":
-                console.log("AdvancedPlayManager: Append playlist tracks")
-                tidalApi.getPlaylistTracks(playlistInfo.id)
+                console.log("AdvancedPlayManager: Append playlist and play", playlistInfo.id)
+                playlistManager.playPlaylist(playlistInfo.id, true)
                 break
                 
             case "playnow":
-                console.log("AdvancedPlayManager: Play playlist now")
+                console.log("AdvancedPlayManager: Play playlist now, keep current", playlistInfo.id)
+                // For play now, we need to insert tracks after current position
+                pendingPlayNowAction = {
+                    type: "playlist",
+                    playlistInfo: playlistInfo
+                }
                 tidalApi.getPlaylistTracks(playlistInfo.id)
                 break
                 
             case "queue":
-                console.log("AdvancedPlayManager: Queue playlist tracks")
-                tidalApi.getPlaylistTracks(playlistInfo.id)
+                console.log("AdvancedPlayManager: Queue playlist", playlistInfo.id)
+                playlistManager.playPlaylist(playlistInfo.id, false)
                 break
         }
         
@@ -174,24 +186,29 @@ Item {
         
         switch (action) {
             case "replace":
-                console.log("AdvancedPlayManager: Replace with mix")
+                console.log("AdvancedPlayManager: Replace playlist with mix", mixInfo.id)
                 playlistManager.clearPlayList()
-                tidalApi.getMixTracks(mixInfo.id)
+                playlistManager.playMix(mixInfo.id, true)
                 break
                 
             case "append":
-                console.log("AdvancedPlayManager: Append mix tracks")
-                tidalApi.getMixTracks(mixInfo.id)
+                console.log("AdvancedPlayManager: Append mix and play", mixInfo.id)
+                playlistManager.playMix(mixInfo.id, true)
                 break
                 
             case "playnow":
-                console.log("AdvancedPlayManager: Play mix now")
+                console.log("AdvancedPlayManager: Play mix now, keep current", mixInfo.id)
+                // For play now, we need to insert tracks after current position
+                pendingPlayNowAction = {
+                    type: "mix",
+                    mixInfo: mixInfo
+                }
                 tidalApi.getMixTracks(mixInfo.id)
                 break
                 
             case "queue":
-                console.log("AdvancedPlayManager: Queue mix tracks")
-                tidalApi.getMixTracks(mixInfo.id)
+                console.log("AdvancedPlayManager: Queue mix", mixInfo.id)
+                playlistManager.playMix(mixInfo.id, false)
                 break
         }
         
@@ -243,6 +260,81 @@ Item {
         return playActions[action] || playActions["replace"]
     }
     
+    // Helper function to get first track ID from album (cache lookup)
+    function getFirstTrackFromCache(albumId) {
+        // Try to find any track in cache that belongs to this album
+        var allKeys = Object.keys(cacheManager.trackCache)
+        for (var i = 0; i < allKeys.length; i++) {
+            var trackInfo = cacheManager.getTrack(allKeys[i])
+            if (trackInfo && trackInfo.albumid && trackInfo.albumid.toString() === albumId.toString()) {
+                return trackInfo.trackid
+            }
+        }
+        return null
+    }
+    
+    // Collection for "play now" tracks
+    property var playNowTracks: []
+    
+    // Handle track collection for "play now" actions
+    Connections {
+        target: tidalApi
+        
+        onAlbumTrackAdded: {
+            if (pendingPlayNowAction && pendingPlayNowAction.type === "album") {
+                playNowTracks.push(track_info.trackid)
+                // Restart timer to wait for more tracks
+                playNowTimer.restart()
+            }
+        }
+        
+        onPlaylistTrackAdded: {
+            if (pendingPlayNowAction && pendingPlayNowAction.type === "playlist") {
+                playNowTracks.push(track_info.trackid)
+                playNowTimer.restart()
+            }
+        }
+        
+        onMixTrackAdded: {
+            if (pendingPlayNowAction && pendingPlayNowAction.type === "mix") {
+                playNowTracks.push(track_info.trackid)
+                playNowTimer.restart()
+            }
+        }
+    }
+    
+    // Timer to execute "play now" after tracks are collected
+    Timer {
+        id: playNowTimer
+        interval: 500  // Wait 500ms after last track
+        repeat: false
+        onTriggered: {
+            if (pendingPlayNowAction && playNowTracks.length > 0) {
+                console.log("AdvancedPlayManager: Executing play now with", playNowTracks.length, "tracks")
+                executePlayNowAction(playNowTracks)
+                
+                // Reset state
+                pendingPlayNowAction = null
+                playNowTracks = []
+            }
+        }
+    }
+    
+    // Execute the actual "play now" logic
+    function executePlayNowAction(trackIds) {
+        var currentIndex = playlistManager.currentIndex
+        console.log("AdvancedPlayManager: Inserting", trackIds.length, "tracks after position", currentIndex)
+        
+        // Insert tracks in reverse order to maintain order
+        // (each insertTrack inserts at currentIndex + 1, so reverse order keeps correct sequence)
+        for (var i = trackIds.length - 1; i >= 0; i--) {
+            playlistManager.insertTrack(trackIds[i])
+        }
+        
+        // Play first inserted track (now at currentIndex + 1)
+        playlistManager.playPosition(currentIndex + 1)
+    }
+
     Component.onCompleted: {
         console.log("AdvancedPlayManager: Initialized with default action:", applicationWindow.settings.defaultPlayAction)
     }

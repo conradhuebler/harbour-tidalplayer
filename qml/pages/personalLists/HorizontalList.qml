@@ -231,6 +231,16 @@ SilicaListView {
                             var contentInfo = getContentInfo()
                             var contentType = getContentType()
                             
+                            if (!contentInfo) {
+                                console.error("Cannot execute play action - contentInfo is null")
+                                return
+                            }
+                            
+                            if (!contentInfo.id || contentInfo.id === '') {
+                                console.error("Cannot execute play action - contentInfo.id is empty")
+                                return
+                            }
+                            
                             if (advancedPlayManager) {
                                 switch(contentType) {
                                     case "track":
@@ -259,38 +269,53 @@ SilicaListView {
                             switch(contentType) {
                                 case "album":
                                     pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
-                                        "albumId": contentInfo.id,
-                                        "albumTitle": contentInfo.title,
-                                        "albumImage": contentInfo.image
+                                        "albumId": contentInfo.id
                                     })
                                     break
                                 case "artist":
                                     pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"), {
-                                        "artistId": contentInfo.id,
-                                        "artistName": contentInfo.title,
-                                        "artistImage": contentInfo.image
+                                        "artistId": contentInfo.id
                                     })
                                     break
                                 case "playlist":
                                     pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"), {
                                         "playlistId": contentInfo.id,
-                                        "playlistTitle": contentInfo.title,
-                                        "playlistImage": contentInfo.image
+                                        "playlistTitle": contentInfo.title
                                     })
                                     break
                                 case "mix":
                                     pageStack.push(Qt.resolvedUrl("../MixPage.qml"), {
-                                        "mixId": contentInfo.id,
-                                        "mixTitle": contentInfo.title,
-                                        "mixImage": contentInfo.image
+                                        "playlistId": contentInfo.id,
+                                        "playlistTitle": contentInfo.title
                                     })
                                     break
                             }
                         }
                         
                         function getContentInfo() {
+                            var id
+                            
+                            // Get the correct ID based on type
+                            switch(model.type) {
+                                case typeTrack: id = model.trackid; break
+                                case typeAlbum: id = model.albumid; break  
+                                case typeArtist: id = model.artistid; break
+                                case typePlaylist: id = model.playlistid; break
+                                case typeMix: id = model.mixid; break
+                                default: id = model.trackid || model.albumid || model.artistid || model.playlistid || model.mixid
+                            }
+                            
+                            // Debug output for mix issues
+                            if (model.type === typeMix) {
+                                console.log("Mix content info - mixid:", model.mixid, "selected id:", id, "title:", model.title)
+                                if (!id || id === '' || id === -1) {
+                                    console.error("Mix has invalid mixid:", id)
+                                    return null
+                                }
+                            }
+                            
                             return {
-                                id: model.trackid || model.albumid || model.artistid || model.playlistid || model.mixid,
+                                id: id,
                                 title: model.title,
                                 name: model.title,
                                 image: model.image
@@ -317,39 +342,31 @@ SilicaListView {
                     switch(model.type) {
                         case typeAlbum:
                             pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
-                                "albumId": model.albumid,
-                                "albumTitle": model.title,
-                                "albumImage": model.image
+                                "albumId": model.albumid
                             })
                             break
                         case typeArtist:
                             pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"), {
-                                "artistId": model.artistid,
-                                "artistName": model.title,
-                                "artistImage": model.image
+                                "artistId": model.artistid
                             })
                             break
                         case typePlaylist:
                             pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"), {
                                 "playlistId": model.playlistid,
-                                "playlistTitle": model.title,
-                                "playlistImage": model.image
+                                "playlistTitle": model.title
                             })
                             break
                         case typeMix:
                             pageStack.push(Qt.resolvedUrl("../MixPage.qml"), {
-                                "mixId": model.mixid,
-                                "mixTitle": model.title,
-                                "mixImage": model.image
+                                "playlistId": model.mixid,
+                                "playlistTitle": model.title
                             })
                             break
                         case typeTrack:
                             // For tracks, we could show album page
                             if (model.albumid) {
                                 pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
-                                    "albumId": model.albumid,
-                                    "albumTitle": model.title,
-                                    "albumImage": model.image
+                                    "albumId": model.albumid
                                 })
                             }
                             break

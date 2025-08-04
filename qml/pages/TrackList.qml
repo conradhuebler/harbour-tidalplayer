@@ -63,7 +63,7 @@ Item {
         // highlightFollowsCurrentItem: true //introduced by Pawel for removing of tracks
 
         // PERFORMANCE: Virtual scrolling optimizations
-        cacheBuffer: height * 2        // Cache 2 screens worth of content
+        cacheBuffer: Math.max(height * 2, 0)  // Cache 2 screens worth of content, never negative
         
         // Add smooth scrolling properties
         highlightRangeMode: ListView.ApplyRange

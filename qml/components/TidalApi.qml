@@ -90,6 +90,7 @@ Item {
     signal playlistTrackAdded(var track_info)
     signal albumTrackAdded(var track_info)
     signal mixTrackAdded(var track_info)
+    
 
     // Properties für die Suche
     property string artistsResults
@@ -758,12 +759,10 @@ Item {
         return returnValue
     }
 
-    // Album Funktionen - Now Async-First
+    // Album Funktionen - Back to simple approach
     function getAlbumTracks(id) {
-        console.log("ASYNC: Get album tracks", id)
-        return queueRequest("tidal.Tidaler.getAlbumTracks", [id], function(result) {
-            console.log("Album tracks loaded for:", id)
-        })
+        console.log("Get album tracks", id)
+        pythonTidal.call("tidal.Tidaler.getAlbumTracks", [id])
     }
 
     function getAlbumInfo(id) {
