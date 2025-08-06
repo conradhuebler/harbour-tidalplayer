@@ -180,7 +180,7 @@ Item {
         console.log("Setting currentIndex to:", position, "resume_playback:", applicationWindow.settings.resume_playback)
         if(applicationWindow.settings.resume_playback) {
             console.log("Resuming playback at position:", position)
-            playlistManager.playPosition(position);
+            //playlistManager.playPosition(position);
         }
     }
     Component.onCompleted: {

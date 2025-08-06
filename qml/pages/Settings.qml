@@ -2,6 +2,8 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import Nemo.Configuration 1.0
 
+import "../components/"
+
 Page {
     id: page
     allowedOrientations: Orientation.All
@@ -421,6 +423,65 @@ Page {
                 onClicked: {
                     cacheManager.clearCache()
                 }
+            }
+
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
+                text: qsTr("Reset Audio Players")
+                visible: tidalApi.loginTrue
+                onClicked: {
+                    if (mediaController && mediaController.dualAudioManager) {
+                        mediaController.dualAudioManager.resetPlayers()
+                    }
+                }
+            }
+
+            SectionHeader {
+                text: qsTr("Audio Player Status")
+                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false)
+            }
+
+            Label {
+                id: player1Status
+                text: {
+                    if (mediaController && mediaController.dualAudioManager && mediaController.dualAudioManager.audioPlayer1) {
+                        return qsTr("Player 1: ") + mediaController.dualAudioManager.audioPlayer1.status
+                    }
+                    return qsTr("Player 1: Unknown")
+                }
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryColor
+                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false)
+            }
+
+            Label {
+                id: player2Status
+                text: {
+                    if (mediaController && mediaController.dualAudioManager && mediaController.dualAudioManager.audioPlayer2) {
+                        return qsTr("Player 2: ") + mediaController.dualAudioManager.audioPlayer2.status
+                    }
+                    return qsTr("Player 2: Unknown")
+                }
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryColor
+                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false)
+            }
+
+            Label {
+                id: activePlayerStatus
+                text: {
+                    if (mediaController && mediaController.dualAudioManager) {
+                        return qsTr("Active Player: ") + (mediaController.dualAudioManager.player1Active ? "Player 1" : "Player 2")
+                    }
+                    return qsTr("Active Player: Unknown")
+                }
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.highlightColor
+                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false)
             }
 
         }

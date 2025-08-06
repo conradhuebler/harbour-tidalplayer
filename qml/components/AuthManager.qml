@@ -70,10 +70,16 @@ Item {
     }
 
     function isTokenValid() {
-        console.log(applicationWindow.settings.expiry_time, applicationWindow.settings.access_token)
+        console.log("Token check - expiry:", applicationWindow.settings.expiry_time, "current:", Math.floor(new Date().getTime() / 1000))
         var currentUnixTime = Math.floor(new Date().getTime() / 1000)
-        if (!applicationWindow.settings.expiry_time) return false
-        return applicationWindow.settings.expiry_time> currentUnixTime
+        // Check if expiry_time is set and valid (not -1 or 0)
+        if (!applicationWindow.settings.expiry_time || applicationWindow.settings.expiry_time <= 0) {
+            console.log("Token invalid - no expiry time set")
+            return false
+        }
+        var isValid = applicationWindow.settings.expiry_time > currentUnixTime
+        console.log("Token valid:", isValid, "expires in:", (applicationWindow.settings.expiry_time - currentUnixTime), "seconds")
+        return isValid
     }
 
     function clearTokens() {

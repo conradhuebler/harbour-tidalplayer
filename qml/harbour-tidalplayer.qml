@@ -30,6 +30,9 @@ ApplicationWindow
         property string mail: ""
         property string audio_quality : ""
         property bool resume_playback : false
+        property string last_track_url: ""
+        property string last_track_id: ""
+        property real last_track_position: 0.0
         property bool hide_player: false
         property bool auto_load_playlist: true
         property bool stay_logged_in: false
@@ -48,6 +51,94 @@ ApplicationWindow
         property bool enableTrackPreloading: false // dual audio player for seamless transitions
         property int crossfadeMode: 1 // crossfade mode: 0=No Fade, 1=Timer, 2=Buffer Crossfade, 3=Buffer Fade-Out
         property int crossfadeTimeMs: 1000 // crossfade time in milliseconds
+        
+        // Quick resume functions
+        function saveCurrentState() {
+            if (mediaController && mediaController.track_id && mediaController.source) {
+                last_track_id = mediaController.track_id
+                last_track_url = mediaController.source  
+                last_track_position = mediaController.position
+                
+                // Save to persistent storage
+                lastTrackId.value = last_track_id
+                lastTrackUrl.value = last_track_url
+                lastTrackPosition.value = last_track_position
+                
+                console.log("Resume: Saved state - track:", last_track_id, "position:", (last_track_position/1000).toFixed(1) + "s")
+            }
+        }
+        
+        function restoreCurrentState() {
+            if (resume_playback && lastTrackUrl.value && lastTrackId.value) {
+                console.log("Resume: Restoring track:", lastTrackId.value, "position:", (lastTrackPosition.value/1000).toFixed(1) + "s")
+                
+                // Set track info immediately for UI
+                var trackInfo = cacheManager.getTrackInfo(lastTrackId.value)
+                if (trackInfo) {
+                    mediaController.track_id = lastTrackId.value
+                    mediaController.track_name = trackInfo.title || ""
+                    mediaController.album_name = trackInfo.album || ""
+                    mediaController.artist_name = trackInfo.artist || ""
+                    mediaController.artwork_url = trackInfo.image || ""
+                    mediaController.track_duration = trackInfo.duration || 0
+                }
+                
+                // Load track directly with cached URL - no API call needed!
+                mediaController.setSource(lastTrackUrl.value)
+                mediaController.play()
+                
+                // Seek to saved position after track loads
+                resumeSeekTimer.start()
+            }
+        }
+    }
+    
+    // Resume system timers
+    Timer {
+        id: autoSaveTimer
+        interval: 10000  // Save every 10 seconds
+        repeat: true
+        running: mediaController && mediaController.isPlaying
+        onTriggered: {
+            applicationWindow.settings.saveCurrentState()
+        }
+    }
+    
+    Timer {
+        id: resumeSeekTimer
+        interval: 2000  // Wait for track to load
+        onTriggered: {
+            if (lastTrackPosition.value > 1000) {  // Only seek if > 1 second
+                console.log("Resume: Seeking to", (lastTrackPosition.value/1000).toFixed(1) + "s")
+                mediaController.seek(lastTrackPosition.value)
+            }
+        }
+    }
+    
+    Timer {
+        id: saveStateTimer
+        interval: 2000
+        onTriggered: applicationWindow.settings.saveCurrentState()
+    }
+    
+    Timer {
+        id: resumeRestoreTimer
+        interval: 3000  // Wait 3 seconds for everything to initialize
+        onTriggered: {
+            console.log("Resume: Attempting to restore playback...")
+            applicationWindow.settings.restoreCurrentState()
+        }
+    }
+    
+    // Save state when track changes
+    Connections {
+        target: mediaController
+        onCurrentTrackChanged: {
+            if (trackInfo && trackInfo.trackid) {
+                // Save with small delay to ensure track is properly loaded
+                saveStateTimer.start()
+            }
+        }
     }
 
     // Configuration Storage
@@ -164,6 +255,24 @@ ApplicationWindow
     ConfigurationValue {
         id: radioMixesListConfig
         key : "/radioMixesList"
+        defaultValue: true
+    }
+    
+    ConfigurationValue {
+        id: lastTrackUrl
+        key: "/lastTrackUrl"
+        defaultValue: ""
+    }
+    
+    ConfigurationValue {
+        id: lastTrackId
+        key: "/lastTrackId"
+        defaultValue: ""
+    }
+    
+    ConfigurationValue {
+        id: lastTrackPosition
+        key: "/lastTrackPosition"
         defaultValue: true
     }
     
@@ -531,6 +640,9 @@ ApplicationWindow
             enableTrackPreloadingConfig.value = applicationWindow.settings.enableTrackPreloading
             crossfadeModeConfig.value = applicationWindow.settings.crossfadeMode
             crossfadeTimeMsConfig.value = applicationWindow.settings.crossfadeTimeMs
+            lastTrackUrl.value = applicationWindow.settings.last_track_url
+            lastTrackId.value = applicationWindow.settings.last_track_id
+            lastTrackPosition.value = applicationWindow.settings.last_track_position
         }
     }
 
@@ -553,6 +665,11 @@ ApplicationWindow
             applicationWindow.settings.topArtistsList = topArtistsListConfig.value
             
             console.log("Deferred settings loaded")
+            
+            // Try to restore playback after all settings are loaded
+            if (applicationWindow.settings.resume_playback) {
+                resumeRestoreTimer.start()
+            }
         }
     }
 
@@ -574,6 +691,9 @@ ApplicationWindow
         applicationWindow.settings.enableTrackPreloading = enableTrackPreloadingConfig.value
         applicationWindow.settings.crossfadeMode = crossfadeModeConfig.value
         applicationWindow.settings.crossfadeTimeMs = crossfadeTimeMsConfig.value
+        applicationWindow.settings.last_track_url = lastTrackUrl.value
+        applicationWindow.settings.last_track_id = lastTrackId.value
+        applicationWindow.settings.last_track_position = lastTrackPosition.value
         tidalApi.quality = audioQuality.value
 
         // PERFORMANCE: Critical initialization first
@@ -586,6 +706,13 @@ ApplicationWindow
 
     Component.onDestruction:
     {
+        // Save resume state before closing
+        console.log("Resume: App closing - saving current state")
+        if (settings) {
+            settings.saveCurrentState()
+        }
+        
+        // Save all settings
         token_type.value = applicationWindow.settings.token_type
         access_token.value = applicationWindow.settings.access_token
         refresh_token.value = applicationWindow.settings.refresh_token
@@ -610,6 +737,9 @@ ApplicationWindow
         enableTrackPreloadingConfig.value = applicationWindow.settings.enableTrackPreloading
         crossfadeModeConfig.value = applicationWindow.settings.crossfadeMode
         crossfadeTimeMsConfig.value = applicationWindow.settings.crossfadeTimeMs
+        lastTrackUrl.value = applicationWindow.settings.last_track_url
+        lastTrackId.value = applicationWindow.settings.last_track_id
+        lastTrackPosition.value = applicationWindow.settings.last_track_position
     }
 
 }

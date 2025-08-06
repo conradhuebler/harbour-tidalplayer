@@ -419,10 +419,15 @@ Item {
         
         console.log("MediaHandler: Starting crossfade in DualAudioManager:", url, "for track", trackId)
         
+        // Set track ID immediately for proper track info display
+        dualAudioManager.currentTrackId = trackId
+        dualAudioManager.currentTrackUrl = url
+        
         // Use DualAudioManager's crossfade functionality
         if (dualAudioManager.crossfadeToTrack(url, trackId)) {
             console.log("MediaHandler: Crossfade started successfully")
-            // Update track info will be handled by the crossfade completion
+            // Update track info immediately
+            updateTrackInfoFromPlaylist()
         } else {
             console.log("MediaHandler: Failed to start crossfade, using normal playback")
             playUrl(url)
@@ -445,6 +450,8 @@ Item {
      */
     function updateTrackInfoFromPlaylist() {
         var trackId = ""
+        
+        console.log("MediaHandler: updateTrackInfoFromPlaylist - dualAudioManager.currentTrackId:", dualAudioManager.currentTrackId, "playlistManager.currentIndex:", playlistManager.currentIndex)
         
         // Use crossfade track ID if available, otherwise use playlist
         if (dualAudioManager.currentTrackId) {
