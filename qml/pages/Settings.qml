@@ -8,6 +8,21 @@ Page {
     id: page
     allowedOrientations: Orientation.All
 
+    // Auto-refresh timer for status display - Claude Generated
+    Timer {
+        id: statusUpdateTimer
+        interval: 1000  // Update every second
+        repeat: true
+        running: tidalApi.loginTrue && page.status === PageStatus.Active
+        onTriggered: {
+            // Trigger text re-evaluation by updating a dummy property
+            statusTrigger = !statusTrigger
+        }
+    }
+    
+    // Dummy property to trigger status label updates
+    property bool statusTrigger: false
+
     SilicaFlickable {
         anchors.fill: parent
         contentHeight: column.height
@@ -434,54 +449,143 @@ Page {
                 text: qsTr("Reset Audio Players")
                 visible: tidalApi.loginTrue
                 onClicked: {
-                    if (mediaController && mediaController.dualAudioManager) {
-                        mediaController.dualAudioManager.resetPlayers()
+                    if (applicationWindow.mediaController && applicationWindow.mediaController.dualAudioManager) {
+                        applicationWindow.mediaController.dualAudioManager.resetPlayers()
                     }
                 }
             }
 
             SectionHeader {
                 text: qsTr("Audio Player Status")
-                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false)
+                visible: tidalApi.loginTrue
             }
 
             Label {
                 id: player1Status
                 text: {
-                    if (mediaController && mediaController.dualAudioManager && mediaController.dualAudioManager.audioPlayer1) {
-                        return qsTr("Player 1: ") + mediaController.dualAudioManager.audioPlayer1.status
+                    statusTrigger; // Force re-evaluation when statusTrigger changes
+                    if (applicationWindow.mediaController && applicationWindow.mediaController.dualAudioManager && applicationWindow.mediaController.dualAudioManager.audioPlayer1) {
+                        var status = applicationWindow.mediaController.dualAudioManager.audioPlayer1.status
+                        var position = Math.floor(applicationWindow.mediaController.dualAudioManager.audioPlayer1.position / 1000)
+                        var duration = Math.floor(applicationWindow.mediaController.dualAudioManager.audioPlayer1.duration / 1000)
+                        return qsTr("Player 1: ") + status + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
                     }
-                    return qsTr("Player 1: Unknown")
+                    return qsTr("Player 1: Not Available")
                 }
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryColor
-                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false)
+                visible: tidalApi.loginTrue
+                wrapMode: Text.WordWrap
             }
 
             Label {
                 id: player2Status
                 text: {
-                    if (mediaController && mediaController.dualAudioManager && mediaController.dualAudioManager.audioPlayer2) {
-                        return qsTr("Player 2: ") + mediaController.dualAudioManager.audioPlayer2.status
+                    statusTrigger; // Force re-evaluation when statusTrigger changes
+                    if (applicationWindow.mediaController && applicationWindow.mediaController.dualAudioManager && applicationWindow.mediaController.dualAudioManager.audioPlayer2) {
+                        var status = applicationWindow.mediaController.dualAudioManager.audioPlayer2.status
+                        var position = Math.floor(applicationWindow.mediaController.dualAudioManager.audioPlayer2.position / 1000)
+                        var duration = Math.floor(applicationWindow.mediaController.dualAudioManager.audioPlayer2.duration / 1000)
+                        return qsTr("Player 2: ") + status + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
                     }
-                    return qsTr("Player 2: Unknown")
+                    return qsTr("Player 2: Not Available")
                 }
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryColor
-                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false)
+                visible: tidalApi.loginTrue
+                wrapMode: Text.WordWrap
             }
 
             Label {
                 id: activePlayerStatus
                 text: {
-                    if (mediaController && mediaController.dualAudioManager) {
-                        return qsTr("Active Player: ") + (mediaController.dualAudioManager.player1Active ? "Player 1" : "Player 2")
+                    statusTrigger; // Force re-evaluation when statusTrigger changes
+                    if (applicationWindow.mediaController && applicationWindow.mediaController.dualAudioManager) {
+                        var activePlayer = applicationWindow.mediaController.dualAudioManager.player1Active ? "Player 1" : "Player 2"
+                        var preloadEnabled = applicationWindow.settings.enableTrackPreloading ? qsTr("Enabled") : qsTr("Disabled")
+                        return qsTr("Active Player: ") + activePlayer + qsTr(" | Preloading: ") + preloadEnabled
                     }
                     return qsTr("Active Player: Unknown")
                 }
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.highlightColor
-                visible: tidalApi.loginTrue && (applicationWindow.settings.enableTrackPreloading || false)
+                visible: tidalApi.loginTrue
+                wrapMode: Text.WordWrap
+            }
+
+            Label {
+                id: crossfadeStatus
+                text: {
+                    var modeNames = [qsTr("No Fade"), qsTr("Timer"), qsTr("Buffer Crossfade"), qsTr("Buffer Fade-Out")]
+                    var modeName = modeNames[applicationWindow.settings.crossfadeMode] || qsTr("Unknown")
+                    return qsTr("Crossfade Mode: ") + modeName + " (" + applicationWindow.settings.crossfadeTimeMs + "ms)"
+                }
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryHighlightColor
+                visible: tidalApi.loginTrue
+                wrapMode: Text.WordWrap
+            }
+
+            SectionHeader {
+                text: qsTr("Debug Settings")
+            }
+
+            ComboBox {
+                id: debugLevelCombo
+                label: qsTr("Debug Level")
+                description: qsTr("Controls console logging output")
+                
+                menu: ContextMenu {
+                    MenuItem { 
+                        text: qsTr("None (0)") 
+                        property int value: 0
+                    }
+                    MenuItem { 
+                        text: qsTr("Normal (1)") 
+                        property int value: 1
+                    }
+                    MenuItem { 
+                        text: qsTr("Informative (2)") 
+                        property int value: 2
+                    }
+                    MenuItem { 
+                        text: qsTr("Verbose/Spawn (3)") 
+                        property int value: 3
+                    }
+                }
+                
+                onCurrentItemChanged: {
+                    if (currentItem) {
+                        applicationWindow.settings.debugLevel = currentItem.value
+                        debugLevelConfig.value = currentItem.value
+                    }
+                }
+                
+                Component.onCompleted: {
+                    // Set current selection based on saved setting
+                    var savedLevel = applicationWindow.settings.debugLevel || 0
+                    for (var i = 0; i < menu.children.length; i++) {
+                        if (menu.children[i].value === savedLevel) {
+                            currentIndex = i
+                            break
+                        }
+                    }
+                }
+            }
+            
+            SectionHeader {
+                text: qsTr("Experimental Features")
+            }
+            
+            TextSwitch {
+                id: enableUrlCaching
+                text: qsTr("Enable URL Caching")
+                description: qsTr("Cache track URLs for faster loading (may cause issues)")
+                checked: applicationWindow.settings.enableUrlCaching || false
+                onCheckedChanged: {
+                    applicationWindow.settings.enableUrlCaching = checked
+                    enableUrlCachingConfig.value = checked
+                }
             }
 
         }

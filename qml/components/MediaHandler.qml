@@ -95,8 +95,29 @@ Item {
         }
         
         onPlayerError: {
-            console.error("MediaHandler: Playback error:", error)
+            console.error("MediaHandler: Playback error:", error, "timestamp:", Date.now())
             mprisPlayer.playbackStatus = Mpris.Stopped
+            
+            // Handle URL expiry (403 Forbidden) - fallback to API (only if caching enabled)
+            var errorStr = String(error)
+            if ((errorStr.includes("Forbidden") || errorStr.includes("403")) && applicationWindow.settings.enableUrlCaching) {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("MediaHandler: URL expired (403) - falling back to API for current track")
+                }
+                
+                // Get current track ID and retry via API
+                var currentTrack = playlistManager.currentTrackIndex()
+                if (currentTrack >= 0) {
+                    var trackId = playlistManager.requestPlaylistItem(currentTrack)
+                    if (trackId && trackId > 0) {
+                        // Clear expired URL from cache
+                        cacheManager.clearExpiredUrl(trackId.toString())
+                        
+                        // Force API request by calling TidalApi directly (bypasses cache)
+                        tidalApi.playTrackId(trackId)
+                    }
+                }
+            }
         }
         
         onTrackInfoChanged: {
@@ -303,20 +324,26 @@ Item {
     }
 
     function setSource(url) {
-        console.log("MediaHandler: Setting source:", url)
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("MediaHandler: Setting source:", url ? url.substring(0, 80) + "..." : "NULL")
+        }
         media_source = url
         dualAudioManager.setSource(url)
     }
 
     function playUrl(url) {
-        console.log("MediaHandler: Playing URL:", url, "- preloading enabled:", preloadingEnabled)
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("MediaHandler: Playing URL:", url ? url.substring(0, 80) + "..." : "NULL", "- preloading enabled:", preloadingEnabled)
+        }
         blockAutoNext = true
         setSource(url)
         play()
         blockAutoNext = false
         
         // Reset preload state when new track starts
-        console.log("MediaHandler: Resetting preload state for new track")
+        if (applicationWindow.settings.debugLevel >= 2) {
+            console.log("MediaHandler: Resetting preload state for new track")
+        }
         resetPreloadState()
     }
     

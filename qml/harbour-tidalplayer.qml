@@ -16,6 +16,7 @@ ApplicationWindow
     id: applicationWindow
     
     property FirstPage mainPage
+    property alias mediaController: mediaController
 
     property bool loginTrue : false
     property var locale: Qt.locale()
@@ -51,6 +52,8 @@ ApplicationWindow
         property bool enableTrackPreloading: false // dual audio player for seamless transitions
         property int crossfadeMode: 1 // crossfade mode: 0=No Fade, 1=Timer, 2=Buffer Crossfade, 3=Buffer Fade-Out
         property int crossfadeTimeMs: 1000 // crossfade time in milliseconds
+        property int debugLevel: 0 // debug logging level: 0=None, 1=Normal, 2=Informative, 3=Verbose/Spawn
+        property bool enableUrlCaching: false // URL caching for faster track loading
         
         // Quick resume functions
         function saveCurrentState() {
@@ -299,6 +302,18 @@ ApplicationWindow
         key : "/crossfadeTimeMs"
         defaultValue: 1000  // Default: 1 second
     }
+    
+    ConfigurationValue {
+        id: debugLevelConfig
+        key : "/debugLevel"
+        defaultValue: 0  // Default: No debug output
+    }
+    
+    ConfigurationValue {
+        id: enableUrlCachingConfig
+        key : "/enableUrlCaching"
+        defaultValue: false  // Default: Disabled
+    }
 
     property int remainingMinutes: 0
     property string timerAction: "pause"
@@ -475,17 +490,27 @@ ApplicationWindow
                 
                 // Enhanced: Use crossfade system if preloading enabled
                 if (mediaController.preloadingEnabled) {
-                    var trackInfo = cacheManager.getTrackInfo(track)
-                    if (trackInfo && trackInfo.url) {
-                        console.log("PlaylistManager: Using crossfade for track", track, "with cached URL")
-                        if (!mediaController.switchToTrackImmediately(trackInfo.url, track)) {
-                            // Fallback to normal API
-                            console.log("PlaylistManager: Crossfade failed, using normal playback")
-                            tidalApi.playTrackId(track)
+                    // Only use URL cache if it has valid URLs with tokens
+                    var cachedUrl = null
+                    if (applicationWindow.settings.enableUrlCaching) {
+                        cachedUrl = cacheManager.getCachedUrl(track.toString())
+                    }
+                    
+                    if (cachedUrl) {
+                        if (applicationWindow.settings.debugLevel >= 1) {
+                            console.log("PlaylistManager: Using crossfade for track", track, "with URL cache:", cachedUrl.substring(0, 80) + "...")
+                            console.log("PlaylistManager: URL cache has token:", cachedUrl.indexOf('token') !== -1 ? "YES" : "NO")
+                        }
+                        if (!mediaController.switchToTrackImmediately(cachedUrl, track)) {
+                            // Fallback to API request
+                            console.log("PlaylistManager: Crossfade failed, requesting fresh URL")
+                            mediaController.requestTrackForCrossfade(track)
                         }
                     } else {
-                        console.log("PlaylistManager: No cached URL for track", track, "- requesting via crossfade system")
-                        // Request URL via crossfade system - will load in background while current plays
+                        // Always request fresh URL with token via crossfade system
+                        if (applicationWindow.settings.debugLevel >= 1) {
+                            console.log("PlaylistManager: No valid cached URL for track", track, "- requesting fresh URL via crossfade system")
+                        }
                         mediaController.requestTrackForCrossfade(track)
                     }
                 } else {
@@ -640,6 +665,8 @@ ApplicationWindow
             enableTrackPreloadingConfig.value = applicationWindow.settings.enableTrackPreloading
             crossfadeModeConfig.value = applicationWindow.settings.crossfadeMode
             crossfadeTimeMsConfig.value = applicationWindow.settings.crossfadeTimeMs
+            debugLevelConfig.value = applicationWindow.settings.debugLevel
+            enableUrlCachingConfig.value = applicationWindow.settings.enableUrlCaching
             lastTrackUrl.value = applicationWindow.settings.last_track_url
             lastTrackId.value = applicationWindow.settings.last_track_id
             lastTrackPosition.value = applicationWindow.settings.last_track_position
@@ -691,6 +718,8 @@ ApplicationWindow
         applicationWindow.settings.enableTrackPreloading = enableTrackPreloadingConfig.value
         applicationWindow.settings.crossfadeMode = crossfadeModeConfig.value
         applicationWindow.settings.crossfadeTimeMs = crossfadeTimeMsConfig.value
+        applicationWindow.settings.debugLevel = debugLevelConfig.value
+        applicationWindow.settings.enableUrlCaching = enableUrlCachingConfig.value
         applicationWindow.settings.last_track_url = lastTrackUrl.value
         applicationWindow.settings.last_track_id = lastTrackId.value
         applicationWindow.settings.last_track_position = lastTrackPosition.value
@@ -737,6 +766,8 @@ ApplicationWindow
         enableTrackPreloadingConfig.value = applicationWindow.settings.enableTrackPreloading
         crossfadeModeConfig.value = applicationWindow.settings.crossfadeMode
         crossfadeTimeMsConfig.value = applicationWindow.settings.crossfadeTimeMs
+        debugLevelConfig.value = applicationWindow.settings.debugLevel
+        enableUrlCachingConfig.value = applicationWindow.settings.enableUrlCaching
         lastTrackUrl.value = applicationWindow.settings.last_track_url
         lastTrackId.value = applicationWindow.settings.last_track_id
         lastTrackPosition.value = applicationWindow.settings.last_track_position

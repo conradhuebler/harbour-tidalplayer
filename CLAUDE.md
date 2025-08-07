@@ -44,7 +44,12 @@ The project requires specific Python packages available through OpenRepos:
 - Document new functions briefly with JSDoc-style comments
 - Document existing undocumented functions if appearing regularly
 - Remove TODO comments if done and approved
-- Use console.log() for debugging within development builds
+- **Debug Logging Standards**:
+  - Use 4-tier debug system: 0=None, 1=Normal, 2=Informative, 3=Verbose/Spawn
+  - Enable debug level via user settings (settings.debugLevel)
+  - Always use conditional guards around console.log() calls
+  - Pattern: `if (settings.debugLevel >= 1) console.log("Component: message")`
+  - Avoid debug overhead in production builds (level 0)
 - Use proper QML/JavaScript error handling patterns
 - Maintain backward compatibility with older Sailfish OS versions
 - **Always check and consider instructions blocks** before implementing
