@@ -13,7 +13,7 @@ Item {
 
     // Crossfade modes: 0=No Fade, 1=Timer Fade, 2=Buffer Dependent Fade, 3=Buffer Fade-Out Only
     property int crossfadeMode: 1  // Default: Timer Fade
-    property int crossfadeTimeMs: 3500  // Configurable fade time
+    property int crossfadeTimeMs: 2000  // Configurable fade time (reduced from 3500ms)
 
     // Volume control - separate normal vs crossfade volume
     property real normalVolume: playerVolume * trackVolume
@@ -57,6 +57,7 @@ Item {
     // Crossfade state tracking
     property real fadeStartTime: 0
     property bool crossfadeInProgress: false
+    property bool playerSwitchLocked: false  // Prevent concurrent switches
 
     // Audio Player 1 with Playlist
     AudioPlayerComponent {
@@ -157,13 +158,41 @@ Item {
             if (isActive && status === Audio.EndOfMedia) {
                 console.log("DualAudioManager: Player1 reached end of media")
 
-                // Prüfen ob es einen nächsten Track in der Playlist gibt
-                if (playlistItem.itemCount > 1 && playlistItem.currentIndex < playlistItem.itemCount - 1) {
-                    console.log("DualAudioManager: Auto-advancing to next track in playlist")
-                    playlistItem.next()  // Playlist automatisch weiter
+                // Only block auto-advance if there's an ongoing crossfade to a different track
+                // Allow auto-advance if it's part of the normal playlist flow
+                if (playerSwitchLocked && crossfadeInProgress) {
+                    console.log("DualAudioManager: Auto-advance blocked - crossfade in progress")
+                    return
+                }
+
+                // Check if next track is preloaded and ready for seamless switch
+                if (preloadingEnabled && nextTrackId && inactivePlayer.isReady()) {
+                    console.log("DualAudioManager: Auto-advance using preloaded track - seamless switch!")
+                    
+                    // Use preloaded track for seamless transition
+                    player1Active = !player1Active
+                    currentTrackUrl = nextTrackUrl
+                    currentTrackId = nextTrackId
+                    
+                    activePlayer.startPlayback()
+                    
+                    // Update playlist to reflect the change
+                    if (playlistItem.itemCount > 1 && playlistItem.currentIndex < playlistItem.itemCount - 1) {
+                        playlistItem.next()
+                    }
+                    
+                    resetPreloadState()
+                    trackInfoUpdateTimer.start()
+                    
                 } else {
-                    console.log("DualAudioManager: End of playlist reached")
-                    trackFinished()
+                    // Fallback to normal playlist advance
+                    if (playlistItem.itemCount > 1 && playlistItem.currentIndex < playlistItem.itemCount - 1) {
+                        console.log("DualAudioManager: Auto-advancing to next track in playlist (normal)")
+                        playlistItem.next()  // Playlist automatisch weiter
+                    } else {
+                        console.log("DualAudioManager: End of playlist reached")
+                        trackFinished()
+                    }
                 }
             }
 
@@ -263,7 +292,13 @@ Item {
             // Player2 hat keine Playlist, also direkt trackFinished bei EndOfMedia
             if (isActive && status === Audio.EndOfMedia) {
                 console.log("DualAudioManager: Player2 reached end of media - track finished")
-                trackFinished()
+                
+                // Only block trackFinished if there's an ongoing crossfade
+                if (!crossfadeInProgress) {
+                    trackFinished()
+                } else {
+                    console.log("DualAudioManager: TrackFinished blocked - crossfade in progress")
+                }
             }
 
             if (!isActive && status === Audio.Loaded && source.toString() === nextTrackUrl.toString()) {
@@ -334,6 +369,12 @@ Item {
     function crossfadeToTrack(url, trackId) {
         console.log("DualAudioManager: Starting crossfade to:", trackId, "mode:", crossfadeMode)
 
+        // Prevent concurrent switches during crossfade or playlist operations
+        if (playerSwitchLocked) {
+            console.log("DualAudioManager: Player switch locked, ignoring crossfade request for", trackId)
+            return false
+        }
+
         if (crossfadeInProgress && currentTrackId === trackId) {
             console.log("DualAudioManager: Crossfade already in progress for same track, ignoring")
             return false
@@ -343,6 +384,9 @@ Item {
             console.log("DualAudioManager: Resetting previous crossfade for new track")
             completeCrossfade()
         }
+
+        // Lock player switches during crossfade
+        playerSwitchLocked = true
 
         var hasActiveTrack = activePlayer.playbackState === Audio.PlayingState || activePlayer.playbackState === Audio.PausedState
         console.log("DualAudioManager: Has active track playing:", hasActiveTrack)
@@ -359,6 +403,10 @@ Item {
             activePlayer.loadTrack(url)
             // Player startet automatisch wenn ready (über onPlayerStatusChanged)
             trackInfoUpdateTimer.start()
+            
+            // Unlock immediately for mode 0
+            Qt.callLater(function() { playerSwitchLocked = false })
+            
             return true
         }
 
@@ -371,6 +419,10 @@ Item {
             pendingSwitchTrackId = trackId
             pendingImmediateSwitch = true
             trackInfoUpdateTimer.start()
+            
+            // Unlock after brief delay since no crossfade is needed
+            Qt.callLater(function() { playerSwitchLocked = false })
+            
             return true
         }
 
@@ -403,9 +455,12 @@ Item {
         var elapsed = Date.now() - fadeStartTime
         var timeProgress = Math.min(elapsed / crossfadeTimeMs, 1.0)
 
-        console.log("DualAudioManager: Crossfade step - mode:", crossfadeMode,
-                   "buffer:", newPlayerBuffer.toFixed(2), "ready:", newPlayerReady,
-                   "time:", timeProgress.toFixed(2), "oldPlayer:", oldPlayer.playerId, "newPlayer:", newPlayer.playerId)
+        // Reduce log spam - only log every 500ms or important events
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 3 && elapsed % 500 < 50) {
+            console.log("DualAudioManager: Crossfade step - mode:", crossfadeMode,
+                       "buffer:", newPlayerBuffer.toFixed(2), "ready:", newPlayerReady,
+                       "time:", timeProgress.toFixed(2), "oldPlayer:", oldPlayer.playerId, "newPlayer:", newPlayer.playerId)
+        }
 
         if (crossfadeMode === 1) {
             // Mode 1: Zeitbasiertes Fading während der neue lädt
@@ -478,6 +533,9 @@ Item {
         // Inaktiven Player stoppen
         inactivePlayer.stopPlayback()
 
+        // Unlock player switches
+        playerSwitchLocked = false
+
         console.log("DualAudioManager: Crossfade finished - ready for next")
     }
 
@@ -513,15 +571,28 @@ Item {
     function switchToTrackImmediately(url, trackId) {
         console.log("DualAudioManager: Immediate switch to track", trackId)
 
+        // Check if player switching is locked
+        if (playerSwitchLocked) {
+            console.log("DualAudioManager: Cannot switch - player switching locked")
+            return false
+        }
+
         if (inactivePlayer.source.toString() === url.toString() && inactivePlayer.isReady()) {
             console.log("DualAudioManager: Track already preloaded - seamless switch!")
 
+            // Lock during switch
+            playerSwitchLocked = true
+            
             player1Active = !player1Active
             currentTrackUrl = url
             currentTrackId = trackId
 
             activePlayer.startPlayback()
             resetPreloadState()
+            
+            // Unlock after brief delay to ensure switch completes
+            Qt.callLater(function() { playerSwitchLocked = false })
+            
             return true
         }
 
@@ -606,11 +677,14 @@ Item {
     }
 
     function setCrossfadeVolume(player, volume) {
-        console.log("volume", volume, "Player ", player.playerId, "isReady", inactivePlayer.isReady())
+        // Only log volume changes at debug level 3 to reduce spam
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 3) {
+            console.log("DualAudioManager: Setting volume", volume.toFixed(2), "for", player.playerId)
+        }
         if (player === audioPlayer1) {
-            player.volume =volume //player1CrossfadeVolume = volume
+            player.volume = volume //player1CrossfadeVolume = volume
         } else if (player === audioPlayer2) {
-             player.volume =volume //player2CrossfadeVolume = volume
+             player.volume = volume //player2CrossfadeVolume = volume
         }
     }
 

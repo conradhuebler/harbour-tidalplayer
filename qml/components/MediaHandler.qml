@@ -508,8 +508,8 @@ Item {
                 
                 console.log("MediaHandler: Updated track info for", track_name, "by", artist_name)
                 
-                // Emit signal for MiniPlayer and other components
-                currentTrackChanged({
+                // Emit signals for MiniPlayer and other components
+                var trackData = {
                     trackid: trackId,
                     track_num: playlistManager.currentIndex + 1,
                     title: track_name,
@@ -517,7 +517,14 @@ Item {
                     album: album_name,
                     image: artwork_url,
                     duration: track_duration
-                })
+                }
+                
+                currentTrackChanged(trackData)
+                
+                // Also emit currentPlayback for Cover page compatibility
+                if (tidalApi) {
+                    tidalApi.currentPlayback(trackData)
+                }
             }
         }
     }
