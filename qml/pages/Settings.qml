@@ -464,11 +464,20 @@ Page {
                 id: player1Status
                 text: {
                     statusTrigger; // Force re-evaluation when statusTrigger changes
-                    if (applicationWindow.mediaController && applicationWindow.mediaController.dualAudioManager && applicationWindow.mediaController.dualAudioManager.audioPlayer1) {
-                        var status = applicationWindow.mediaController.dualAudioManager.audioPlayer1.status
-                        var position = Math.floor(applicationWindow.mediaController.dualAudioManager.audioPlayer1.position / 1000)
-                        var duration = Math.floor(applicationWindow.mediaController.dualAudioManager.audioPlayer1.duration / 1000)
-                        return qsTr("Player 1: ") + status + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
+                    try {
+                        var dualManager = applicationWindow.mediaController.dualAudioManager
+                        if (settings.debugLevel >= 2) console.log("Settings: dualManager:", dualManager, "audioPlayer1:", dualManager ? dualManager.audioPlayer1 : "no manager")
+                        if (dualManager && dualManager.audioPlayer1) {
+                            var player = dualManager.audioPlayer1
+                            var status = player.status
+                            var position = Math.floor(player.position / 1000)
+                            var duration = Math.floor(player.duration / 1000)
+                            var isActive = dualManager.player1Active ? " (ACTIVE)" : ""
+                            var statusText = getStatusText(status)
+                            return qsTr("Player 1: ") + statusText + isActive + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
+                        }
+                    } catch (e) {
+                        console.log("Settings: Error accessing Player1 status:", e)
                     }
                     return qsTr("Player 1: Not Available")
                 }
@@ -482,13 +491,20 @@ Page {
                 id: player2Status
                 text: {
                     statusTrigger; // Force re-evaluation when statusTrigger changes
-                    if (applicationWindow.mediaController && applicationWindow.mediaController.dualAudioManager && applicationWindow.mediaController.dualAudioManager.audioPlayer2) {
-                        var status = applicationWindow.mediaController.dualAudioManager.audioPlayer2.status
-                        var position = Math.floor(applicationWindow.mediaController.dualAudioManager.audioPlayer2.position / 1000)
-                        var duration = Math.floor(applicationWindow.mediaController.dualAudioManager.audioPlayer2.duration / 1000)
-                        return qsTr("Player 2: ") + status + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
+                    try {
+                        var dualManager = applicationWindow.mediaController.dualAudioManager
+                        if (dualManager && dualManager.audioPlayer2) {
+                            var player = dualManager.audioPlayer2
+                            var status = player.status
+                            var position = Math.floor(player.position / 1000)
+                            var duration = Math.floor(player.duration / 1000)
+                            var isActive = !dualManager.player1Active ? " (ACTIVE)" : ""
+                            var statusText = getStatusText(status)
+                            return qsTr("Player 2: ") + statusText + isActive + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
+                        }
+                    } catch (e) {
+                        console.log("Settings: Error accessing Player2 status:", e)
                     }
-                    return qsTr("Player 2: Not Available")
                 }
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryColor
@@ -505,7 +521,6 @@ Page {
                         var preloadEnabled = applicationWindow.settings.enableTrackPreloading ? qsTr("Enabled") : qsTr("Disabled")
                         return qsTr("Active Player: ") + activePlayer + qsTr(" | Preloading: ") + preloadEnabled
                     }
-                    return qsTr("Active Player: Unknown")
                 }
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.highlightColor
@@ -599,5 +614,20 @@ Page {
         idx >= 0 ? idx : 1  // default to HIGH (index 1) if not found
         audioQuality.currentIndex = idx
        }
+    }
+
+    // Helper function to convert Audio status codes to readable text
+    function getStatusText(status) {
+        switch(status) {
+            case 0: return qsTr("Unknown")
+            case 1: return qsTr("No Media")
+            case 2: return qsTr("Loading")
+            case 3: return qsTr("Loaded")
+            case 4: return qsTr("Buffering")
+            case 5: return qsTr("Buffered")
+            case 6: return qsTr("End of Media")
+            case 7: return qsTr("Invalid Media")
+            default: return qsTr("Status ") + status
+        }
     }
 }

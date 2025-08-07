@@ -42,6 +42,10 @@ Item {
     signal playerError(string error)
     signal trackInfoChanged()
 
+    // Player references - exported for Settings display
+    property AudioPlayerComponent audioPlayer1: audioPlayer1
+    property AudioPlayerComponent audioPlayer2: audioPlayer2
+    
     // Active player reference
     property AudioPlayerComponent activePlayer: player1Active ? audioPlayer1 : audioPlayer2
     property AudioPlayerComponent inactivePlayer: player1Active ? audioPlayer2 : audioPlayer1

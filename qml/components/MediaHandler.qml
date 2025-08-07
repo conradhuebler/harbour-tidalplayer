@@ -16,6 +16,7 @@ Item {
     property int track_duration
 
     property alias playlist: dualAudioManager.playlist
+    property alias dualAudioManager: dualAudioManager
     
     // Track Preloading properties - Claude Generated  
     property bool preloadingEnabled: applicationWindow.settings.enableTrackPreloading || false
