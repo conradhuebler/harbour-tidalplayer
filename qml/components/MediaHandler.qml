@@ -27,7 +27,9 @@ Item {
     
     // Debug: Monitor preloading state changes
     onPreloadingEnabledChanged: {
-        console.log("MediaHandler: preloadingEnabled changed to:", preloadingEnabled)
+        if (settings.debugLevel >= 1) {
+            console.log("MEDIA: Track preloading", preloadingEnabled ? "enabled" : "disabled")
+        }
     }
     
     // Dual Audio Manager for seamless transitions - Claude Generated
@@ -122,7 +124,9 @@ Item {
         }
         
         onTrackInfoChanged: {
-            console.log("MediaHandler: Track info changed, updating...")
+            if (settings.debugLevel >= 2) {
+                console.log("MEDIA: Track info changed, updating...")
+            }
             updateTrackInfoFromPlaylist()
         }
     }
@@ -326,7 +330,12 @@ Item {
 
     function setSource(url) {
         if (applicationWindow.settings.debugLevel >= 1) {
-            console.log("MediaHandler: Setting source:", url ? url.substring(0, 80) + "..." : "NULL")
+            if (url) {
+                var safeUrl = url.indexOf('token') !== -1 ? url.split('?')[0] + "?token=***" : url
+                console.log("MediaHandler: Setting source:", safeUrl.substring(0, 80) + "...")
+            } else {
+                console.log("MediaHandler: Setting source: NULL")
+            }
         }
         media_source = url
         dualAudioManager.setSource(url)
@@ -334,7 +343,14 @@ Item {
 
     function playUrl(url) {
         if (applicationWindow.settings.debugLevel >= 1) {
-            console.log("MediaHandler: Playing URL:", url ? url.substring(0, 80) + "..." : "NULL", "- preloading enabled:", preloadingEnabled)
+            if (settings.debugLevel >= 2) {
+                if (url) {
+                    var safeUrl = url.indexOf('token') !== -1 ? url.split('?')[0] + "?token=***" : url
+                    console.log("MEDIA: Playing URL:", safeUrl.substring(0, 80) + "... - preloading:", preloadingEnabled)
+                } else {
+                    console.log("MEDIA: Playing URL: NULL - preloading:", preloadingEnabled)
+                }
+            }
         }
         blockAutoNext = true
         setSource(url)
@@ -479,7 +495,9 @@ Item {
     function updateTrackInfoFromPlaylist() {
         var trackId = ""
         
-        console.log("MediaHandler: updateTrackInfoFromPlaylist - dualAudioManager.currentTrackId:", dualAudioManager.currentTrackId, "playlistManager.currentIndex:", playlistManager.currentIndex)
+        if (settings.debugLevel >= 3) {
+            console.log("MEDIA: updateTrackInfoFromPlaylist - currentTrackId:", dualAudioManager.currentTrackId, "currentIndex:", playlistManager.currentIndex)
+        }
         
         // Use crossfade track ID if available, otherwise use playlist
         if (dualAudioManager.currentTrackId) {
@@ -507,7 +525,9 @@ Item {
                 current_track_image = artwork_url
                 current_track_duration = track_duration
                 
-                console.log("MediaHandler: Updated track info for", track_name, "by", artist_name)
+                if (settings.debugLevel >= 2) {
+                    console.log("MEDIA: Updated track info for", track_name, "by", artist_name)
+                }
                 
                 // Emit signals for MiniPlayer and other components
                 var trackData = {
@@ -603,8 +623,10 @@ Item {
     }
 
     Component.onCompleted: {
-        console.log("MediaHandler: Initialized with Amber.Mpris")
-        console.log("MediaHandler: Track preloading setting:", preloadingEnabled)
+        if (settings.debugLevel >= 1) {
+            console.log("MEDIA: Initialized with Amber.Mpris")
+            console.log("MEDIA: Track preloading setting:", preloadingEnabled)
+        }
         
         // Set up property bindings after component creation to avoid conflicts
         current_track_title = Qt.binding(function() { return track_name })

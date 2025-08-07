@@ -191,14 +191,20 @@ Item {
             // lets remove soon one
 
             setHandler('get_token', function(type, token, rtoken, date) {
-                console.log("Got new token from session")
-                console.log(type, token, rtoken, date)
+                if (settings.debugLevel >= 3) {
+                    console.log("AUTH: Got new token from session - type:", type, "token:", token, "rtoken:", rtoken, "expiry:", date)
+                } else if (settings.debugLevel >= 1) {
+                    console.log("AUTH: Got new token from session")
+                }
                 tidalApi.oAuthSuccess(type, token, rtoken, date)
             })
 
             setHandler('oauth_refresh', function(token, rtoken, expiry) {
-                console.log("Got refreshed token from session")
-                console.log("token:", token, "rtoken:", rtoken, "expiry:", expiry)
+                if (settings.debugLevel >= 3) {
+                    console.log("AUTH: Got refreshed token - token:", token, "rtoken:", rtoken, "expiry:", expiry)
+                } else if (settings.debugLevel >= 1) {
+                    console.log("AUTH: Got refreshed token from session")
+                }
                 tidalApi.oAuthRefresh(token)
                 // Update AuthManager with all token info
                 authManager.refreshTokens(token, rtoken, expiry)
@@ -206,7 +212,9 @@ Item {
 
             // Debug Handler
             setHandler('printConsole', function(string) {
-                console.log("tidalApi::printConsole " + string)
+                if (settings.debugLevel >= 2) {
+                    console.log("TIDAL: " + string)
+                }
             })
 
 
@@ -411,7 +419,14 @@ Item {
             setHandler('playback_info', function(info) {
                 console.log("TidalApi: playback_info received - preload:", root.pendingPreloadId, "crossfade:", root.pendingCrossfadeId)
                 if (applicationWindow.settings.debugLevel >= 1) {
-                    console.log("TidalApi: URL received:", info.url ? String(info.url).substring(0, 100) + "..." : "NO URL")
+                        if (info.url) {
+                        var urlStr = String(info.url)
+                        var hasToken = urlStr.indexOf('token') !== -1
+                        var safeUrl = hasToken ? urlStr.split('?')[0] + "?token=***" : urlStr
+                        console.log("TIDAL: URL received:", safeUrl.substring(0, 100) + "...")
+                    } else {
+                        console.log("TIDAL: URL received: NO URL")
+                    }
                     console.log("TidalApi: Track info:", info.track ? JSON.stringify(info.track).substring(0, 200) + "..." : "NO TRACK")
                     
                     // Additional debug for 403 investigation
@@ -588,7 +603,11 @@ Item {
 
             setHandler('topArtist', function(artist_info)
             {
-                console.log("topArtist", artist_info)
+                if (settings.debugLevel >= 3) {
+                    console.log("TIDAL: topArtist data:", artist_info)
+                } else if (settings.debugLevel >= 2) {
+                    console.log("TIDAL: topArtist received:", artist_info ? "data" : "no data")
+                }
                 root.topArtist(artist_info)
             })
 
@@ -637,7 +656,11 @@ Item {
     }
 
     function loginIn(tokenType, accessToken, refreshToken, expiryTime) {
-        console.log("loginIn:", accessToken)
+        if (settings.debugLevel >= 3) {
+            console.log("AUTH: loginIn token (VERBOSE):", accessToken)
+        } else if (settings.debugLevel >= 1) {
+            console.log("AUTH: loginIn with token (length:", accessToken.length, "chars)")
+        }
         pythonTidal.call('tidal.Tidaler.initialize', [quality])
         pythonTidal.call('tidal.Tidaler.login',
             [tokenType, accessToken, refreshToken, expiryTime])

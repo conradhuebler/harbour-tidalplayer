@@ -21,7 +21,7 @@ Page {
         id: flickable
         anchors {
             fill: parent
-            bottomMargin: minPlayerPanel.margin
+            bottomMargin: miniPlayerPanel.margin
         }
 
 
@@ -36,7 +36,7 @@ Page {
             MenuItem {
                 text: qsTr("Settings")
                 onClicked: {
-                    minPlayerPanel.open = false
+                    miniPlayerPanel.open = false
                     pageStack.push(Qt.resolvedUrl("Settings.qml"))
                 }
             }
@@ -64,8 +64,8 @@ Page {
                 onClicked: applicationWindow.cancelSleepTimer()
             }
               MenuItem {
-                text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
-                onClicked: minPlayerPanel.open = !minPlayerPanel.open
+                text: miniPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
+                onClicked: miniPlayerPanel.open = !miniPlayerPanel.open
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
@@ -93,22 +93,22 @@ Page {
         SlideshowView {
                   clip: true
                   id: swipeView
-                  height: parent.height - getBottomOffset() // << this limits the overall size
                   itemWidth: width
                   itemHeight: height
                   orientation: Qt.Horizontal
 
                   function getBottomOffset()
                   {
-                      if (minPlayerPanel.open) return ( 1.2 * minPlayerPanel.height )
-                      return minPlayerPanel.height * 0.4
+                      if (miniPlayerPanel.open) return ( 1.2 * miniPlayerPanel.height )
+                      return miniPlayerPanel.height * 0.4
                   }
 
                   anchors.top: mainPageHeader.bottom
                   anchors.topMargin: Theme.paddingLarge
                   anchors.left: parent.left
                   anchors.right: parent.right
-                  anchors.bottom: miniPlayerPanel.top
+                  anchors.bottom: parent.bottom
+                  anchors.bottomMargin: getBottomOffset()
                   property var carouselPages: [
                       applicationWindow.settings.useNewHomescreen ? "PersonalConfigurable.qml" : "Personal.qml", 
                       "Search.qml", 

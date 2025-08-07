@@ -143,17 +143,30 @@ id: root
         batchWriteInProgress = true
         var writesToProcess = pendingWrites.splice(0, batchSize)
         
-        console.log("PERFORMANCE: Processing", writesToProcess.length, "database writes in batch")
+        if (settings.debugLevel >= 2) {
+            console.log("CACHE: Processing", writesToProcess.length, "database writes in batch")
+        }
         
         db.transaction(function(tx) {
             for (var i = 0; i < writesToProcess.length; i++) {
                 var write = writesToProcess[i]
                 try {
-                    // Extract correct ID field based on table
-                    var id = write.data.trackid || write.data.albumid || write.data.artistid || 
-                             write.data.playlistid || write.data.mixid || write.data.trackId
-                    tx.executeSql('INSERT OR REPLACE INTO ' + write.table + '(id, data, timestamp) VALUES(?, ?, ?)',
-                        [id, JSON.stringify(write.data), write.timestamp])
+                    // Convert table to string to handle potential objects
+                    var tableName = String(write.table)
+                    
+                    // Handle DELETE operations differently
+                    if (tableName.indexOf('_delete') !== -1 || (write.data && write.data.operation === 'DELETE')) {
+                        var actualTable = tableName.replace('_delete', '')
+                        var deleteId = write.data.id || write.data.trackid || write.data.albumid || write.data.artistid || 
+                                      write.data.playlistid || write.data.mixid || write.data.trackId
+                        tx.executeSql('DELETE FROM ' + actualTable + ' WHERE id = ?', [deleteId])
+                    } else {
+                        // Handle INSERT/REPLACE operations
+                        var id = write.data.trackid || write.data.albumid || write.data.artistid || 
+                                 write.data.playlistid || write.data.mixid || write.data.trackId
+                        tx.executeSql('INSERT OR REPLACE INTO ' + tableName + '(id, data, timestamp) VALUES(?, ?, ?)',
+                            [id, JSON.stringify(write.data), write.timestamp])
+                    }
                 } catch (e) {
                     console.error("Batch write error:", e, "for table:", write.table)
                 }
@@ -175,7 +188,9 @@ id: root
             return
         }
         
-        console.log("PERFORMANCE: Starting incremental cache cleanup")
+        if (settings.debugLevel >= 2) {
+            console.log("CACHE: Starting incremental cleanup")
+        }
         cleanupInProgress = true
         cleanupQueue = []
         
@@ -225,7 +240,9 @@ id: root
         }
         
         if (expiredKeys.length > 0) {
-            console.log("PERFORMANCE: Cleaning", expiredKeys.length, "expired", batch.type, "entries")
+            if (settings.debugLevel >= 2) {
+                console.log("CACHE: Cleaning", expiredKeys.length, "expired", batch.type, "entries")
+            }
             
             // Remove from cache and access order
             for (var j = 0; j < expiredKeys.length; j++) {
@@ -713,10 +730,12 @@ id: root
             // PERFORMANCE: Update LRU access order
             touchLRU(trackAccessOrder, id)
             
-            // Debug: Check what URL is stored
+            // Debug: Check what URL is stored (without exposing tokens)
             if (applicationWindow.settings.debugLevel >= 2 && track.url) {
-                console.log("TidalCache: getTrack", id, "returning URL:", track.url.substring(0, 80) + "...")
-                console.log("TidalCache: getTrack URL has token:", track.url.indexOf('token') !== -1 ? "YES" : "NO")
+                var hasToken = track.url.indexOf('token') !== -1
+                var safeUrl = hasToken ? track.url.split('?')[0] + "?token=***" : track.url
+                console.log("TidalCache: getTrack", id, "returning URL:", safeUrl.substring(0, 80) + "...")
+                console.log("TidalCache: getTrack URL has token:", hasToken ? "YES" : "NO")
             }
         }
         return track
@@ -850,7 +869,9 @@ id: root
 
     // PERFORMANCE: Non-blocking cache cleanup - triggers incremental cleanup
     function cleanOldCache() {
-        console.log("PERFORMANCE: Triggering incremental cache cleanup instead of blocking cleanup")
+        if (settings.debugLevel >= 2) {
+            console.log("CACHE: Triggering incremental cleanup (non-blocking)")
+        }
         startIncrementalCleanup()
     }
 

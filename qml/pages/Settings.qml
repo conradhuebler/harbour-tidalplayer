@@ -36,8 +36,20 @@ Page {
                 title: qsTr("Settings")
             }
 
+            // LOGIN REQUIRED STATE - Only show login when not authenticated
             SectionHeader {
-                text: qsTr("Account")
+                text: qsTr("Login Required")
+                visible: !tidalApi.loginTrue
+            }
+            
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Please sign in to access your Tidal music library and configure the app")
+                font.pixelSize: Theme.fontSizeMedium
+                color: Theme.primaryColor
+                wrapMode: Text.WordWrap
+                visible: !tidalApi.loginTrue
             }
 
             TextField {
@@ -49,6 +61,7 @@ Page {
                 EnterKey.enabled: text.length > 0
                 EnterKey.iconSource: "image://theme/icon-m-enter-next"
                 EnterKey.onClicked: focus = false
+                visible: !tidalApi.loginTrue
 
                 onTextChanged: {
                     mail.value = text
@@ -58,18 +71,7 @@ Page {
             Item {
                 width: parent.width
                 height: Theme.paddingLarge
-            }
-
-            TextSwitch {
-                id: stayLoggedIn
-                visible: tidalApi.loginTrue
-                text: qsTr("Stay logged in")
-                description: qsTr("Prevent automatic logout on token errors")
-                checked: applicationWindow.settings.stay_logged_in
-                onClicked: {
-                    applicationWindow.settings.stay_logged_in = stayLoggedIn.checked
-                    console.log("Stay logged in setting:", stayLoggedIn.checked)
-                }
+                visible: !tidalApi.loginTrue
             }
 
             Button {
@@ -80,29 +82,23 @@ Page {
                 }
                 text: qsTr("Login with Tidal")
                 visible: !tidalApi.loginTrue
+                preferredWidth: Theme.buttonWidthLarge
                 onClicked: {
                     pageStack.push(Qt.resolvedUrl("../dialogs/OAuth.qml"))
                 }
             }
 
-            Button {
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    margins: Theme.horizontalPageMargin
-                }
-                text: qsTr("Logout")
-                visible: tidalApi.loginTrue
-                onClicked: {
-                    authManager.clearTokens()
-                    token_type.value = "clear"
-                    access_token.value = "clear"
-                    tidalApi.loginTrue = false
-                }
-            }
-
             SectionHeader {
                 text: qsTr("Interface")
+            }
+            
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Customize the app interface and behavior")
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryColor
+                wrapMode: Text.WordWrap
             }
 
             TextSwitch {
@@ -159,6 +155,16 @@ Page {
 
             SectionHeader {
                 text: qsTr("Playback")
+                visible: tidalApi.loginTrue
+            }
+            
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Configure audio quality and playback behavior")
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryColor
+                wrapMode: Text.WordWrap
                 visible: tidalApi.loginTrue
             }
 
@@ -459,96 +465,138 @@ Page {
                 text: qsTr("Audio Player Status")
                 visible: tidalApi.loginTrue
             }
-
+            
             Label {
-                id: player1Status
-                text: {
-                    statusTrigger; // Force re-evaluation when statusTrigger changes
-                    try {
-                        var dualManager = applicationWindow.mediaController.dualAudioManager
-                        if (settings.debugLevel >= 2) console.log("Settings: dualManager:", dualManager, "audioPlayer1:", dualManager ? dualManager.audioPlayer1 : "no manager")
-                        if (dualManager && dualManager.audioPlayer1) {
-                            var player = dualManager.audioPlayer1
-                            var status = player.status
-                            var position = Math.floor(player.position / 1000)
-                            var duration = Math.floor(player.duration / 1000)
-                            var isActive = dualManager.player1Active ? " (ACTIVE)" : ""
-                            var statusText = getStatusText(status)
-                            return qsTr("Player 1: ") + statusText + isActive + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
-                        }
-                    } catch (e) {
-                        console.log("Settings: Error accessing Player1 status:", e)
-                    }
-                    return qsTr("Player 1: Not Available")
-                }
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Real-time status of dual audio players for crossfade system")
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryColor
-                visible: tidalApi.loginTrue
                 wrapMode: Text.WordWrap
+                visible: tidalApi.loginTrue
             }
 
-            Label {
-                id: player2Status
-                text: {
-                    statusTrigger; // Force re-evaluation when statusTrigger changes
-                    try {
-                        var dualManager = applicationWindow.mediaController.dualAudioManager
-                        if (dualManager && dualManager.audioPlayer2) {
-                            var player = dualManager.audioPlayer2
-                            var status = player.status
-                            var position = Math.floor(player.position / 1000)
-                            var duration = Math.floor(player.duration / 1000)
-                            var isActive = !dualManager.player1Active ? " (ACTIVE)" : ""
-                            var statusText = getStatusText(status)
-                            return qsTr("Player 2: ") + statusText + isActive + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
+            // Player Status Container - Claude Generated
+            Rectangle {
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                height: playerStatusColumn.height + 2 * Theme.paddingMedium
+                x: Theme.horizontalPageMargin
+                color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+                radius: Theme.paddingSmall
+                border.color: Theme.rgba(Theme.highlightBackgroundColor, 0.2)
+                border.width: 1
+                visible: tidalApi.loginTrue
+                
+                Column {
+                    id: playerStatusColumn
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        top: parent.top
+                        margins: Theme.paddingMedium
+                    }
+                    spacing: Theme.paddingSmall
+                    
+                    Label {
+                        id: player1Status
+                        width: parent.width
+                        text: {
+                            statusTrigger; // Force re-evaluation when statusTrigger changes
+                            try {
+                                var dualManager = applicationWindow.mediaController.dualAudioManager
+
+                                if (dualManager && dualManager.audioPlayer1) {
+                                    var player = dualManager.audioPlayer1
+                                    var status = player.status
+                                    var position = Math.floor(player.position / 1000)
+                                    var duration = Math.floor(player.duration / 1000)
+                                    var isActive = dualManager.player1Active ? " (ACTIVE)" : ""
+                                    var statusText = getStatusText(status)
+                                    return qsTr("Player 1: ") + statusText + isActive + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
+                                }
+                            } catch (e) {
+                                console.log("Settings: Error accessing Player1 status:", e)
+                            }
+                            return qsTr("Player 1: Not Available")
                         }
-                    } catch (e) {
-                        console.log("Settings: Error accessing Player2 status:", e)
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.primaryColor
+                        wrapMode: Text.WordWrap
+                    }
+                    
+                    Label {
+                        id: player2Status
+                        width: parent.width
+                        text: {
+                            statusTrigger; // Force re-evaluation when statusTrigger changes
+                            try {
+                                var dualManager = applicationWindow.mediaController.dualAudioManager
+                                if (dualManager && dualManager.audioPlayer2) {
+                                    var player = dualManager.audioPlayer2
+                                    var status = player.status
+                                    var position = Math.floor(player.position / 1000)
+                                    var duration = Math.floor(player.duration / 1000)
+                                    var isActive = !dualManager.player1Active ? " (ACTIVE)" : ""
+                                    var statusText = getStatusText(status)
+                                    return qsTr("Player 2: ") + statusText + isActive + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
+                                }
+                            } catch (e) {
+                                console.log("Settings: Error accessing Player2 status:", e)
+                            }
+                            return qsTr("Player 2: Not Available")
+                        }
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.primaryColor
+                        wrapMode: Text.WordWrap
+                    }
+                    
+                    Label {
+                        id: activePlayerStatus
+                        width: parent.width
+                        text: {
+                            statusTrigger; // Force re-evaluation when statusTrigger changes
+                            try {
+                                var dualManager = applicationWindow.mediaController.dualAudioManager
+                                if (dualManager && dualManager.activePlayer) {
+                                    var activePlayer = dualManager.activePlayer
+                                    var status = activePlayer.status
+                                    var position = Math.floor(activePlayer.position / 1000)
+                                    var duration = Math.floor(activePlayer.duration / 1000)
+                                    var playerNum = dualManager.player1Active ? "1" : "2"
+                                    var statusText = getStatusText(status)
+                                    return qsTr("Active: Player ") + playerNum + " - " + statusText + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
+                                }
+                            } catch (e) {
+                                console.log("Settings: Error accessing Active Player status:", e)
+                            }
+                            return qsTr("Active Player: Not Available")
+                        }
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.highlightColor
+                        font.bold: true
+                        wrapMode: Text.WordWrap
                     }
                 }
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.secondaryColor
-                visible: tidalApi.loginTrue
-                wrapMode: Text.WordWrap
             }
 
-            Label {
-                id: activePlayerStatus
-                text: {
-                    statusTrigger; // Force re-evaluation when statusTrigger changes
-                    if (applicationWindow.mediaController && applicationWindow.mediaController.dualAudioManager) {
-                        var activePlayer = applicationWindow.mediaController.dualAudioManager.player1Active ? "Player 1" : "Player 2"
-                        var preloadEnabled = applicationWindow.settings.enableTrackPreloading ? qsTr("Enabled") : qsTr("Disabled")
-                        return qsTr("Active Player: ") + activePlayer + qsTr(" | Preloading: ") + preloadEnabled
-                    }
-                }
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.highlightColor
-                visible: tidalApi.loginTrue
-                wrapMode: Text.WordWrap
-            }
-
-            Label {
-                id: crossfadeStatus
-                text: {
-                    var modeNames = [qsTr("No Fade"), qsTr("Timer"), qsTr("Buffer Crossfade"), qsTr("Buffer Fade-Out")]
-                    var modeName = modeNames[applicationWindow.settings.crossfadeMode] || qsTr("Unknown")
-                    return qsTr("Crossfade Mode: ") + modeName + " (" + applicationWindow.settings.crossfadeTimeMs + "ms)"
-                }
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.secondaryHighlightColor
-                visible: tidalApi.loginTrue
-                wrapMode: Text.WordWrap
-            }
 
             SectionHeader {
-                text: qsTr("Debug Settings")
+                text: qsTr("Advanced & Debug")
+            }
+            
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Advanced settings for debugging and development")
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryColor
+                wrapMode: Text.WordWrap
             }
 
             ComboBox {
                 id: debugLevelCombo
                 label: qsTr("Debug Level")
-                description: qsTr("Controls console logging output")
+                description: qsTr("Higher levels show more detailed logs but may affect performance")
                 
                 menu: ContextMenu {
                     MenuItem { 
@@ -571,8 +619,11 @@ Page {
                 
                 onCurrentItemChanged: {
                     if (currentItem) {
-                        applicationWindow.settings.debugLevel = currentItem.value
-                        debugLevelConfig.value = currentItem.value
+                        var newLevel = currentItem.value
+                        var levelNames = ["None", "Normal", "Informative", "Verbose/Spawn"]
+                        console.log("SETTINGS: Debug level changed to", newLevel, "(" + levelNames[newLevel] + ")")
+                        applicationWindow.settings.debugLevel = newLevel
+                        debugLevelConfig.value = newLevel
                     }
                 }
                 
@@ -592,6 +643,15 @@ Page {
                 text: qsTr("Experimental Features")
             }
             
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("⚠️ Warning: These features are experimental and may cause crashes or unexpected behavior")
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.errorColor
+                wrapMode: Text.WordWrap
+            }
+            
             TextSwitch {
                 id: enableUrlCaching
                 text: qsTr("Enable URL Caching")
@@ -600,6 +660,77 @@ Page {
                 onCheckedChanged: {
                     applicationWindow.settings.enableUrlCaching = checked
                     enableUrlCachingConfig.value = checked
+                }
+            }
+
+            // ACCOUNT SETTINGS - Only show at the end when authenticated
+            SectionHeader {
+                text: qsTr("Account")
+                visible: tidalApi.loginTrue
+            }
+            
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Manage your Tidal account and authentication settings")
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryColor
+                wrapMode: Text.WordWrap
+                visible: tidalApi.loginTrue
+            }
+
+            TextField {
+                id: emailFieldLoggedIn
+                width: parent.width
+                text: applicationWindow.settings.mail || ""
+                label: qsTr("Email address")
+                placeholderText: qsTr("Enter your email")
+                EnterKey.enabled: text.length > 0
+                EnterKey.iconSource: "image://theme/icon-m-enter-next"
+                EnterKey.onClicked: focus = false
+                visible: tidalApi.loginTrue
+                readOnly: true
+                color: Theme.secondaryColor
+
+                onTextChanged: {
+                    if (!readOnly) mail.value = text
+                }
+            }
+
+            TextSwitch {
+                id: stayLoggedInEnd
+                visible: tidalApi.loginTrue
+                text: qsTr("Stay logged in")
+                description: qsTr("Prevent automatic logout on token errors")
+                checked: applicationWindow.settings.stay_logged_in
+                onClicked: {
+                    applicationWindow.settings.stay_logged_in = stayLoggedInEnd.checked
+                    console.log("Stay logged in setting:", stayLoggedInEnd.checked)
+                }
+            }
+
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
+                text: qsTr("Logout")
+                visible: tidalApi.loginTrue
+                color: Theme.errorColor
+                onClicked: {
+                    var dialog = pageStack.push(Qt.resolvedUrl("../dialogs/ConfirmationDialog.qml"), {
+                        title: qsTr("Confirm Logout"),
+                        message: qsTr("Are you sure you want to logout? This will clear your stored credentials."),
+                        acceptText: qsTr("Logout"),
+                        cancelText: qsTr("Cancel")
+                    })
+                    dialog.accepted.connect(function() {
+                        authManager.clearTokens()
+                        token_type.value = "clear"
+                        access_token.value = "clear"
+                        tidalApi.loginTrue = false
+                    })
                 }
             }
 

@@ -14,10 +14,8 @@ Item {
     readonly property int typeVideo: 5
 
     SilicaFlickable {
-        anchors {
-            fill: parent
-            bottomMargin: 0 //minPlayerPanel.margin
-        }
+        anchors.fill: parent
+        anchors.bottomMargin: miniPlayerPanel.height
         clip: true //miniPlayerPanel.expanded
         contentHeight: parent.height - getBottomOffset()
 

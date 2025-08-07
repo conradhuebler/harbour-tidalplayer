@@ -73,12 +73,16 @@ SilicaListView {
 
     function addPlaylist(playlist_info)
     {
-        console.log(JSON.stringify(playlist_info))
+        if (settings.debugLevel >= 3) {
+            console.log("PLAYLIST: addPlaylist data:", JSON.stringify(playlist_info))
+        }
         if (playlist_info === undefined) {
-             console.error("album_info is undefined. skip append to model")
+             console.error("PLAYLIST: playlist_info is undefined, skipping")
              return;
         }
-        console.log("addPlaylist", playlist_info.title, playlist_info.playlistid)
+        if (settings.debugLevel >= 2) {
+            console.log("PLAYLIST: addPlaylist", playlist_info.title, playlist_info.playlistid)
+        }
         model.append({
             "title": playlist_info.title,
             "image": playlist_info.image,
@@ -97,7 +101,9 @@ SilicaListView {
              console.error("mix_info is undefined. skip append to model")
              return;
         }
-        console.log("addMix", mix_info.title, mix_info.mixid, mix_info.image)
+        if (settings.debugLevel >= 2) {
+            console.log("MIX: addMix", mix_info.title, mix_info.mixid, mix_info.image)
+        }
         model.append({
             "title": mix_info.title,
             "mixid": mix_info.mixid,
@@ -307,7 +313,9 @@ SilicaListView {
                             
                             // Debug output for mix issues
                             if (model.type === typeMix) {
-                                console.log("Mix content info - mixid:", model.mixid, "selected id:", id, "title:", model.title)
+                                if (settings.debugLevel >= 2) {
+                                    console.log("MIX: Opening mix - mixid:", model.mixid, "selected id:", id, "title:", model.title)
+                                }
                                 if (!id || id === '' || id === -1) {
                                     console.error("Mix has invalid mixid:", id)
                                     return null
@@ -337,7 +345,9 @@ SilicaListView {
 
                 onClicked: {
                     // Single click opens info page (for homescreen)
-                    console.log("HorizontalList: Opening info page for", model.title)
+                    if (settings.debugLevel >= 2) {
+                        console.log("LIST: Opening info page for", model.title)
+                    }
                     
                     switch(model.type) {
                         case typeAlbum:

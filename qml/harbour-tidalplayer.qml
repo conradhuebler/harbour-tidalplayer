@@ -67,13 +67,17 @@ ApplicationWindow
                 lastTrackUrl.value = last_track_url
                 lastTrackPosition.value = last_track_position
                 
-                console.log("Resume: Saved state - track:", last_track_id, "position:", (last_track_position/1000).toFixed(1) + "s")
+                if (settings.debugLevel >= 2) {
+                    console.log("RESUME: Saved state - track:", last_track_id, "position:", (last_track_position/1000).toFixed(1) + "s")
+                }
             }
         }
         
         function restoreCurrentState() {
             if (resume_playback && lastTrackUrl.value && lastTrackId.value) {
-                console.log("Resume: Restoring track:", lastTrackId.value, "position:", (lastTrackPosition.value/1000).toFixed(1) + "s")
+                if (settings.debugLevel >= 1) {
+                console.log("RESUME: Restoring track:", lastTrackId.value, "position:", (lastTrackPosition.value/1000).toFixed(1) + "s")
+            }
                 
                 // Set track info immediately for UI
                 var trackInfo = cacheManager.getTrackInfo(lastTrackId.value)
@@ -112,7 +116,9 @@ ApplicationWindow
         interval: 2000  // Wait for track to load
         onTriggered: {
             if (lastTrackPosition.value > 1000) {  // Only seek if > 1 second
-                console.log("Resume: Seeking to", (lastTrackPosition.value/1000).toFixed(1) + "s")
+                if (settings.debugLevel >= 2) {
+                    console.log("RESUME: Seeking to", (lastTrackPosition.value/1000).toFixed(1) + "s")
+                }
                 mediaController.seek(lastTrackPosition.value)
             }
         }
@@ -128,7 +134,9 @@ ApplicationWindow
         id: resumeRestoreTimer
         interval: 3000  // Wait 3 seconds for everything to initialize
         onTriggered: {
-            console.log("Resume: Attempting to restore playback...")
+            if (settings.debugLevel >= 1) {
+                console.log("RESUME: Attempting to restore playback...")
+            }
             applicationWindow.settings.restoreCurrentState()
         }
     }
@@ -348,7 +356,9 @@ ApplicationWindow
 
     // Enhanced function to start timer with action
     function startSleepTimer(minutes, action) {
-        console.log("Starting sleep timer:", minutes, "minutes, action:", action || "pause")
+        if (settings.debugLevel >= 1) {
+            console.log("SLEEP: Starting sleep timer:", minutes, "minutes, action:", action || "pause")
+        }
         if (minutes > 0) {
             remainingMinutes = minutes
             timerAction = action || "pause"
@@ -382,7 +392,9 @@ ApplicationWindow
 
     // Execute the selected action when timer expires
     function executeTimerAction() {
-        console.log("Executing timer action:", timerAction)
+        if (settings.debugLevel >= 1) {
+            console.log("SLEEP: Executing timer action:", timerAction)
+        }
         
         switch (timerAction) {
             case "stop":
@@ -486,7 +498,9 @@ ApplicationWindow
         id: playlistManager
         onCurrentTrackChanged: {
             if (track) {
-                console.log("PlaylistManager: Track changed to", track, "- preloading enabled:", mediaController.preloadingEnabled)
+                if (settings.debugLevel >= 2) {
+                    console.log("PLAYLIST: Track changed to", track, "- preloading enabled:", mediaController.preloadingEnabled)
+                }
                 
                 // Enhanced: Use crossfade system if preloading enabled
                 if (mediaController.preloadingEnabled) {
@@ -497,13 +511,17 @@ ApplicationWindow
                     }
                     
                     if (cachedUrl) {
-                        if (applicationWindow.settings.debugLevel >= 1) {
-                            console.log("PlaylistManager: Using crossfade for track", track, "with URL cache:", cachedUrl.substring(0, 80) + "...")
-                            console.log("PlaylistManager: URL cache has token:", cachedUrl.indexOf('token') !== -1 ? "YES" : "NO")
+                        if (applicationWindow.settings.debugLevel >= 2) {
+                            var hasToken = cachedUrl.indexOf('token') !== -1
+                            var safeUrl = hasToken ? cachedUrl.split('?')[0] + "?token=***" : cachedUrl
+                            console.log("PLAYLIST: Using crossfade for track", track, "with URL cache:", safeUrl.substring(0, 80) + "...")
+                            console.log("PLAYLIST: URL cache has token:", hasToken ? "YES" : "NO")
                         }
                         if (!mediaController.switchToTrackImmediately(cachedUrl, track)) {
                             // Fallback to API request
-                            console.log("PlaylistManager: Crossfade failed, requesting fresh URL")
+                            if (settings.debugLevel >= 1) {
+                                console.log("PLAYLIST: Crossfade failed, requesting fresh URL")
+                            }
                             mediaController.requestTrackForCrossfade(track)
                         }
                     } else {
@@ -604,7 +622,11 @@ ApplicationWindow
         }
         onOAuthRefresh: {
             // AuthManager.refreshTokens is now called directly from TidalApi.qml handler
-            console.log("OAuth refresh signal received:", token)
+            if (settings.debugLevel >= 3) {
+                console.log("AUTH: OAuth refresh signal received:", token)
+            } else if (settings.debugLevel >= 1) {
+                console.log("AUTH: OAuth refresh signal received (length:", token.length, "chars)")
+            }
         }
         onLoginFailed: {
             authManager.clearTokens()
@@ -725,6 +747,18 @@ ApplicationWindow
         applicationWindow.settings.last_track_position = lastTrackPosition.value
         tidalApi.quality = audioQuality.value
 
+        // LOG LEVEL INFORMATION - Display current debug configuration
+        var debugLevel = applicationWindow.settings.debugLevel || 0
+        var debugLevelNames = ["None", "Normal", "Informative", "Verbose/Spawn"]
+        var levelName = debugLevelNames[debugLevel] || ("Custom:" + debugLevel)
+        console.log("STARTUP: Tidal Player initialized with debug level", debugLevel, "(" + levelName + ")")
+        if (debugLevel >= 1) {
+            console.log("STARTUP: Track preloading:", applicationWindow.settings.enableTrackPreloading ? "enabled" : "disabled")
+            console.log("STARTUP: Crossfade mode:", applicationWindow.settings.crossfadeMode, "time:", applicationWindow.settings.crossfadeTimeMs + "ms")
+            console.log("STARTUP: New homescreen:", applicationWindow.settings.useNewHomescreen ? "enabled" : "disabled")
+            console.log("STARTUP: URL caching:", applicationWindow.settings.enableUrlCaching ? "enabled" : "disabled")
+        }
+
         // PERFORMANCE: Critical initialization first
         authManager.checkAndLogin()
         // MPRIS is now initialized in MediaHandler
@@ -736,7 +770,9 @@ ApplicationWindow
     Component.onDestruction:
     {
         // Save resume state before closing
-        console.log("Resume: App closing - saving current state")
+        if (settings.debugLevel >= 1) {
+            console.log("RESUME: App closing - saving current state")
+        }
         if (settings) {
             settings.saveCurrentState()
         }

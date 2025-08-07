@@ -32,7 +32,11 @@ Item {
     }
 
     function refreshTokens(token, rtoken, expiry) {
-        console.log("Refresh tokens", "new_token:", token, "new_expiry:", expiry)
+        if (settings.debugLevel >= 3) {
+            console.log("AUTH: Refresh tokens - new_token:", token, "new_expiry:", expiry)
+        } else if (settings.debugLevel >= 1) {
+            console.log("AUTH: Token refreshed (length:", token.length, "chars) expiry:", expiry)
+        }
         
         applicationWindow.settings.access_token = token
         if (rtoken) applicationWindow.settings.refresh_token = rtoken

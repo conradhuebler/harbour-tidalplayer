@@ -6,7 +6,6 @@ import "personalLists"
 Item {
     id: personalPage
     anchors.fill: parent
-    anchors.bottomMargin: miniPlayerPanel.height
 
     SilicaFlickable {
         anchors.fill: parent

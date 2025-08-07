@@ -359,7 +359,13 @@ Item {
 
     function setSource(url) {
         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1) {
-            console.log("DualAudioManager: Setting source:", url ? String(url).substring(0, 100) + "..." : "NULL")
+            if (url) {
+                var urlStr = String(url)
+                var safeUrl = urlStr.indexOf('token') !== -1 ? urlStr.split('?')[0] + "?token=***" : urlStr
+                console.log("DualAudioManager: Setting source:", safeUrl.substring(0, 100) + "...")
+            } else {
+                console.log("DualAudioManager: Setting source: NULL")
+            }
         }
         currentTrackUrl = url
 
