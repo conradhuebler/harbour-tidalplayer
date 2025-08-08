@@ -38,6 +38,9 @@ Item {
             console.log("AUTH: Token refreshed (length:", token.length, "chars) expiry:", expiry)
         }
         
+        // Show token refresh notification
+        applicationWindow.showInfoNotification(qsTr("Session Renewed"), qsTr("Authentication token refreshed automatically"))
+        
         applicationWindow.settings.access_token = token
         if (rtoken) applicationWindow.settings.refresh_token = rtoken
         
@@ -55,22 +58,36 @@ Item {
     }
 
     function checkAndLogin() {
+        // Check if we have any authentication data at all
+        if (!applicationWindow.settings.access_token || 
+            !applicationWindow.settings.refresh_token ||
+            applicationWindow.settings.access_token === "" ||
+            applicationWindow.settings.refresh_token === "") {
+            
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("AUTH: No valid tokens found, skipping auto-login")
+            }
+            return
+        }
+        
         if (isTokenValid()) {
-            console.log("old token valid");
-            console.log(applicationWindow.settings.token_type, applicationWindow.settings.access_token)
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("AUTH: Token valid, attempting login")
+            }
             tidalApi.loginIn(applicationWindow.settings.token_type,
                                 applicationWindow.settings.access_token,
                                 applicationWindow.settings.refresh_token,
                                 applicationWindow.settings.expiry_time)
-            } else {
+        } else {
             // Token abgelaufen, mit Refresh Token versuchen
-            console.log("old token invalid, attempting refresh");
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("AUTH: Token expired, attempting refresh")
+            }
             tidalApi.loginIn(applicationWindow.settings.token_type,
                                 applicationWindow.settings.refresh_token,  // Als access_token für refresh
                                 applicationWindow.settings.refresh_token,  // Als refresh_token
                                 applicationWindow.settings.expiry_time)
         }
-
     }
 
     function isTokenValid() {
@@ -89,15 +106,125 @@ Item {
     function clearTokens() {
         // Check if user wants to stay logged in
         if (applicationWindow.settings.stay_logged_in) {
-            console.log("Stay logged in is enabled - not clearing tokens")
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("AUTH: Stay logged in is enabled - not clearing tokens")
+            }
             return
         }
         
-        console.log("Clearing authentication tokens")
+        _performTokenClear("automatic logout")
+    }
+    
+    function forceLogout() {
+        // Force logout regardless of stay_logged_in setting
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("AUTH: Force logout - ignoring stay_logged_in setting")
+        }
+        _performTokenClear("manual logout")
+    }
+    
+    function _performTokenClear(reason) {
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("AUTH: Clearing authentication tokens (" + reason + ")")
+        }
+        
+        // Show logout notification
+        if (reason === "manual logout") {
+            applicationWindow.showSuccessNotification(qsTr("Logged Out"), qsTr("Successfully logged out. Session cleared."))
+        } else if (reason === "token expired") {
+            applicationWindow.showWarningNotification(qsTr("Session Expired"), qsTr("Your session has expired. Please log in again."))
+        }
+        
+        // Clear QML settings (but keep email for easy re-login)
         applicationWindow.settings.token_type = ""
         applicationWindow.settings.access_token = ""
         applicationWindow.settings.refresh_token = ""
         applicationWindow.settings.expiry_time = ""
+        
+        // Keep email address for debugging/development convenience
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("AUTH: Keeping email address for easier re-login:", applicationWindow.settings.mail)
+        }
+        
+        // Clear loginTrue flag
+        tidalApi.loginTrue = false
+        
+        // Stop current playback completely
+        try {
+            if (mediaController) {
+                mediaController.stop()
+                mediaController.setSource("")  // Clear source
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("AUTH: Media playback stopped and source cleared")
+                }
+            }
+            
+            // Clear playlist
+            if (playlistManager) {
+                playlistManager.clearPlayList()
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("AUTH: Playlist cleared")
+                }
+            }
+        } catch (e) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("AUTH: Warning - could not stop playback:", e)
+            }
+        }
+        
+        // Clear resume playback data (user-specific)
+        applicationWindow.settings.last_track_url = ""
+        applicationWindow.settings.last_track_id = ""
+        applicationWindow.settings.last_track_position = 0.0
+        
+        // Clear cache (user-specific data)
+        if (cacheManager && cacheManager.clearAllCache) {
+            try {
+                cacheManager.clearAllCache()
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("AUTH: Cache cleared")
+                }
+            } catch (e) {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("AUTH: Warning - could not clear cache:", e)
+                }
+            }
+        }
+        
+        // Notify Python backend to clear session
+        if (tidalApi && tidalApi.pythonTidal) {
+            try {
+                tidalApi.pythonTidal.call('tidal.Tidaler.clearSession', [])
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("AUTH: Notified Python backend to clear session")
+                }
+            } catch (e) {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("AUTH: Warning - could not notify Python backend:", e)
+                }
+            }
+        }
+        
+        // Force settings update to persist cleared values
         updateSettings()
+        
+        // Double-check: Force clear resume data in persistent storage
+        try {
+            if (typeof lastTrackUrl !== "undefined") lastTrackUrl.value = ""
+            if (typeof lastTrackId !== "undefined") lastTrackId.value = ""
+            if (typeof lastTrackPosition !== "undefined") lastTrackPosition.value = 0.0
+            
+            if (applicationWindow.settings.debugLevel >= 2) {
+                console.log("AUTH: Forced clear of persistent resume data")
+            }
+        } catch (e) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("AUTH: Warning - could not force clear resume data:", e)
+            }
+        }
+        
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("AUTH: Token clearing completed")
+        }
     }
 }

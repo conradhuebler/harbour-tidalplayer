@@ -52,6 +52,14 @@ Item {
         effect: ThemeEffect.PressStrong
     }
 
+    // Check if user is authenticated for playlist operations
+    function isAuthenticated() {
+        return applicationWindow.settings.access_token && 
+               applicationWindow.settings.refresh_token &&
+               applicationWindow.settings.access_token !== "" &&
+               applicationWindow.settings.refresh_token !== ""
+    }
+
     // Private Methods
     function _notifyPlaylistState() {
         var isLastTrack = currentIndex >= playlist.length - 1
@@ -80,11 +88,22 @@ Item {
     // Core Playlist Methods (ersetzt Python-Logik)
     function appendTrack(trackId) {
         console.log('PlaylistManager.appendTrack', trackId)
+        
+        // Check authentication before allowing playlist modifications
+        if (!isAuthenticated()) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("PlaylistManager: Cannot add track - not authenticated")
+            }
+            applicationWindow.showWarningNotification(qsTr("Login Required"), qsTr("Please log in to manage playlists"))
+            return false
+        }
+        
         if (trackId) {
             playlist.push(trackId)
             _notifyPlaylistState()
             canNext = true
         }
+        return true
     }
 
     function appendTrackSilent(trackId) {
@@ -136,6 +155,16 @@ Item {
 
     function playTrack(trackId) {
         console.log('Playlistmanager::playtrack', trackId)
+        
+        // Check authentication before allowing track playback
+        if (!isAuthenticated()) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("PlaylistManager: Cannot play track - not authenticated")
+            }
+            applicationWindow.showWarningNotification(qsTr("Login Required"), qsTr("Please log in to play music"))
+            return false
+        }
+        
         if (trackId) {
             mediaController.blockAutoNext = true
             var insertPos = Math.max(0, currentIndex + 1)
@@ -144,6 +173,7 @@ Item {
             _notifyPlaylistState()
             _notifyCurrentTrack()
         }
+        return true
     }
 
     function nextTrack() {

@@ -166,8 +166,70 @@ Item {
     Python {
         id: pythonTidal
 
+        onError: {
+            // Handle PyOtherSide errors and show them in UI
+            console.log("PyOtherSide Error:", traceback)
+            
+            // Convert traceback to string for parsing
+            var errorStr = String(traceback || "")
+            
+            // Parse common error types and show user-friendly messages
+            // Only show critical errors that require user action
+            if (errorStr.indexOf("Not a callable: tidal.Tidaler.login") !== -1) {
+                applicationWindow.showErrorNotification(
+                    qsTr("Session Error"), 
+                    qsTr("Please restart the app and log in again")
+                )
+            } else if (errorStr.indexOf("HTTPError: 401") !== -1) {
+                applicationWindow.showErrorNotification(
+                    qsTr("Authentication Error"), 
+                    qsTr("Please log in again")
+                )
+                // Trigger logout
+                authManager.clearTokens()
+            } else if (errorStr.indexOf("HTTPError: 403") !== -1) {
+                applicationWindow.showErrorNotification(
+                    qsTr("Access Denied"), 
+                    qsTr("This content is not available in your region or subscription")
+                )
+            } else if (errorStr.indexOf("requests.exceptions.ConnectionError") !== -1) {
+                applicationWindow.showErrorNotification(
+                    qsTr("Connection Error"), 
+                    qsTr("Unable to connect to Tidal. Check your internet connection.")
+                )
+            } else if (errorStr.indexOf("HTTPError: 400 Client Error") !== -1) {
+                // 400 errors can be temporary during session setup, so be less intrusive
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("DEBUG: 400 API Error detected, but may be temporary during session setup")
+                }
+                // Only show if it's NOT during the critical session initialization period
+                if (!sessionReinitTimer.running && loginTrue) {
+                    applicationWindow.showErrorNotification(
+                        qsTr("API Error"), 
+                        qsTr("Tidal API request failed. This may be temporary - try again later.")
+                    )
+                }
+            } else {
+                // Generic errors - only show in debug mode and not during session setup
+                if (applicationWindow.settings.debugLevel >= 2 && !sessionReinitTimer.running) {
+                    console.log("DEBUG: Generic PyOtherSide error - may be harmless during session setup")
+                }
+            }
+        }
+
         Component.onCompleted: {
+            // DEBUG: TidalAPI initialization
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("TIDAL: Starting Python backend initialization...")
+                console.log("TIDAL: Adding import path:", Qt.resolvedUrl('../'))
+            }
+            
             addImportPath(Qt.resolvedUrl('../'))
+            
+            // DEBUG: Module loading with error handling
+            if (applicationWindow.settings.debugLevel >= 2) {
+                console.log("TIDAL: Attempting to import tidal.py and dependencies...")
+            }
 
             // Login Handler
             setHandler('get_url', function(newvalue) {
@@ -208,12 +270,34 @@ Item {
                 tidalApi.oAuthRefresh(token)
                 // Update AuthManager with all token info
                 authManager.refreshTokens(token, rtoken, expiry)
+                
+                // Note: Session reinitialization after token refresh may not be necessary
+                // The existing session should continue working with the refreshed tokens
             })
 
-            // Debug Handler
+            // Enhanced Debug Handlers - synchronized with Python debug levels
             setHandler('printConsole', function(string) {
                 if (settings.debugLevel >= 2) {
                     console.log("TIDAL: " + string)
+                }
+            })
+            
+            // Python debug level handlers
+            setHandler('pythonDebugNormal', function(message) {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log(message)
+                }
+            })
+            
+            setHandler('pythonDebugInfo', function(message) {
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log(message)
+                }
+            })
+            
+            setHandler('pythonDebugVerbose', function(message) {
+                if (applicationWindow.settings.debugLevel >= 3) {
+                    console.log(message)
                 }
             })
 
@@ -611,8 +695,18 @@ Item {
                 root.topArtist(artist_info)
             })
 
+            // Import Python module with detailed error handling  
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("TIDAL: Importing tidal.py module...")
+                console.log("TIDAL: Debug level synchronization:", applicationWindow.settings.debugLevel)
+            }
+            
             importModule('tidal', function() {
-                console.log("Tidal module imported successfully")
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("TIDAL: ✓ Python module 'tidal' imported successfully")
+                    console.log("TIDAL: Python backend is ready for API calls")
+                    console.log("TIDAL: Python debug output should now be filtered by QML debug level")
+                }
             })
         }
 
@@ -631,13 +725,33 @@ Item {
     }
 
     onOAuthSuccess: {
-        console.log(type, token, rtoken, date)
+        if (applicationWindow.settings.debugLevel >= 3) {
+            console.log("OAuth Success - type:", type, "token:", token, "rtoken:", rtoken, "date:", date)
+        } else if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("OAuth Success - type:", type, "token length:", token.length, "rtoken length:", rtoken.length, "date:", date)
+        }
         authManager.updateTokens(type, token, rtoken, date)
         loginSuccess()
     }
 
     onLoginSuccess: {
         loginTrue = true
+        
+        // Add current email to history
+        if (applicationWindow.settings.mail && applicationWindow.settings.mail !== "") {
+            applicationWindow.settings.addEmailToHistory(applicationWindow.settings.mail)
+        }
+        
+        // CRITICAL: Ensure Python session is ready after successful login
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("LOGIN: Forcing Python session reinitialization after successful login")
+        }
+        // Force full reinitialization to ensure session works properly
+        sessionReinitTimer.start()
+        
+        // Show login success notification and switch to main page
+        applicationWindow.showSuccessNotification(qsTr("Login Successful"), qsTr("Successfully logged in to Tidal"))
+        applicationWindow.switchToMainPage()
     }
 
     onLoginFailed: {
@@ -645,6 +759,9 @@ Item {
         if (authManager) {
             authManager.clearTokens()
         }
+        
+        // Show login failure notification
+        applicationWindow.showErrorNotification(qsTr("Login Failed"), qsTr("Unable to authenticate with Tidal. Please check your credentials."))
     }
 
 
@@ -711,8 +828,16 @@ Item {
         if (cachedResult) {
             console.log("DEDUP: Using cached result for:", signature)
             if (callback) {
-                // Use Qt.callLater to call callback asynchronously
-                Qt.callLater(callback, cachedResult)
+                // Use timer to call callback asynchronously (Qt.callLater not available in older Qt versions)
+                var callbackTimer = Qt.createQmlObject(
+                    "import QtQuick 2.0; Timer { interval: 1; repeat: false }",
+                    tidalApi, "callbackTimer"
+                )
+                callbackTimer.triggered.connect(function() {
+                    callback(cachedResult)
+                    callbackTimer.destroy()
+                })
+                callbackTimer.start()
             }
             return -1  // Cached request ID
         }
@@ -809,6 +934,15 @@ Item {
     }
 
     function search(searchText) {
+        // Check authentication before allowing search
+        if (!isAuthenticated()) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("TidalApi: Cannot search - not authenticated")
+            }
+            applicationWindow.showWarningNotification(qsTr("Login Required"), qsTr("Please log in to search music"))
+            return false
+        }
+        
         if(tracks) {
             pythonTidal.call('tidal.Tidaler.search_track', [searchText])
         }
@@ -821,6 +955,7 @@ Item {
         if(playlists) {
             pythonTidal.call('tidal.Tidaler.search_playlist', [searchText])
         }
+        return true
     }
 
     // WORKAROUND: Track play deduplication 
@@ -831,6 +966,15 @@ Item {
     // - Slower track loading performance
     property string lastPlayedTrackId: ""
     property bool trackPlayInProgress: false
+    
+    // Check if user is authenticated for API operations
+    function isAuthenticated() {
+        return applicationWindow.settings.access_token && 
+               applicationWindow.settings.refresh_token &&
+               applicationWindow.settings.access_token !== "" &&
+               applicationWindow.settings.refresh_token !== "" &&
+               loginTrue
+    }
     
     // Fallback timer to reset deduplication flag
     Timer {
@@ -843,10 +987,37 @@ Item {
         }
     }
     
+    // Timer for delayed session reinitialization after login
+    Timer {
+        id: sessionReinitTimer
+        interval: 2000  // Wait 2 seconds for login to fully settle
+        repeat: false
+        onTriggered: {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("LOGIN: Executing forced Python session reinitialization")
+            }
+            // Force full reinitialization to ensure session works properly
+            pythonTidal.call('tidal.Tidaler.initialize', [applicationWindow.settings.audio_quality], function() {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("LOGIN: Session reinitialization completed")
+                }
+            })
+        }
+    }
+    
     // Track Funktionen
     function playTrackId(id) {
         if (applicationWindow.settings.debugLevel >= 1) {
             console.log("TidalApi.playTrackId called with:", id)
+        }
+        
+        // Check authentication before allowing track playback
+        if (!isAuthenticated()) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("TidalApi: Cannot play track - not authenticated")
+            }
+            applicationWindow.showWarningNotification(qsTr("Login Required"), qsTr("Please log in to play music"))
+            return false
         }
         
         // WORKAROUND: Prevent duplicate plays for same track
@@ -855,7 +1026,7 @@ Item {
             if (applicationWindow.settings.debugLevel >= 1) {
                 console.log("TidalApi: WORKAROUND - Ignoring duplicate playTrackId call for", id, "(already in progress)")
             }
-            return
+            return false
         }
         
         // Check for cached URL first - fast path! (only if enabled)

@@ -15,19 +15,19 @@ Item {
 
     SilicaFlickable {
         anchors.fill: parent
-        anchors.bottomMargin: miniPlayerPanel.height
         clip: true //miniPlayerPanel.expanded
-        contentHeight: parent.height - getBottomOffset()
+        contentHeight: mainColumn.height
 
-        function getBottomOffset()
-        {
-            if (minPlayerPanel.open) return ( 0.4 * minPlayerPanel.height )
-            return minPlayerPanel.height * 0.4
-        }
 
-        // Header-Bereich
+        // Main content column
         Column {
-            id: header
+            id: mainColumn
+            width: parent.width
+            spacing: Theme.paddingLarge
+            
+            // Header-Bereich
+            Column {
+                id: header
             width: searchPage.width
             spacing: Theme.paddingSmall
 
@@ -95,20 +95,14 @@ Item {
             }
         }
 
-        // Suchergebnisse
-        SilicaListView {
-            anchors {
-                top: header.bottom
-                topMargin: Theme.paddingLarge
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
+            // Suchergebnisse
+            SilicaListView {
+                width: mainColumn.width
                 leftMargin: Theme.horizontalPageMargin
                 rightMargin: Theme.horizontalPageMargin
-            }
-            clip: true
-            height: parent.height
-            contentHeight: height
+                clip: true
+                height: searchPage.height - header.height - Theme.paddingLarge * 2
+                contentHeight: contentItem.childrenRect.height
             
             // PERFORMANCE: Virtual scrolling optimizations for search results
             cacheBuffer: height * 3        // Search results might be longer, cache more
@@ -119,7 +113,8 @@ Item {
                 itemData: model
             }
 
-            VerticalScrollDecorator {}
+                VerticalScrollDecorator {}
+            }
         }
     }
 

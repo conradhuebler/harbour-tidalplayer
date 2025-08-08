@@ -57,6 +57,14 @@ Item {
         repeat: false
         onTriggered: trackInfoChanged()
     }
+    
+    // Timer for unlocking player switch after immediate switches
+    Timer {
+        id: unlockTimer
+        interval: 100  // Brief delay
+        repeat: false
+        onTriggered: playerSwitchLocked = false
+    }
 
     // Crossfade state tracking
     property real fadeStartTime: 0
@@ -78,7 +86,16 @@ Item {
 
             onCurrentItemSourceChanged: {
                 if (audioPlayer1.isActive && currentItemSource) {
-                    console.log('DualAudioManager: Playlist track changed to:', currentItemSource)
+                    // Convert to string and mask token in URL for secure logging
+                    var urlString = currentItemSource.toString()
+                    var hasToken = urlString.indexOf('token') !== -1
+                    
+                    if (applicationWindow.settings.debugLevel >= 3) {
+                        console.log('DualAudioManager: Playlist track changed to:', urlString)
+                    } else if (applicationWindow.settings.debugLevel >= 1) {
+                        var safeUrl = hasToken ? urlString.split('?')[0] + "?token=***" : urlString
+                        console.log('DualAudioManager: Playlist track changed to:', safeUrl)
+                    }
                     currentTrackUrl = currentItemSource
                     trackInfoUpdateTimer.start()
                 }
@@ -415,7 +432,7 @@ Item {
             trackInfoUpdateTimer.start()
             
             // Unlock immediately for mode 0
-            Qt.callLater(function() { playerSwitchLocked = false })
+            unlockTimer.start()
             
             return true
         }
@@ -431,7 +448,7 @@ Item {
             trackInfoUpdateTimer.start()
             
             // Unlock after brief delay since no crossfade is needed
-            Qt.callLater(function() { playerSwitchLocked = false })
+            unlockTimer.start()
             
             return true
         }
@@ -601,7 +618,7 @@ Item {
             resetPreloadState()
             
             // Unlock after brief delay to ensure switch completes
-            Qt.callLater(function() { playerSwitchLocked = false })
+            unlockTimer.start()
             
             return true
         }

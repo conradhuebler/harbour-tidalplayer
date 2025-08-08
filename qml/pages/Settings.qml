@@ -181,7 +181,9 @@ Page {
                     MenuItem { text: qsTr("Master (MQA)") }
                 }
                 onCurrentIndexChanged: {
-                    applicationWindow.settings.audio_quality = qualities[currentIndex]
+                    if (currentIndex >= 0 && currentIndex < qualities.length) {
+                        applicationWindow.settings.audio_quality = qualities[currentIndex]
+                    }
                 }
             }
 
@@ -709,6 +711,108 @@ Page {
                 }
             }
 
+            // Email History Management
+            SectionHeader {
+                text: qsTr("Email History")
+                visible: tidalApi.loginTrue && applicationWindow.settings.getEmailHistory().length > 0
+            }
+            
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Previously used email addresses for quick login")
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryColor
+                wrapMode: Text.WordWrap
+                visible: tidalApi.loginTrue && applicationWindow.settings.getEmailHistory().length > 0
+            }
+
+            Repeater {
+                model: tidalApi.loginTrue ? applicationWindow.settings.getEmailHistory() : []
+                delegate: ListItem {
+                    width: parent.width
+                    contentHeight: emailLabel.height + Theme.paddingMedium
+                    
+                    Row {
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            margins: Theme.horizontalPageMargin
+                            verticalCenter: parent.verticalCenter
+                        }
+                        spacing: Theme.paddingMedium
+                        
+                        Label {
+                            id: emailLabel
+                            text: modelData
+                            color: modelData === applicationWindow.settings.mail ? Theme.highlightColor : Theme.primaryColor
+                            font.bold: modelData === applicationWindow.settings.mail
+                            width: parent.width - deleteButton.width - parent.spacing
+                            truncationMode: TruncationMode.Elide
+                        }
+                        
+                        IconButton {
+                            id: deleteButton
+                            icon.source: "image://theme/icon-m-delete"
+                            onClicked: {
+                                var dialog = pageStack.push(Qt.resolvedUrl("../dialogs/ConfirmationDialog.qml"), {
+                                    title: qsTr("Remove Email"),
+                                    message: qsTr("Remove '%1' from email history?").arg(modelData),
+                                    acceptText: qsTr("Remove"),
+                                    cancelText: qsTr("Cancel")
+                                })
+                                
+                                if (dialog && dialog.accepted) {
+                                    dialog.accepted.connect(function() {
+                                        if (applicationWindow.settings.debugLevel >= 1) {
+                                            console.log("EMAIL: User confirmed removal of", modelData)
+                                        }
+                                        applicationWindow.settings.removeEmailFromHistory(modelData)
+                                    })
+                                }
+                            }
+                        }
+                    }
+                    
+                    onClicked: {
+                        // Select this email for login
+                        if (modelData !== applicationWindow.settings.mail) {
+                            applicationWindow.settings.mail = modelData
+                            if (applicationWindow.settings.debugLevel >= 1) {
+                                console.log("EMAIL: Selected from history:", modelData)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
+                text: qsTr("Clear Email History")
+                visible: tidalApi.loginTrue && applicationWindow.settings.getEmailHistory().length > 0
+                onClicked: {
+                    var dialog = pageStack.push(Qt.resolvedUrl("../dialogs/ConfirmationDialog.qml"), {
+                        title: qsTr("Clear Email History"),
+                        message: qsTr("Remove all email addresses from history?"),
+                        acceptText: qsTr("Clear All"),
+                        cancelText: qsTr("Cancel")
+                    })
+                    
+                    if (dialog && dialog.accepted) {
+                        dialog.accepted.connect(function() {
+                            if (applicationWindow.settings.debugLevel >= 1) {
+                                console.log("EMAIL: User confirmed clearing all history")
+                            }
+                            applicationWindow.settings.clearEmailHistory()
+                        })
+                    }
+                }
+            }
+
             Button {
                 anchors {
                     left: parent.left
@@ -725,12 +829,22 @@ Page {
                         acceptText: qsTr("Logout"),
                         cancelText: qsTr("Cancel")
                     })
-                    dialog.accepted.connect(function() {
-                        authManager.clearTokens()
-                        token_type.value = "clear"
-                        access_token.value = "clear"
-                        tidalApi.loginTrue = false
-                    })
+                    
+                    if (dialog && dialog.accepted) {
+                        dialog.accepted.connect(function() {
+                            if (applicationWindow.settings.debugLevel >= 1) {
+                                console.log("SETTINGS: User confirmed logout")
+                            }
+                            authManager.forceLogout()
+                        })
+                    } else {
+                        console.log("Warning: ConfirmationDialog or accepted signal not available")
+                        // Fallback - logout directly if dialog fails
+                        if (applicationWindow.settings.debugLevel >= 1) {
+                            console.log("SETTINGS: Dialog failed, performing direct logout")
+                        }
+                        authManager.forceLogout()
+                    }
                 }
             }
 

@@ -1,21 +1,115 @@
 # This Python file uses the following encoding: utf-8
 
 import sys
-sys.path.append('/usr/share/harbour-tidalplayer/python/')
-import socket
-import requests
-import json
-import tidalapi
-import pyotherside
+import os
 
-from tidalapi.page import PageItem, PageLink
-from tidalapi.mix import Mix
-from tidalapi.media import Quality
-from requests.exceptions import HTTPError, RequestException
+# Debug function for controlled logging synchronized with QML debug levels
+def debug_log(message, level=1, force=False):
+    """
+    Log debug messages with level control synchronized with QML
+    level 1: Normal debug (QML debugLevel >= 1)
+    level 2: Informative debug (QML debugLevel >= 2) 
+    level 3: Verbose debug (QML debugLevel >= 3)
+    force: Always log regardless of level (for critical errors)
+    """
+    import pyotherside
+    try:
+        # Use different pyotherside signals based on debug level
+        # This allows QML to filter messages according to its debugLevel setting
+        if force or level == 1:
+            # Level 1 and force: Send as 'pythonDebugNormal' (QML shows when debugLevel >= 1)
+            pyotherside.send('pythonDebugNormal', f"PYTHON: {message}")
+        elif level == 2:
+            # Level 2: Send as 'pythonDebugInfo' (QML shows when debugLevel >= 2)
+            pyotherside.send('pythonDebugInfo', f"PYTHON: {message}")
+        elif level == 3:
+            # Level 3: Send as 'pythonDebugVerbose' (QML shows when debugLevel >= 3)
+            pyotherside.send('pythonDebugVerbose', f"PYTHON: {message}")
+        else:
+            # Fallback for any other levels
+            pyotherside.send('pythonDebugNormal', f"PYTHON: {message}")
+    except:
+        # Fallback to console if pyotherside fails
+        print(f"PYTHON: {message}")
+
+# Enhanced import with error handling and debug info
+debug_log("Starting TidalAPI Python backend initialization", level=1)
+debug_log(f"Python version: {sys.version}", level=2)
+debug_log(f"Python path: {sys.path[:3]}...", level=2)
+
+# Add custom Python path
+python_path = '/usr/share/harbour-tidalplayer/python/'
+if python_path not in sys.path:
+    sys.path.append(python_path)
+    debug_log(f"Added Python path: {python_path}", level=2)
+
+# Check if path exists
+if os.path.exists(python_path):
+    debug_log(f"Python path verified: {python_path}", level=2)
+    if os.path.exists(os.path.join(python_path, 'tidalapi')):
+        debug_log("TidalAPI package found in Python path", level=2)
+    else:
+        debug_log("WARNING: TidalAPI package not found in Python path", level=1, force=True)
+else:
+    debug_log(f"WARNING: Python path does not exist: {python_path}", level=1, force=True)
+
+# Import modules with detailed error handling
+modules_to_import = [
+    ('socket', 'socket'),
+    ('requests', 'requests'),
+    ('json', 'json'), 
+    ('tidalapi', 'tidalapi (main)'),
+    ('pyotherside', 'pyotherside')
+]
+
+debug_log("Importing standard modules...", level=2)
+for module_name, display_name in modules_to_import:
+    try:
+        module = __import__(module_name)
+        if hasattr(module, '__version__'):
+            debug_log(f"✓ Imported {display_name} v{module.__version__}", level=2)
+        else:
+            debug_log(f"✓ Imported {display_name}", level=2)
+        globals()[module_name] = module
+    except ImportError as e:
+        debug_log(f"✗ Failed to import {display_name}: {str(e)}", level=1, force=True)
+        raise
+    except Exception as e:
+        debug_log(f"✗ Error importing {display_name}: {str(e)}", level=1, force=True)
+        raise
+
+# Import TidalAPI submodules with error handling
+debug_log("Importing TidalAPI submodules...", level=2)
+tidalapi_submodules = [
+    ('tidalapi.page', ['PageItem', 'PageLink']),
+    ('tidalapi.mix', ['Mix']),
+    ('tidalapi.media', ['Quality']),
+    ('requests.exceptions', ['HTTPError', 'RequestException'])
+]
+
+for module_path, classes in tidalapi_submodules:
+    try:
+        module = __import__(module_path, fromlist=classes)
+        for class_name in classes:
+            if hasattr(module, class_name):
+                globals()[class_name] = getattr(module, class_name)
+                debug_log(f"✓ Imported {module_path}.{class_name}", level=3)
+            else:
+                debug_log(f"✗ Class {class_name} not found in {module_path}", level=1, force=True)
+        debug_log(f"✓ Imported {module_path}", level=2)
+    except ImportError as e:
+        debug_log(f"✗ Failed to import {module_path}: {str(e)}", level=1, force=True)
+        raise
+    except Exception as e:
+        debug_log(f"✗ Error importing {module_path}: {str(e)}", level=1, force=True)
+        raise
+
+debug_log("All modules imported successfully", level=1)
 
 
 class Tidal:
     def __init__(self):
+        debug_log("Creating Tidal class instance", level=1)
         self.session = None
         self.config = None
         self.top_tracks = 20
@@ -23,27 +117,76 @@ class Tidal:
         self.track_search = 20
         self.artist_search = 20
 
+        debug_log("Tidal class initialized, sending loadingStarted signal", level=2)
         pyotherside.send('loadingStarted')
 
     def initialize(self, quality="HIGH"):
-        pyotherside.send("printConsole", "Initialise tidal api")
+        debug_log(f"Initializing TidalAPI with quality: {quality}", level=1)
+        
+        try:
+            # Enhanced quality selection with debug info
+            quality_mapping = {
+                "LOW": (Quality.low_96k, "96k"),
+                "HIGH": (Quality.low_320k, "320k"), 
+                "LOSSLESS": (Quality.high_lossless, "lossless"),
+                "TEST": (Quality.low_96k, "96k test")
+            }
+            
+            if quality in quality_mapping:
+                selected_quality, quality_name = quality_mapping[quality]
+                debug_log(f"Selected audio quality: {quality_name}", level=2)
+            else:
+                selected_quality = Quality.default
+                debug_log(f"Unknown quality '{quality}', using default", level=1, force=True)
+                quality_name = "default"
 
-        selected_quality = ""
-        if quality == "LOW":
-            selected_quality = Quality.low_96k
-        elif quality == "HIGH":
-            selected_quality = Quality.low_320k
-        elif quality == "LOSSLESS":
-            selected_quality = Quality.high_lossless
-        elif quality == "TEST":
-            selected_quality = Quality.low_96k
-        else:
-            # Fallback auf HIGH wenn unbekannte Qualität
-            selected_quality = Quality.default
-        #todo: add the other qualities too
+            # Check if tidalapi classes are available
+            debug_log("Creating TidalAPI Config object...", level=2)
+            
+            if not hasattr(tidalapi, 'Config'):
+                raise AttributeError("tidalapi.Config class not found")
+            if not hasattr(tidalapi, 'VideoQuality'):
+                raise AttributeError("tidalapi.VideoQuality class not found")
+            if not hasattr(tidalapi, 'Session'):
+                raise AttributeError("tidalapi.Session class not found")
+                
+            self.config = tidalapi.Config(
+                quality=selected_quality, 
+                video_quality=tidalapi.VideoQuality.low
+            )
+            debug_log(f"TidalAPI Config created successfully with {quality_name} audio quality", level=2)
 
-        self.config = tidalapi.Config(quality=selected_quality, video_quality=tidalapi.VideoQuality.low)
-        self.session = tidalapi.Session(self.config)
+            # Only create new session if none exists or session is invalid
+            if not hasattr(self, 'session') or not self.session:
+                debug_log("Creating new TidalAPI Session object...", level=2)
+                self.session = tidalapi.Session(self.config)
+                if self.session:
+                    debug_log("New TidalAPI Session created successfully", level=1)
+            else:
+                debug_log("Reusing existing TidalAPI Session object", level=2)
+                # Update existing session config
+                if hasattr(self.session, 'config'):
+                    self.session.config = self.config
+                    debug_log("Updated existing session config", level=2)
+                    
+            if self.session:
+                debug_log("TidalAPI Session ready", level=1)
+                # Check session capabilities
+                if hasattr(self.session, 'login_oauth_simple'):
+                    debug_log("OAuth login method available", level=2)
+                if hasattr(self.session, 'check_login'):
+                    debug_log("Login check method available", level=2)
+            else:
+                debug_log("WARNING: TidalAPI Session creation returned None", level=1, force=True)
+                
+        except AttributeError as e:
+            debug_log(f"CRITICAL: TidalAPI class missing: {str(e)}", level=1, force=True)
+            debug_log("This indicates a TidalAPI installation problem", level=1, force=True)
+            raise
+        except Exception as e:
+            debug_log(f"CRITICAL: Failed to initialize TidalAPI: {str(e)}", level=1, force=True)
+            debug_log(f"Error type: {type(e).__name__}", level=1, force=True)
+            raise
 
     def setconfig(self, top_tracks, album_search, track_search, artist_search):
         self.top_tracks = top_tracks
@@ -57,19 +200,19 @@ class Tidal:
                 pyotherside.send("oauth_login_failed")
             else:
                 if access_token == refresh_token:
-                    pyotherside.send("printConsole", "Getting new token")
+                    debug_log("Getting new token via refresh", level=1)
 
                     try:
                         self.session.token_refresh(refresh_token)
                         self.session.load_oauth_session(token_type, self.session.access_token)
 
                         if self.session.check_login() is True:
-                            pyotherside.send("printConsole", "New token", self.session.access_token)
+                            debug_log(f"New token obtained (length: {len(self.session.access_token)} chars)", level=1)
                             # Send all token info including new expiry time
                             pyotherside.send("oauth_refresh", self.session.access_token, 
                                             self.session.refresh_token, self.session.expiry_time)
                             pyotherside.send("oauth_login_success")
-                            pyotherside.send("printConsole", "Login success")
+                            debug_log("Login verification successful", level=1)
                         else:
                             pyotherside.send("printConsole", "Token refresh failed - login check unsuccessful")
                             pyotherside.send("oauth_login_failed")
@@ -98,7 +241,7 @@ class Tidal:
 
                         if self.session.check_login() == True:
                             pyotherside.send("oauth_login_success")
-                            pyotherside.send("printConsole", "Login success")
+                            debug_log("Login verification successful", level=1)
                         else:
                             pyotherside.send("printConsole", "Login check failed with old token")
                             pyotherside.send("oauth_login_failed")
@@ -125,21 +268,75 @@ class Tidal:
             pyotherside.send("oauth_login_failed")
 
     def request_oauth(self):
-        pyotherside.send("printConsole", "Start new session")
-        self.login, self.future = self.session.login_oauth()
-        pyotherside.send("printConsole", "getting url")
-
-        pyotherside.send("get_url", self.login.verification_uri_complete)
-        pyotherside.send("printConsole", "waiting for done")
-
-        self.future.result()
-        pyotherside.send("printConsole", "Done", self.session.token_type, self.session.access_token)
-
-        if self.session.check_login() == True:
-            pyotherside.send("get_token", self.session.token_type, self.session.access_token, self.session.refresh_token,  self.session.expiry_time)
-        else:
+        debug_log("Starting OAuth authentication process", level=1)
+        
+        try:
+            # Check if session is available
+            if not self.session:
+                debug_log("CRITICAL: TidalAPI session is None, cannot proceed with OAuth", level=1, force=True)
+                pyotherside.send("oauth_failed")
+                return
+                
+            if not hasattr(self.session, 'login_oauth'):
+                debug_log("CRITICAL: TidalAPI session missing login_oauth method", level=1, force=True)
+                pyotherside.send("oauth_failed")
+                return
+                
+            debug_log("Calling TidalAPI login_oauth()...", level=2)
+            self.login, self.future = self.session.login_oauth()
+            
+            if not self.login:
+                debug_log("CRITICAL: OAuth login object is None", level=1, force=True)
+                pyotherside.send("oauth_failed")
+                return
+                
+            if not hasattr(self.login, 'verification_uri_complete'):
+                debug_log("CRITICAL: OAuth login missing verification_uri_complete", level=1, force=True)
+                pyotherside.send("oauth_failed")
+                return
+                
+            oauth_url = self.login.verification_uri_complete
+            debug_log(f"OAuth URL obtained: {oauth_url[:50]}...", level=2)
+            pyotherside.send("get_url", oauth_url)
+            
+            debug_log("Waiting for user OAuth completion...", level=1)
+            
+            if not self.future:
+                debug_log("CRITICAL: OAuth future object is None", level=1, force=True)
+                pyotherside.send("oauth_failed")
+                return
+                
+            # Wait for OAuth completion
+            self.future.result()
+            
+            # Check tokens
+            if hasattr(self.session, 'access_token') and self.session.access_token:
+                debug_log(f"OAuth completed, token received (length: {len(self.session.access_token)} chars)", level=1)
+            else:
+                debug_log("WARNING: OAuth completed but no access token received", level=1, force=True)
+                
+            # Verify login
+            if self.session.check_login():
+                debug_log("OAuth login verification successful", level=1)
+                debug_log(f"Token type: {getattr(self.session, 'token_type', 'unknown')}", level=2)
+                debug_log(f"Token expires: {getattr(self.session, 'expiry_time', 'unknown')}", level=2)
+                
+                pyotherside.send("get_token", 
+                                self.session.token_type, 
+                                self.session.access_token, 
+                                self.session.refresh_token, 
+                                self.session.expiry_time)
+            else:
+                debug_log("CRITICAL: OAuth login verification failed", level=1, force=True)
+                pyotherside.send("oauth_failed")
+                
+        except HTTPError as e:
+            debug_log(f"HTTP error during OAuth: {e} (Status: {getattr(e.response, 'status_code', 'unknown')})", level=1, force=True)
             pyotherside.send("oauth_failed")
-
+        except Exception as e:
+            debug_log(f"Unexpected error during OAuth: {str(e)} (Type: {type(e).__name__})", level=1, force=True)
+            pyotherside.send("oauth_failed")
+            
         pyotherside.send('loadingFinished')
 
     def handle_track(self, track):
@@ -833,5 +1030,111 @@ class Tidal:
             result = self.getUser().favorites.remove_playlist(id)
         if result:
             pyotherside.send('updateFavorite', id, status)
+            
+    def validateSession(self):
+        """
+        Validate if the current session is working properly
+        Returns True if session is valid, False otherwise
+        """
+        try:
+            if not hasattr(self, 'session') or not self.session:
+                debug_log("No session object - validation failed", level=2)
+                return False
+                
+            # Debug: Check session tokens
+            if hasattr(self.session, 'access_token'):
+                token_length = len(self.session.access_token) if self.session.access_token else 0
+                debug_log(f"Session has access_token (length: {token_length})", level=2)
+            
+            if not hasattr(self.session, 'check_login'):
+                debug_log("Session has no check_login method - validation failed", level=2)
+                return False
+                
+            login_valid = self.session.check_login()
+            debug_log(f"Session check_login result: {login_valid}", level=2)
+            
+            if not login_valid:
+                debug_log("Session login check failed - validation failed", level=2)  
+                return False
+                
+            debug_log("Session validation passed", level=2)
+            return True
+            
+        except Exception as e:
+            debug_log(f"Session validation error: {e}", level=1, force=True)
+            return False
 
-Tidaler = Tidal()
+    def clearSession(self):
+        """Clear the current session completely - for manual logout"""
+        debug_log("Clearing TidalAPI session (manual logout)", level=1)
+        
+        try:
+            if self.session:
+                # Clear session tokens and user data
+                session_cleared = False
+                
+                if hasattr(self.session, 'access_token'):
+                    self.session.access_token = None
+                    session_cleared = True
+                if hasattr(self.session, 'refresh_token'):
+                    self.session.refresh_token = None
+                    session_cleared = True
+                if hasattr(self.session, 'token_type'):
+                    self.session.token_type = None
+                    session_cleared = True
+                if hasattr(self.session, 'expiry_time'):
+                    self.session.expiry_time = None
+                    session_cleared = True
+                if hasattr(self.session, 'user'):
+                    self.session.user = None
+                    session_cleared = True
+                
+                # Clear any cached session state
+                if hasattr(self.session, '_user_id'):
+                    self.session._user_id = None
+                if hasattr(self.session, 'session_id'):
+                    self.session.session_id = None
+                if hasattr(self.session, '_session_id'):
+                    self.session._session_id = None
+                    
+                debug_log(f"Session tokens cleared: {session_cleared}", level=2)
+                
+                # Try to close/invalidate session if method exists
+                if hasattr(self.session, 'close'):
+                    self.session.close()
+                    debug_log("Session closed", level=2)
+                elif hasattr(self.session, 'logout'):
+                    self.session.logout() 
+                    debug_log("Session logout called", level=2)
+                    
+                # Force recreate session object to ensure clean state
+                debug_log("Recreating session object for clean state", level=2)
+                old_config = self.config
+                self.session = None
+                
+                # Recreate with same config but clean state
+                if old_config:
+                    self.session = tidalapi.Session(old_config)
+                    debug_log("New clean session created", level=2)
+                else:
+                    debug_log("No config available, session set to None", level=2)
+                    
+                debug_log("✓ TidalAPI session cleared and recreated successfully", level=1)
+            else:
+                debug_log("No active session to clear", level=1)
+                
+        except Exception as e:
+            debug_log(f"Error clearing session: {str(e)} (Type: {type(e).__name__})", level=1, force=True)
+            debug_log("Forcing session to None for safety", level=1)
+            self.session = None
+
+# Create global Tidal instance with error handling
+try:
+    debug_log("Creating global Tidal instance 'Tidaler'...", level=1)
+    Tidaler = Tidal()
+    debug_log("✓ Global Tidal instance created successfully", level=1)
+except Exception as e:
+    debug_log(f"✗ CRITICAL: Failed to create global Tidal instance: {str(e)}", level=1, force=True)
+    debug_log(f"Error type: {type(e).__name__}", level=1, force=True)
+    debug_log("This will prevent the app from working properly", level=1, force=True)
+    raise

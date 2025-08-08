@@ -15,7 +15,7 @@ ApplicationWindow
 {
     id: applicationWindow
     
-    property FirstPage mainPage
+    property var mainPage
     property alias mediaController: mediaController
 
     property bool loginTrue : false
@@ -54,6 +54,69 @@ ApplicationWindow
         property int crossfadeTimeMs: 1000 // crossfade time in milliseconds
         property int debugLevel: 0 // debug logging level: 0=None, 1=Normal, 2=Informative, 3=Verbose/Spawn
         property bool enableUrlCaching: false // URL caching for faster track loading
+        property var emailHistory: [] // List of previously used email addresses
+        
+        // Email history management functions
+        function addEmailToHistory(email) {
+            if (!email || email === "") return
+            
+            var history = emailHistory.slice() // Copy array
+            var index = history.indexOf(email)
+            
+            if (index !== -1) {
+                // Move existing email to front
+                history.splice(index, 1)
+            }
+            
+            // Add to front
+            history.unshift(email)
+            
+            // Keep only last 5 emails
+            if (history.length > 5) {
+                history = history.slice(0, 5)
+            }
+            
+            emailHistory = history
+            
+            if (debugLevel >= 2) {
+                console.log("EMAIL: Added to history:", email, "Total entries:", history.length)
+            }
+        }
+        
+        function getEmailHistory() {
+            return emailHistory || []
+        }
+        
+        function removeEmailFromHistory(email) {
+            if (!email || email === "") return false
+            
+            var history = emailHistory.slice() // Copy array
+            var index = history.indexOf(email)
+            
+            if (index !== -1) {
+                history.splice(index, 1)
+                emailHistory = history
+                
+                if (debugLevel >= 2) {
+                    console.log("EMAIL: Removed from history:", email, "Remaining entries:", history.length)
+                }
+                return true
+            }
+            
+            if (debugLevel >= 2) {
+                console.log("EMAIL: Email not found in history:", email)
+            }
+            return false
+        }
+        
+        function clearEmailHistory() {
+            var oldLength = (emailHistory || []).length
+            emailHistory = []
+            
+            if (debugLevel >= 1) {
+                console.log("EMAIL: Cleared history (" + oldLength + " entries removed)")
+            }
+        }
         
         // Quick resume functions
         function saveCurrentState() {
@@ -74,29 +137,43 @@ ApplicationWindow
         }
         
         function restoreCurrentState() {
+            // Check if we have valid authentication before trying to resume
+            if (!access_token || !refresh_token || 
+                access_token === "" || refresh_token === "") {
+                if (settings.debugLevel >= 1) {
+                    console.log("RESUME: No valid tokens - skipping resume playback")
+                }
+                return
+            }
+            
             if (resume_playback && lastTrackUrl.value && lastTrackId.value) {
                 if (settings.debugLevel >= 1) {
-                console.log("RESUME: Restoring track:", lastTrackId.value, "position:", (lastTrackPosition.value/1000).toFixed(1) + "s")
-            }
-                
-                // Set track info immediately for UI
-                var trackInfo = cacheManager.getTrackInfo(lastTrackId.value)
-                if (trackInfo) {
-                    mediaController.track_id = lastTrackId.value
-                    mediaController.track_name = trackInfo.title || ""
-                    mediaController.album_name = trackInfo.album || ""
-                    mediaController.artist_name = trackInfo.artist || ""
-                    mediaController.artwork_url = trackInfo.image || ""
-                    mediaController.track_duration = trackInfo.duration || 0
+                    console.log("RESUME: Restoring track:", lastTrackId.value, "position:", (lastTrackPosition.value/1000).toFixed(1) + "s")
                 }
-                
-                // Load track directly with cached URL - no API call needed!
-                mediaController.setSource(lastTrackUrl.value)
-                mediaController.play()
-                
-                // Seek to saved position after track loads
-                resumeSeekTimer.start()
+            } else {
+                if (settings.debugLevel >= 1) {
+                    console.log("RESUME: Resume disabled or no saved state available")
+                }
+                return
             }
+            
+            // Set track info immediately for UI
+            var trackInfo = cacheManager.getTrackInfo(lastTrackId.value)
+            if (trackInfo) {
+                mediaController.track_id = lastTrackId.value
+                mediaController.track_name = trackInfo.title || ""
+                mediaController.album_name = trackInfo.album || ""
+                mediaController.artist_name = trackInfo.artist || ""
+                mediaController.artwork_url = trackInfo.image || ""
+                mediaController.track_duration = trackInfo.duration || 0
+            }
+            
+            // Load track directly with cached URL - no API call needed!
+            mediaController.setSource(lastTrackUrl.value)
+            mediaController.play()
+            
+            // Seek to saved position after track loads
+            resumeSeekTimer.start()
         }
     }
     
@@ -138,6 +215,35 @@ ApplicationWindow
                 console.log("RESUME: Attempting to restore playback...")
             }
             applicationWindow.settings.restoreCurrentState()
+        }
+    }
+    
+    // Timer to check authentication and redirect to settings if needed
+    Timer {
+        id: authCheckTimer
+        interval: 1000  // Wait 1 second for settings to load
+        repeat: false
+        onTriggered: {
+            var hasValidAuth = applicationWindow.settings.access_token && 
+                             applicationWindow.settings.refresh_token &&
+                             applicationWindow.settings.access_token !== "" &&
+                             applicationWindow.settings.refresh_token !== ""
+            
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("AUTH_CHECK: Checking authentication - hasValidAuth:", hasValidAuth)
+            }
+            
+            if (!hasValidAuth) {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("AUTH_CHECK: No valid authentication - redirecting to settings")
+                }
+                showInfoNotification(qsTr("Welcome"), qsTr("Please log in to access Tidal music"))
+                pageStack.push(Qt.resolvedUrl("pages/Settings.qml"))
+            } else {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("AUTH_CHECK: User is authenticated - staying on main page")
+                }
+            }
         }
     }
     
@@ -322,6 +428,12 @@ ApplicationWindow
         key : "/enableUrlCaching"
         defaultValue: false  // Default: Disabled
     }
+    
+    ConfigurationValue {
+        id: emailHistoryConfig
+        key : "/emailHistory"
+        defaultValue: "[]"  // JSON array of email addresses
+    }
 
     property int remainingMinutes: 0
     property string timerAction: "pause"
@@ -481,6 +593,72 @@ ApplicationWindow
         }
     }
 
+    // Sailfish-native RemorsePopup for notifications
+    RemorsePopup {
+        id: notificationRemorse
+    }
+
+    // Global notification functions using RemorsePopup
+    function showErrorNotification(title, message) {
+        console.log("ERROR:", title, "-", message)
+        var fullMessage = title + (message ? "\n" + message : "")
+        notificationRemorse.execute(fullMessage, function() {
+            // Optional action after timeout - currently empty
+        }, 8000) // 8 seconds timeout
+    }
+
+    function showWarningNotification(title, message) {
+        console.log("WARNING:", title, "-", message)
+        var fullMessage = title + (message ? "\n" + message : "")
+        notificationRemorse.execute(fullMessage, function() {
+            // Optional action after timeout - currently empty
+        }, 6000) // 6 seconds timeout
+    }
+
+    function showSuccessNotification(title, message) {
+        console.log("SUCCESS:", title, "-", message)
+        var fullMessage = title + (message ? "\n" + message : "")
+        notificationRemorse.execute(fullMessage, function() {
+            // Optional action after timeout - currently empty
+        }, 4000) // 4 seconds timeout
+    }
+
+    function showInfoNotification(title, message) {
+        console.log("INFO:", title, "-", message)
+        var fullMessage = title + (message ? "\n" + message : "")
+        notificationRemorse.execute(fullMessage, function() {
+            // Optional action after timeout - currently empty
+        }, 5000) // 5 seconds timeout
+    }
+
+    // Switch to main page after successful login
+    function switchToMainPage() {
+        if (settings.debugLevel >= 1) {
+            console.log("AUTH: Switching to main page after successful login, current depth:", pageStack.depth)
+        }
+        
+        // Use timer to delay navigation slightly to ensure login process is complete
+        switchTimer.start()
+    }
+    
+    Timer {
+        id: switchTimer
+        interval: 500  // Wait 500ms for login to settle
+        repeat: false
+        onTriggered: {
+            if (settings.debugLevel >= 1) {
+                console.log("AUTH: Executing delayed switch to main page, pageStack depth:", pageStack.depth)
+            }
+            
+            // Navigate back to first page
+            if (pageStack.depth > 1) {
+                pageStack.pop(pageStack.find(function(page) {
+                    return page === applicationWindow.mainPage
+                }))
+            }
+        }
+    }
+
 
 
     TidalApi {
@@ -582,10 +760,13 @@ ApplicationWindow
 
     initialPage: Component {
         FirstPage {
-            id: firstpage  // Diese ID wird nun über applicationWindow.firstPage verfügbar
+            id: firstpage
             Component.onCompleted: {
                 // Store reference to the page
                 applicationWindow.mainPage = this
+                
+                // Check if authentication is needed and redirect to settings
+                authCheckTimer.start()
             }
         }
     }
@@ -601,6 +782,7 @@ ApplicationWindow
         id: miniPlayerPanel
         z:10
     }
+
 
 
     AuthManager {
@@ -631,6 +813,7 @@ ApplicationWindow
         onLoginFailed: {
             authManager.clearTokens()
             console.log("Login failed")
+            showErrorNotification(qsTr("Login Failed"), qsTr("Authentication failed. Please check your credentials."))
             pageStack.push(Qt.resolvedUrl("pages/Settings.qml"))
         }
     }
@@ -692,6 +875,13 @@ ApplicationWindow
             lastTrackUrl.value = applicationWindow.settings.last_track_url
             lastTrackId.value = applicationWindow.settings.last_track_id
             lastTrackPosition.value = applicationWindow.settings.last_track_position
+            
+            // Save email history
+            try {
+                emailHistoryConfig.value = JSON.stringify(applicationWindow.settings.emailHistory || [])
+            } catch (e) {
+                console.log("EMAIL: Error saving history:", e)
+            }
         }
     }
 
@@ -717,7 +907,22 @@ ApplicationWindow
             
             // Try to restore playback after all settings are loaded
             if (applicationWindow.settings.resume_playback) {
-                resumeRestoreTimer.start()
+                // Only start resume timer if we have valid authentication and are showing main page
+                if (applicationWindow.settings.access_token && 
+                    applicationWindow.settings.refresh_token &&
+                    applicationWindow.settings.access_token !== "" &&
+                    applicationWindow.settings.refresh_token !== "" &&
+                    applicationWindow.loginTrue) {
+                    
+                    if (applicationWindow.settings.debugLevel >= 2) {
+                        console.log("RESUME: Starting resume timer - authenticated and on main page")
+                    }
+                    resumeRestoreTimer.start()
+                } else {
+                    if (applicationWindow.settings.debugLevel >= 1) {
+                        console.log("RESUME: Skipping resume - not authenticated or on settings page")
+                    }
+                }
             }
         }
     }
@@ -745,6 +950,18 @@ ApplicationWindow
         applicationWindow.settings.last_track_url = lastTrackUrl.value
         applicationWindow.settings.last_track_id = lastTrackId.value
         applicationWindow.settings.last_track_position = lastTrackPosition.value
+        
+        // Load email history
+        try {
+            var historyJson = emailHistoryConfig.value
+            applicationWindow.settings.emailHistory = historyJson ? JSON.parse(historyJson) : []
+            if (applicationWindow.settings.debugLevel >= 2) {
+                console.log("EMAIL: Loaded history with", applicationWindow.settings.emailHistory.length, "entries")
+            }
+        } catch (e) {
+            console.log("EMAIL: Error loading history, resetting:", e)
+            applicationWindow.settings.emailHistory = []
+        }
         tidalApi.quality = audioQuality.value
 
         // LOG LEVEL INFORMATION - Display current debug configuration

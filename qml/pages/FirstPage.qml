@@ -30,7 +30,15 @@ Page {
 
             MenuItem {
                 text: qsTr("Saved Playlists")
-                onClicked: pageStack.push(Qt.resolvedUrl("SavedPlaylistsPage.qml"))
+                onClicked: {
+                    if (applicationWindow.loginTrue) {
+                        pageStack.push(Qt.resolvedUrl("SavedPlaylistsPage.qml"))
+                    } else {
+                        console.log("Login required for playlists")
+                        // Redirect to settings instead  
+                        pageStack.push(Qt.resolvedUrl("Settings.qml"))
+                    }
+                }
             }
 
             MenuItem {
@@ -44,7 +52,13 @@ Page {
             MenuItem {
                 text: qsTr("Clear Playlist")
                 onClicked: {
-                    playlistManager.clearPlayList()
+                    if (applicationWindow.loginTrue) {
+                        playlistManager.clearPlayList()
+                    } else {
+                        console.log("Login required for playlist management")
+                        // Redirect to settings instead
+                        pageStack.push(Qt.resolvedUrl("Settings.qml"))
+                    }
                 }
             }
 
@@ -65,7 +79,15 @@ Page {
             }
               MenuItem {
                 text: miniPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
-                onClicked: miniPlayerPanel.open = !miniPlayerPanel.open
+                onClicked: {
+                    if (applicationWindow.loginTrue) {
+                        miniPlayerPanel.open = !miniPlayerPanel.open
+                    } else {
+                        console.log("Login required for media player")
+                        // Redirect to settings instead
+                        pageStack.push(Qt.resolvedUrl("Settings.qml"))
+                    }
+                }
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 

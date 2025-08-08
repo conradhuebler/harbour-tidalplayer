@@ -456,12 +456,21 @@ Item {
      */
     function setCrossfadeUrl(url, trackId) {
         if (!preloadingEnabled) {
-            console.log("MediaHandler: Crossfade not enabled, falling back to normal playback")
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("MediaHandler: Crossfade not enabled, falling back to normal playback")
+            }
             playUrl(url)
             return
         }
         
-        console.log("MediaHandler: Starting crossfade in DualAudioManager:", url, "for track", trackId)
+        if (applicationWindow.settings.debugLevel >= 3) {
+            console.log("MediaHandler: Starting crossfade in DualAudioManager:", url, "for track", trackId)
+        } else if (applicationWindow.settings.debugLevel >= 1) {
+            var urlString = url.toString()
+            var hasToken = urlString.indexOf('token') !== -1
+            var safeUrl = hasToken ? urlString.split('?')[0] + "?token=***" : urlString
+            console.log("MediaHandler: Starting crossfade in DualAudioManager:", safeUrl, "for track", trackId)
+        }
         
         // Set track ID immediately for proper track info display
         dualAudioManager.currentTrackId = trackId
@@ -565,13 +574,24 @@ Item {
         }
         
         onCrossfadeUrlReady: {
-            console.log("MediaHandler: Crossfade URL ready - expecting:", expectingCrossfadeResponse, "trackId:", trackId, "crossfadeTrackId:", crossfadeTrackId)
+            if (applicationWindow.settings.debugLevel >= 2) {
+                console.log("MediaHandler: Crossfade URL ready - expecting:", expectingCrossfadeResponse, "trackId:", trackId, "crossfadeTrackId:", crossfadeTrackId)
+            }
             if (expectingCrossfadeResponse && trackId.toString() === crossfadeTrackId.toString()) {
-                console.log("MediaHandler: Received crossfade URL for track", trackId, "URL:", url)
+                if (applicationWindow.settings.debugLevel >= 3) {
+                    console.log("MediaHandler: Received crossfade URL for track", trackId, "URL:", url)
+                } else if (applicationWindow.settings.debugLevel >= 1) {
+                    var urlString = url.toString()
+                    var hasToken = urlString.indexOf('token') !== -1
+                    var safeUrl = hasToken ? urlString.split('?')[0] + "?token=***" : urlString
+                    console.log("MediaHandler: Received crossfade URL for track", trackId, "URL:", safeUrl)
+                }
                 setCrossfadeUrl(url, trackId)
                 expectingCrossfadeResponse = false
             } else {
-                console.log("MediaHandler: Unexpected crossfade response for track", trackId, "(expected:", crossfadeTrackId, ")")
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("MediaHandler: Unexpected crossfade response for track", trackId, "(expected:", crossfadeTrackId, ")")
+                }
             }
         }
     }
