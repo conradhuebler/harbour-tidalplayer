@@ -12,6 +12,13 @@ Item {
     property int current_track: -1
     property int tidalId: 0
     property bool skipTrack: false
+    
+    // Playlist statistics - Claude Generated
+    property int totalTracks: playlist.length
+    property int totalDurationSeconds: 0
+    property string totalDurationFormatted: "00:00"
+    property int currentTrackPosition: currentIndex + 1  // 1-based for UI
+    property string playlistProgress: currentTrackPosition + " / " + totalTracks
 
     // Core playlist data (ersetzt Python-Array)
     property var playlist: []
@@ -100,6 +107,7 @@ Item {
         
         if (trackId) {
             playlist.push(trackId)
+            updatePlaylistStatistics()
             _notifyPlaylistState()
             canNext = true
         }
@@ -119,6 +127,7 @@ Item {
         if (trackIds && trackIds.length > 0) {
             // Optimized: Add all tracks at once instead of one by one
             playlist = playlist.concat(trackIds)
+            updatePlaylistStatistics()
             _notifyPlaylistState()
             canNext = playlist.length > 0 && currentIndex < playlist.length - 1
         }
@@ -129,6 +138,7 @@ Item {
         if (trackId) {
             var insertPos = Math.max(0, currentIndex + 1)
             playlist.splice(insertPos, 0, trackId)
+            updatePlaylistStatistics()
             _notifyPlaylistState()
             _notifyCurrentTrack()
         }
@@ -148,6 +158,7 @@ Item {
                     currentIndex = playlist.length - 1
                 }
                 
+                updatePlaylistStatistics()
                 _notifyPlaylistState()
             }
         }
@@ -170,6 +181,7 @@ Item {
             var insertPos = Math.max(0, currentIndex + 1)
             playlist.splice(insertPos, 0, trackId)
             currentIndex = insertPos
+            updatePlaylistStatistics()
             _notifyPlaylistState()
             _notifyCurrentTrack()
         }
@@ -370,6 +382,76 @@ Item {
 
     function getSavedPlaylists() {
         return playlistStorage.getPlaylistInfo()
+    }
+    
+    // Resume synchronization - find track in current playlist and sync index
+    function syncCurrentTrack(trackId) {
+        if (settings.debugLevel >= 1) {
+            console.log("PLAYLIST: Syncing current track", trackId, "in playlist of size", playlist.length)
+        }
+        
+        // Find track in current playlist
+        for (var i = 0; i < playlist.length; i++) {
+            if (playlist[i].toString() === trackId.toString()) {
+                if (settings.debugLevel >= 1) {
+                    console.log("PLAYLIST: Found track at index", i, "updating currentIndex")
+                }
+                currentIndex = i
+                
+                // Trigger UI updates
+                canNext = (i < playlist.length - 1)
+                canPrev = (i > 0)
+                
+                if (settings.debugLevel >= 1) {
+                    console.log("PLAYLIST: Sync complete - canNext:", canNext, "canPrev:", canPrev)
+                }
+                return true
+            }
+        }
+        
+        if (settings.debugLevel >= 1) {
+            console.log("PLAYLIST: Track not found in current playlist, loading auto-saved playlist")
+        }
+        
+        // Track not in current playlist - try loading auto-saved playlist
+        playlistStorage.loadCurrentPlaylistState()
+        return false
+    }
+    
+    // Calculate total playlist duration - Claude Generated
+    function updatePlaylistStatistics() {
+        totalTracks = playlist.length
+        var totalSeconds = 0
+        
+        for (var i = 0; i < playlist.length; i++) {
+            var trackId = playlist[i]
+            var trackInfo = cacheManager.getTrackInfo(trackId)
+            if (trackInfo && trackInfo.duration) {
+                totalSeconds += trackInfo.duration
+            }
+        }
+        
+        totalDurationSeconds = totalSeconds
+        totalDurationFormatted = formatDuration(totalSeconds)
+        
+        if (settings.debugLevel >= 2) {
+            console.log("PLAYLIST: Statistics updated - tracks:", totalTracks, "duration:", totalDurationFormatted)
+        }
+    }
+    
+    // Format duration in MM:SS or HH:MM:SS
+    function formatDuration(seconds) {
+        if (isNaN(seconds) || seconds < 0) return "00:00"
+        
+        var hours = Math.floor(seconds / 3600)
+        var minutes = Math.floor((seconds % 3600) / 60)
+        var secs = Math.floor(seconds % 60)
+        
+        if (hours > 0) {
+            return hours + ":" + ("00" + minutes).slice(-2) + ":" + ("00" + secs).slice(-2)
+        } else {
+            return minutes + ":" + ("00" + secs).slice(-2)
+        }
     }
 
     // Login state connection to trigger auto-load after login

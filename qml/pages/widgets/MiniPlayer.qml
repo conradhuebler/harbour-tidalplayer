@@ -6,7 +6,7 @@ import org.nemomobile.mpris 1.0
 DockedPanel {
     id: miniPlayerPanel
     width: parent.width
-    height: 1.5*Theme.itemSizeExtraLarge // Reduzierte Höhe
+    height: 2*Theme.itemSizeExtraLarge // Erhöhte Höhe für Playlist-Info
     open: true
     dock: Dock.Bottom
     property bool isFav: false
@@ -24,9 +24,12 @@ DockedPanel {
         
         onPressed: {
             startY = mouse.y
-            // Only propagate to children (buttons) of the DockedPanel
-            mouse.accepted = !buttonsRow.contains(Qt.point(mouse.x, mouse.y)) && 
-                            !favButton.contains(favButton.mapFromItem(swipeArea, mouse.x, mouse.y))
+            // Check if touch is on interactive controls - exclude them from swipe handling
+            var touchOnButtons = buttonsRow.contains(Qt.point(mouse.x, mouse.y))
+            var touchOnFav = favButton.contains(favButton.mapFromItem(swipeArea, mouse.x, mouse.y))
+            var touchOnSlider = progressSlider.contains(progressSlider.mapFromItem(swipeArea, mouse.x, mouse.y))
+            
+            mouse.accepted = !touchOnButtons && !touchOnFav && !touchOnSlider
         }
         
         onMouseYChanged: {
@@ -204,13 +207,21 @@ DockedPanel {
                         minimumValue: 0
                         maximumValue: 100
                         enabled: mediaController.duration > 0
-                        visible: mediaController.duration > 0 && mediaController.isPlaying
-                        height: Theme.paddingMedium
-                    }
-                    Connections {
-                        target: progressSlider
-                        onReleased: {
-                            mediaController.seek(progressSlider.value/100*mediaController.duration)
+                        visible: mediaController.duration > 0  // Remove isPlaying condition
+                        //height: Theme.itemSizeSmall  // Increase height for better touch target
+                        z: 10  // Ensure slider is above other elements
+                        
+                        // Handle drag and release - Claude Generated
+                        onPressedChanged: {
+                            if (applicationWindow.settings.debugLevel >= 2) {
+                                console.log("SLIDER: Pressed state changed to", pressed)
+                            }
+                        }
+                        
+                        onClicked: {
+                            if (applicationWindow.settings.debugLevel >= 2) {
+                                console.log("SLIDER: Clicked at value", value)
+                            }
                         }
                     }
                     // Zeitanzeige
@@ -244,13 +255,30 @@ DockedPanel {
                             font.pixelSize: Theme.fontSizeExtraSmall
                         }
                     }
-                }
-                Label {
-                    visible: applicationWindow.remainingMinutes > 0
-                    text: visible ? qsTr("Sleep in: %1")
-                        .arg(Format.formatDuration(applicationWindow.remainingMinutes * 60, Formatter.DurationLong)) : ""
-                    color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    
+                    // Combined info display - Claude Generated
+                    Label {
+                        id: combinedInfo
+                        anchors.top: timeRow.bottom
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.topMargin: Theme.paddingSmall
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
+                        
+                        // Priority: Sleep timer > Playlist info
+                        text: {
+                            if (applicationWindow.remainingSeconds > 0) {
+                                return qsTr("Sleep in: %1")
+                                    .arg(Format.formatDuration(applicationWindow.remainingSeconds, Formatter.DurationShort))
+                            } else if (playlistManager.totalTracks > 0) {
+                                return playlistManager.playlistProgress + " • " + playlistManager.totalDurationFormatted
+                            } else {
+                                return ""
+                            }
+                        }
+                        
+                        visible: text !== ""
+                    }
                 }
 
             }
@@ -297,7 +325,11 @@ DockedPanel {
         onReleased: {
             if (mediaController.duration > 0) {
                 var seekPosition = (progressSlider.value / 100) * mediaController.duration
-                mediaController.seek(seekPosition)
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("SLIDER: Seeking to position", seekPosition, "ms (", Math.round(seekPosition/1000), "s )")
+                }
+                // Use DualAudioManager's seek function instead of MediaController's
+                mediaController.dualAudioManager.seek(seekPosition)
             }
         }
     }
@@ -323,6 +355,10 @@ DockedPanel {
                 minPlayerPanel.hide(100)
                 progressSlider.visible = false
             }
+        }
+        onListChanged:
+        {
+            nextButton.enabled = playlistManager.canNext
         }
     }
 

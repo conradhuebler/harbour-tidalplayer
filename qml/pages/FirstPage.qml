@@ -31,7 +31,7 @@ Page {
             MenuItem {
                 text: qsTr("Saved Playlists")
                 onClicked: {
-                    if (applicationWindow.loginTrue) {
+                    if (tidalApi.loginTrue) {
                         pageStack.push(Qt.resolvedUrl("SavedPlaylistsPage.qml"))
                     } else {
                         console.log("Login required for playlists")
@@ -52,7 +52,7 @@ Page {
             MenuItem {
                 text: qsTr("Clear Playlist")
                 onClicked: {
-                    if (applicationWindow.loginTrue) {
+                    if (tidalApi.loginTrue) {
                         playlistManager.clearPlayList()
                     } else {
                         console.log("Login required for playlist management")
@@ -80,7 +80,7 @@ Page {
               MenuItem {
                 text: miniPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
                 onClicked: {
-                    if (applicationWindow.loginTrue) {
+                    if (tidalApi.loginTrue) {
                         miniPlayerPanel.open = !miniPlayerPanel.open
                     } else {
                         console.log("Login required for media player")

@@ -508,13 +508,20 @@ Item {
             console.log("MEDIA: updateTrackInfoFromPlaylist - currentTrackId:", dualAudioManager.currentTrackId, "currentIndex:", playlistManager.currentIndex)
         }
         
-        // Use crossfade track ID if available, otherwise use playlist
-        if (dualAudioManager.currentTrackId) {
+        // Priority: playlist track ID, fallback to crossfade track ID
+        if (playlistManager.currentIndex >= 0) {
+            var playlistTrackId = playlistManager.requestPlaylistItem(playlistManager.currentIndex)
+            if (playlistTrackId) {
+                trackId = playlistTrackId
+                console.log("MediaHandler: Using playlist track ID:", trackId)
+                // Update DualAudioManager to stay in sync
+                if (dualAudioManager.currentTrackId !== trackId) {
+                    dualAudioManager.currentTrackId = trackId
+                }
+            }
+        } else if (dualAudioManager.currentTrackId) {
             trackId = dualAudioManager.currentTrackId
             console.log("MediaHandler: Using crossfade track ID:", trackId)
-        } else if (playlistManager.currentIndex >= 0) {
-            trackId = playlistManager.requestPlaylistItem(playlistManager.currentIndex)
-            console.log("MediaHandler: Using playlist track ID:", trackId)
         }
         
         if (trackId) {

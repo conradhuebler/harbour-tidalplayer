@@ -70,6 +70,7 @@ Item {
     property real fadeStartTime: 0
     property bool crossfadeInProgress: false
     property bool playerSwitchLocked: false  // Prevent concurrent switches
+    property bool trackFinishedSignaled: false  // Prevent duplicate trackFinished signals
 
     // Audio Player 1 with Playlist
     AudioPlayerComponent {
@@ -110,7 +111,7 @@ Item {
             onCurrentIndexChanged: {
                 console.log('DualAudioManager: Playlist index changed to:', currentIndex)
                 if (audioPlayer1.isActive && currentItemSource) {
-                    console.log('DualAudioManager: Auto-advancing to next track via playlist')
+                    // Only update URL and track info - don't auto-advance (handled by EndOfMedia)
                     currentTrackUrl = currentItemSource
                     trackInfoUpdateTimer.start()
                 }
@@ -120,6 +121,7 @@ Item {
         onPlayerPlaying: {
             if (isActive) {
                 console.log("DualAudioManager: Player1 started playing")
+                trackFinishedSignaled = false  // Reset flag when new track starts
                 dualManager.playbackStateChanged(Audio.PlayingState)
             }
         }
@@ -135,8 +137,9 @@ Item {
             if (isActive) {
                 console.log("DualAudioManager: Player1 stopped")
                 dualManager.playbackStateChanged(Audio.StoppedState)
-                // Nur trackFinished wenn nicht durch Crossfade gestoppt
-                if (!crossfadeInProgress) {
+                // Nur trackFinished wenn nicht durch Crossfade gestoppt und nicht bereits signalisiert
+                if (!crossfadeInProgress && !trackFinishedSignaled) {
+                    console.log("DualAudioManager: Player1 stopped - signaling trackFinished")
                     trackFinished()
                 }
             }
@@ -206,14 +209,10 @@ Item {
                     trackInfoUpdateTimer.start()
                     
                 } else {
-                    // Fallback to normal playlist advance
-                    if (playlistItem.itemCount > 1 && playlistItem.currentIndex < playlistItem.itemCount - 1) {
-                        console.log("DualAudioManager: Auto-advancing to next track in playlist (normal)")
-                        playlistItem.next()  // Playlist automatisch weiter
-                    } else {
-                        console.log("DualAudioManager: End of playlist reached")
-                        trackFinished()
-                    }
+                    // Let MediaHandler handle playlist advancement via trackFinished signal
+                    console.log("DualAudioManager: Signaling track finished for MediaHandler to handle")
+                    trackFinishedSignaled = true
+                    trackFinished()
                 }
             }
 
@@ -255,6 +254,7 @@ Item {
         onPlayerPlaying: {
             if (isActive) {
                 console.log("DualAudioManager: Player2 started playing")
+                trackFinishedSignaled = false  // Reset flag when new track starts
                 dualManager.playbackStateChanged(Audio.PlayingState)
             }
         }
@@ -270,8 +270,9 @@ Item {
             if (isActive) {
                 console.log("DualAudioManager: Player2 stopped")
                 dualManager.playbackStateChanged(Audio.StoppedState)
-                // Nur trackFinished wenn nicht durch Crossfade gestoppt
-                if (!crossfadeInProgress) {
+                // Nur trackFinished wenn nicht durch Crossfade gestoppt und nicht bereits signalisiert
+                if (!crossfadeInProgress && !trackFinishedSignaled) {
+                    console.log("DualAudioManager: Player2 stopped - signaling trackFinished")
                     trackFinished()
                 }
             }
@@ -316,6 +317,7 @@ Item {
                 
                 // Only block trackFinished if there's an ongoing crossfade
                 if (!crossfadeInProgress) {
+                    trackFinishedSignaled = true
                     trackFinished()
                 } else {
                     console.log("DualAudioManager: TrackFinished blocked - crossfade in progress")

@@ -11,6 +11,146 @@ Item {
     property string type: "current"  // "playlist" oder "current" oder "album" oder "mix" ("tracklist")
     property int currentIndex: playlistManager.currentIndex
     property alias model: listModel
+    property int totalTracks: playlistManager.totalTracks  // For search field visibility
+    
+    // Search state - Claude Generated
+    property bool searchVisible: false
+    property int filteredCount: 0
+    
+    // Auto-scroll to current track - Claude Generated
+    onCurrentIndexChanged: {
+        if (type === "current" && currentIndex >= 0 && currentIndex < listModel.count) {
+            // Use timer to ensure ListView is ready
+            autoScrollTimer.targetIndex = currentIndex
+            autoScrollTimer.restart()
+        }
+    }
+    
+    Timer {
+        id: autoScrollTimer
+        interval: 300  // Delay to ensure ListView is ready
+        property int targetIndex: -1
+        onTriggered: {
+            if (targetIndex >= 0 && targetIndex < listModel.count) {
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("TRACKLIST: Smooth scrolling to track", targetIndex)
+                }
+                // Enable animation temporarily, then use positionViewAtIndex
+                tracks.animateScrolling = true
+                tracks.positionViewAtIndex(targetIndex, ListView.Center)
+                // Disable animation after scroll completes
+                scrollAnimationTimer.start()
+            }
+        }
+    }
+    
+    Timer {
+        id: scrollAnimationTimer
+        interval: 450  // Slightly longer than animation duration
+        onTriggered: {
+            tracks.animateScrolling = false
+        }
+    }
+    
+    // Filter timer and logic - Claude Generated
+    Timer {
+        id: filterTimer
+        interval: 300  // Debounce search input
+        onTriggered: {
+            refreshList()
+        }
+    }
+    
+    Timer {
+        id: clearScrollTimer
+        interval: 500  // Wait for filter refresh to complete
+        onTriggered: {
+            if (type === "current" && root.currentIndex >= 0) {
+                autoScrollTimer.targetIndex = root.currentIndex
+                autoScrollTimer.restart()
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("SEARCH: Auto-scrolling to current track after text clear:", root.currentIndex)
+                }
+            }
+        }
+    }
+    
+    Timer {
+        id: autoClearTimer
+        interval: 300  // Smooth delay after track selection
+        onTriggered: {
+            searchField.text = ""
+            searchVisible = false
+        }
+    }
+    
+    // Store original playlist data for filtering
+    property var originalPlaylistData: []
+    
+    function refreshList() {
+        listModel.clear()
+        
+        if (type === "current") {
+            var searchText = ""
+            var hasFilter = false
+            
+            // Check if search field exists and has content
+            if (typeof searchField !== 'undefined' && searchField && searchField.visible) {
+                searchText = searchField.text.toLowerCase()
+                hasFilter = searchText.length > 0
+                
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("SEARCH: Field found - text:", searchField.text, "searchText:", searchText, "hasFilter:", hasFilter)
+                }
+            } else {
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("SEARCH: Field not found or not visible - type:", type, "totalTracks:", root.totalTracks)
+                }
+            }
+            
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("TRACKLIST: Filtering with search:", searchText, "hasFilter:", hasFilter, "playlistSize:", playlistManager.size)
+            }
+            
+            var filteredCount = 0
+            for (var i = 0; i < playlistManager.size; ++i) {
+                var id = playlistManager.requestPlaylistItem(i)
+                var track = cacheManager.getTrackInfo(id)
+                
+                if (track) {
+                    var matchesFilter = !hasFilter || 
+                        track.title.toLowerCase().indexOf(searchText) >= 0 ||
+                        track.artist.toLowerCase().indexOf(searchText) >= 0 ||
+                        track.album.toLowerCase().indexOf(searchText) >= 0
+                    
+                    if (matchesFilter) {
+                        listModel.append({
+                            "title": track.title,
+                            "artist": track.artist,
+                            "album": track.album,
+                            "id": track.id,
+                            "trackid": track.id,
+                            "duration": track.duration,
+                            "image": track.image,
+                            "index": i  // Keep original index for playback
+                        })
+                        filteredCount++
+                    } else if (applicationWindow.settings.debugLevel >= 2) {
+                        console.log("SEARCH: Filtered out:", track.title, "by", track.artist)
+                    }
+                }
+            }
+            
+            root.filteredCount = filteredCount
+            
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("TRACKLIST: Filter result:", filteredCount, "of", playlistManager.size, "tracks shown")
+            }
+        } else {
+            // Original logic for non-current playlists
+            updateTimer.start()
+        }
+    }
 
     // Add styling properties
     property real normalItemHeight: Theme.itemSizeMedium + Theme.paddingMedium
@@ -70,6 +210,17 @@ Item {
         highlightMoveVelocity: -1   // -1 means use duration instead of velocity
         preferredHighlightBegin: height * 0.1
         preferredHighlightEnd: height * 0.9
+        
+        // Conditional smooth animated scrolling - Claude Generated
+        property bool animateScrolling: false
+        
+        Behavior on contentY {
+            enabled: tracks.animateScrolling
+            NumberAnimation {
+                duration: 400
+                easing.type: Easing.OutCubic
+            }
+        }
         
         header: PageHeader {
             title: root.title
@@ -184,10 +335,20 @@ Item {
             }
 
             onClicked: {
+                // Play track first
                 if (type === "current") {
                     playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
                 } else {
                     playlistManager.playTrack(model.trackid)
+                }
+                
+                // Auto-clear search with smooth delay if only one result - Claude Generated
+                if (type === "current" && searchVisible && root.filteredCount === 1) {
+                    if (applicationWindow.settings.debugLevel >= 1) {
+                        console.log("SEARCH: Auto-clearing search - single result selected")
+                    }
+                    // Smooth delay to let track change be visible first
+                    autoClearTimer.start()
                 }
             }
 
@@ -299,6 +460,124 @@ Item {
 
         VerticalScrollDecorator {}
     }
+    
+    // Floating search overlay for current playlist - Claude Generated
+    Rectangle {
+        id: searchOverlay
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: searchField.height + Theme.paddingMedium * 2
+        color: Theme.rgba(Theme.overlayBackgroundColor, 0.9)
+        visible: type === "current" && root.totalTracks > 0
+        z: 100  // Above ListView
+        
+        // Smooth slide animation from top
+        y: searchVisible ? 0 : -height
+        
+        Behavior on y {
+            NumberAnimation {
+                duration: 250
+                easing.type: Easing.OutQuad
+            }
+        }
+        
+        // Fade animation
+        opacity: searchVisible ? 1.0 : 0.0
+        
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 200
+                easing.type: Easing.InOutQuad
+            }
+        }
+        
+        SearchField {
+            id: searchField
+            anchors.centerIn: parent
+            width: parent.width - Theme.paddingLarge * 2
+            placeholderText: qsTr("Search in playlist...")
+            
+            onTextChanged: {
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("SEARCH: Text changed to:", text)
+                }
+                filterTimer.restart()
+                
+                // Auto-scroll to current track when text is completely cleared - Claude Generated
+                if (text === "" && type === "current" && root.currentIndex >= 0) {
+                    // Delay scroll until after filter refresh
+                    clearScrollTimer.restart()
+                }
+            }
+        }
+        
+        // Close button
+        IconButton {
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.rightMargin: Theme.paddingMedium
+            icon.source: "image://theme/icon-m-clear"
+            onClicked: {
+                searchField.text = ""
+                searchVisible = false
+                // Auto-scroll to current track when search is cleared - Claude Generated
+                if (type === "current" && root.currentIndex >= 0) {
+                    autoScrollTimer.targetIndex = root.currentIndex
+                    autoScrollTimer.restart()
+                    if (applicationWindow.settings.debugLevel >= 1) {
+                        console.log("SEARCH: Auto-scrolling to current track after clear:", root.currentIndex)
+                    }
+                }
+            }
+        }
+    }
+    
+    // Search toggle button - Claude Generated
+    IconButton {
+        id: searchButton
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        anchors.margins: Theme.paddingLarge
+        icon.source: "image://theme/icon-m-search"
+        visible: type === "current" && root.totalTracks > 0
+        z: 99
+        
+        // Smooth fade animation
+        opacity: searchVisible ? 0.0 : 1.0
+        enabled: !searchVisible
+        
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 200
+                easing.type: Easing.InOutQuad
+            }
+        }
+        
+        // Scale animation on press
+        scale: pressed ? 0.9 : 1.0
+        
+        Behavior on scale {
+            NumberAnimation {
+                duration: 100
+                easing.type: Easing.OutQuad
+            }
+        }
+        
+        onClicked: {
+            searchVisible = true
+            // Delay focus until animation starts
+            focusTimer.start()
+        }
+    }
+    
+    // Timer for delayed focus - Claude Generated
+    Timer {
+        id: focusTimer
+        interval: 100  // Wait for slide animation to start
+        onTriggered: {
+            searchField.forceActiveFocus()
+        }
+    }
 
     Component.onCompleted: {
         if (type === "playlist") {
@@ -314,6 +593,16 @@ Item {
         }
     }
 
+    // Listen to playlist changes for filtering - Claude Generated
+    Connections {
+        target: playlistManager
+        onListChanged: {
+            if (type === "current") {
+                refreshList()
+            }
+        }
+    }
+    
     Connections {
         target: tidalApi
         onPlaylistTrackAdded: {

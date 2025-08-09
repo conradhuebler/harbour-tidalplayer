@@ -990,7 +990,7 @@ Item {
     // Timer for delayed session reinitialization after login
     Timer {
         id: sessionReinitTimer
-        interval: 2000  // Wait 2 seconds for login to fully settle
+        interval: 100  // Wait 2 seconds for login to fully settle
         repeat: false
         onTriggered: {
             if (applicationWindow.settings.debugLevel >= 1) {

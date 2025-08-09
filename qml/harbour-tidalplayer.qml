@@ -160,16 +160,53 @@ ApplicationWindow
             // Set track info immediately for UI
             var trackInfo = cacheManager.getTrackInfo(lastTrackId.value)
             if (trackInfo) {
+                if (settings.debugLevel >= 1) {
+                    console.log("RESUME: Track info found in cache:", trackInfo.title, "by", trackInfo.artist)
+                }
                 mediaController.track_id = lastTrackId.value
                 mediaController.track_name = trackInfo.title || ""
                 mediaController.album_name = trackInfo.album || ""
                 mediaController.artist_name = trackInfo.artist || ""
                 mediaController.artwork_url = trackInfo.image || ""
                 mediaController.track_duration = trackInfo.duration || 0
+                
+                // Trigger UI updates by emitting currentTrackChanged signal
+                var trackData = {
+                    trackid: lastTrackId.value,
+                    track_num: 1,
+                    title: trackInfo.title || "",
+                    artist: trackInfo.artist || "",
+                    album: trackInfo.album || "",
+                    image: trackInfo.image || "",
+                    duration: trackInfo.duration || 0
+                }
+                mediaController.currentTrackChanged(trackData)
+                
+                // Also emit for Cover page compatibility
+                if (tidalApi) {
+                    tidalApi.currentPlayback(trackData)
+                }
+            } else {
+                if (settings.debugLevel >= 1) {
+                    console.log("RESUME: No track info found in cache for track ID:", lastTrackId.value)
+                    console.log("RESUME: Will fetch track info from API...")
+                }
+                // Fallback: Request track info from API
+                mediaController.track_id = lastTrackId.value
+                tidalApi.getTrack(lastTrackId.value)
             }
             
             // Load track directly with cached URL - no API call needed!
             mediaController.setSource(lastTrackUrl.value)
+            
+            // Update DualAudioManager current track info
+            mediaController.dualAudioManager.currentTrackId = lastTrackId.value
+            mediaController.dualAudioManager.currentTrackUrl = lastTrackUrl.value
+            
+            // CRITICAL: Restore playlist state after resume
+            playlistSyncTimer.trackIdToSync = lastTrackId.value
+            playlistSyncTimer.start()
+            
             mediaController.play()
             
             // Seek to saved position after track loads
@@ -209,12 +246,25 @@ ApplicationWindow
     
     Timer {
         id: resumeRestoreTimer
-        interval: 3000  // Wait 3 seconds for everything to initialize
+        interval: 10  // Wait 3 seconds for everything to initialize
         onTriggered: {
             if (settings.debugLevel >= 1) {
                 console.log("RESUME: Attempting to restore playback...")
             }
             applicationWindow.settings.restoreCurrentState()
+        }
+    }
+    
+    Timer {
+        id: playlistSyncTimer
+        interval: 1000  // Wait for track to start loading
+        repeat: false
+        property string trackIdToSync: ""
+        onTriggered: {
+            if (settings.debugLevel >= 1) {
+                console.log("RESUME: Syncing playlist state with resumed track", trackIdToSync)
+            }
+            playlistManager.syncCurrentTrack(trackIdToSync)
         }
     }
     
@@ -436,30 +486,35 @@ ApplicationWindow
     }
 
     property int remainingMinutes: 0
+    property int remainingSeconds: 0  // Total seconds for precise display
     property string timerAction: "pause"
     property bool timerNotificationShown: false
 
     property var sleepTimer: Timer {
         id: sleepTimer
-        interval: 60000  // 1 Minute
+        interval: 1000  // 1 Second for precise countdown
         repeat: true
         onTriggered: {
-            remainingMinutes--
+            remainingSeconds--
+            
+            // Update minutes for compatibility
+            remainingMinutes = Math.ceil(remainingSeconds / 60)
             
             // Show notification when 5 minutes remaining
-            if (remainingMinutes === 5 && !timerNotificationShown) {
+            if (remainingSeconds === 300 && !timerNotificationShown) {
                 timerNotificationShown = true
                 showSystemMessage(qsTr("Sleep Timer"), qsTr("5 minutes remaining"))
             }
             
             // Show final countdown notifications
-            if (remainingMinutes === 1) {
+            if (remainingSeconds === 60) {
                 showSystemMessage(qsTr("Sleep Timer"), qsTr("1 minute remaining"))
             }
             
-            if (remainingMinutes <= 0) {
+            if (remainingSeconds <= 0) {
                 stop()
                 remainingMinutes = 0
+                remainingSeconds = 0
                 timerNotificationShown = false
                 executeTimerAction()
             }
@@ -473,6 +528,7 @@ ApplicationWindow
         }
         if (minutes > 0) {
             remainingMinutes = minutes
+            remainingSeconds = minutes * 60  // Convert to total seconds
             timerAction = action || "pause"
             timerNotificationShown = false
             sleepTimer.start()
@@ -497,6 +553,7 @@ ApplicationWindow
         if (sleepTimer.running) {
             sleepTimer.stop()
             remainingMinutes = 0
+            remainingSeconds = 0
             timerNotificationShown = false
             showSystemMessage(qsTr("Sleep Timer"), qsTr("Timer cancelled"))
         }
@@ -810,6 +867,31 @@ ApplicationWindow
                 console.log("AUTH: OAuth refresh signal received (length:", token.length, "chars)")
             }
         }
+        onLoginSuccess: {
+            // Load deferred settings immediately after successful login
+            settings.recentList = recentListConfig.value
+            settings.yourList = yourListConfig.value
+            settings.topartistList = topartistListConfig.value
+            settings.topalbumsList = topalbumsListConfig.value
+            settings.toptrackList = toptrackListConfig.value
+            settings.personalPlaylistList = personalPlaylistListConfig.value
+            settings.dailyMixesList = dailyMixesListConfig.value
+            settings.radioMixesList = radioMixesListConfig.value
+            settings.topArtistsList = topArtistsListConfig.value
+            
+            if (settings.debugLevel >= 1) {
+                console.log("LOGIN: Deferred settings loaded immediately after login")
+            }
+            
+            // Try to restore playback immediately after login and settings load
+            if (settings.resume_playback) {
+                if (settings.debugLevel >= 1) {
+                    console.log("RESUME: Starting resume timer after login - authenticated and ready")
+                }
+                resumeRestoreTimer.start()
+            }
+        }
+        
         onLoginFailed: {
             authManager.clearTokens()
             console.log("Login failed")
@@ -836,9 +918,6 @@ ApplicationWindow
             }
         }
     }
-
-
-    // MPRIS connections are now handled internally in MediaHandler
 
     Connections
     {
@@ -903,26 +982,8 @@ ApplicationWindow
             applicationWindow.settings.radioMixesList = radioMixesListConfig.value
             applicationWindow.settings.topArtistsList = topArtistsListConfig.value
             
-            console.log("Deferred settings loaded")
-            
-            // Try to restore playback after all settings are loaded
-            if (applicationWindow.settings.resume_playback) {
-                // Only start resume timer if we have valid authentication and are showing main page
-                if (applicationWindow.settings.access_token && 
-                    applicationWindow.settings.refresh_token &&
-                    applicationWindow.settings.access_token !== "" &&
-                    applicationWindow.settings.refresh_token !== "" &&
-                    applicationWindow.loginTrue) {
-                    
-                    if (applicationWindow.settings.debugLevel >= 2) {
-                        console.log("RESUME: Starting resume timer - authenticated and on main page")
-                    }
-                    resumeRestoreTimer.start()
-                } else {
-                    if (applicationWindow.settings.debugLevel >= 1) {
-                        console.log("RESUME: Skipping resume - not authenticated or on settings page")
-                    }
-                }
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("FALLBACK: Deferred settings loaded via timer (login not completed yet)")
             }
         }
     }
