@@ -24,10 +24,11 @@ Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
 Requires:   python3-requests
-#Requires:   python-dateutil
+Requires:   python3-dateutil
 Requires:   python3-six
 Requires:   python3-devel
 Requires:   amber-mpris
+Requires:   mpris-qt5-qml-plugin
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
@@ -65,10 +66,12 @@ rm -rf %{buildroot}
 # >> install post
 
 mkdir %{buildroot}%{_datadir}/%{name}/python
-cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/tidalapi
+cp -r python/*  %{buildroot}%{_datadir}/%{name}/python/
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
-
+ls python/dateutil/*
+ls python/isodate/*
 ls  %{buildroot}%{_datadir}/%{name}/python
+#cp -r python/* %{buildroot}%{_datadir}/%{name}/python/
 #cp -r mpegdash  %{buildroot}%{_datadir}/%{name}/python/
 #cp -r isodate  %{buildroot}%{_datadir}/%{name}/python/isodate
 #cp -r ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit

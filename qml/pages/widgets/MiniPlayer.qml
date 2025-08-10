@@ -6,10 +6,33 @@ import org.nemomobile.mpris 1.0
 DockedPanel {
     id: miniPlayerPanel
     width: parent.width
-    height: 2*Theme.itemSizeExtraLarge // Erhöhte Höhe für Playlist-Info
+    height: getPlayerHeight()
     open: true
     dock: Dock.Bottom
     property bool isFav: false
+    
+    // Three-state MiniPlayer system - Claude Generated
+    property int playerState: 2  // 0=Hidden, 1=Mini, 2=Normal
+    property real hiddenHeight: 0
+    property real miniHeight: Theme.itemSizeLarge * 1.5 + Theme.paddingLarge
+    property real normalHeight: Theme.itemSizeExtraLarge * 2.0
+    
+    function getPlayerHeight() {
+        switch(playerState) {
+            case 0: return hiddenHeight
+            case 1: return miniHeight
+            case 2: return normalHeight
+            default: return normalHeight
+        }
+    }
+    
+    // Smooth height transitions
+    Behavior on height {
+        NumberAnimation {
+            duration: 300
+            easing.type: Easing.OutCubic
+        }
+    }
 
     MouseArea {
         id: swipeArea
@@ -25,11 +48,14 @@ DockedPanel {
         onPressed: {
             startY = mouse.y
             // Check if touch is on interactive controls - exclude them from swipe handling
-            var touchOnButtons = buttonsRow.contains(Qt.point(mouse.x, mouse.y))
-            var touchOnFav = favButton.contains(favButton.mapFromItem(swipeArea, mouse.x, mouse.y))
-            var touchOnSlider = progressSlider.contains(progressSlider.mapFromItem(swipeArea, mouse.x, mouse.y))
+            var touchOnControls = controlsContainer.contains(Qt.point(mouse.x, mouse.y))
+            var touchOnProgressArea = progressContainer.visible && progressContainer.contains(Qt.point(mouse.x, mouse.y))
             
-            mouse.accepted = !touchOnButtons && !touchOnFav && !touchOnSlider
+            mouse.accepted = !touchOnControls && !touchOnProgressArea
+            
+            if (applicationWindow.settings.debugLevel >= 3) {
+                console.log("SWIPE: Touch at", mouse.x, mouse.y, "controls:", touchOnControls, "progress:", touchOnProgressArea, "accepted:", mouse.accepted)
+            }
         }
         
         onMouseYChanged: {
@@ -40,15 +66,21 @@ DockedPanel {
 
         onReleased: {
             var delta = startY - mouse.y
-            // console.log("pageStack depth:", pageStack.depth, "delta:", delta)
+            
+            // Upward swipe: Show playlist
             if (delta > swipeThreshold) {
-                // Pop everything but FirstPage
                 while (pageStack.depth > 1) {
                     pageStack.pop(null, PageStackAction.Immediate)
                 }
-                
-                // Now we're back at FirstPage, show the playlist
                 applicationWindow.mainPage.showPlaylist()
+            } 
+            // Tap gesture: Toggle between Mini and Normal mode
+            else if (Math.abs(delta) < Theme.paddingMedium) {
+                if (playerState === 1) {
+                    playerState = 2  // Mini -> Normal
+                } else if (playerState === 2) {
+                    playerState = 1  // Normal -> Mini
+                }
             }
         }
     }    
@@ -62,227 +94,274 @@ DockedPanel {
         z: 0 // Hinter allen anderen Elementen
     }
 
-    IconButton {
-        id: favButton
-        width: Theme.iconSizeMedium
-        height: Theme.iconSizeMedium
-        anchors {
-            verticalCenter: parent.verticalCenter
-            right: parent.right
-            margins: Theme.paddingLarge
-        }
-        icon.source: "image://theme/icon-s-favorite"
-        icon.sourceSize: Qt.size(Theme.iconSizeMedium, Theme.iconSizeMedium)
-        highlighted: miniPlayerPanel.isFav
-        opacity: highlighted ? 1.0 : 0.3
-        onClicked: {
-            favManager.setTrackFavoriteInfo(playlistManager.tidalId,!miniPlayerPanel.isFav)
-        }
-        z:1 // to be on top of the image
-    }
 
     Rectangle {
         anchors.fill: parent
         color: Theme.overlayBackgroundColor //Theme.darkPrimaryColor
         opacity: 0.65
 
-        // Hauptcontainer
+        // Neu strukturierter Hauptcontainer - Claude Generated
         Column {
             anchors.fill: parent
             anchors.margins: Theme.paddingSmall
             spacing: Theme.paddingSmall
             z: 1 // Über dem Hintergrundbild
 
-            // Titel
-            Label {
-                id: mediaTitle
+            // 1. Button Row - Neue Anordnung: Prev links, Play/Pause + Star center, Next rechts
+            Item {
+                id: controlsContainer
                 width: parent.width
-                font.pixelSize: Theme.fontSizeSmall
-                // font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-                clip: true
-
-                // Text Animation
-                property int scrollDuration: 5000  // Dauer einer Richtung in ms
-                property int scrollPause: 2000     // Pause an den Enden in ms
-
-                SequentialAnimation {
-                    id: scrollAnim
-                    running: mediaTitle.implicitWidth > mediaTitle.width
-                    loops: Animation.Infinite
-
-                    PauseAnimation {
-                        duration: mediaTitle.scrollPause
-                    }
-
-                    NumberAnimation {
-                        target: mediaTitle
-                        property: "x"
-                        from: 0
-                        to: -(mediaTitle.implicitWidth - mediaTitle.width)
-                        duration: mediaTitle.scrollDuration
-                        easing.type: Easing.InOutQuad
-                    }
-
-                    PauseAnimation {
-                        duration: mediaTitle.scrollPause
-                    }
-
-                    NumberAnimation {
-                        target: mediaTitle
-                        property: "x"
-                        to: 0
-                        from: -(mediaTitle.implicitWidth - mediaTitle.width)
-                        duration: mediaTitle.scrollDuration
-                        easing.type: Easing.InOutQuad
-                    }
-                }
-
-                // Reset Position wenn Text sich ändert
-                onTextChanged: {
-                    x = 0;
-                    if (mediaTitle.implicitWidth > mediaTitle.width) {
-                        scrollAnim.restart();
-                    }
-                }
-            }
-            // Buttons
-            Row {
-                id: buttonsRow
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: Theme.paddingMedium
+                height: Theme.itemSizeMedium
+                visible: playerState >= 1  // Sichtbar in Mini und Normal
 
                 IconButton {
                     id: prevButton
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
                     icon.source: "image://theme/icon-m-previous"
-                    // icons move around horizontally when using visible
-                    onClicked:
-                    {
+                    enabled: playlistManager.canPrev
+                    onClicked: {
                         console.log("prev button pressed")
                         playlistManager.previousTrackClicked()
                     }
                 }
 
-                IconButton {
-                    id: playButton
-                    icon.source: mediaController.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
-                    onClicked: {
-                        if (mediaController.isPlaying) {
-                            mediaController.pause()
-                        } else {
-                            mediaController.play()
+                // Center group mit Play/Pause und Favorite
+                Row {
+                    id: centerControls
+                    anchors.centerIn: parent
+                    spacing: Theme.paddingLarge
+
+                    IconButton {
+                        id: playButton
+                        icon.source: mediaController.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-play"
+                        onClicked: {
+                            if (mediaController.isPlaying) {
+                                mediaController.pause()
+                            } else {
+                                mediaController.play()
+                            }
+                        }
+                    }
+
+                    IconButton {
+                        id: favButton
+                        icon.source: "image://theme/icon-s-favorite"
+                        highlighted: miniPlayerPanel.isFav
+                        opacity: highlighted ? 1.0 : 0.3
+                        onClicked: {
+                            favManager.setTrackFavoriteInfo(playlistManager.tidalId, !miniPlayerPanel.isFav)
                         }
                     }
                 }
 
                 IconButton {
                     id: nextButton
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
                     icon.source: "image://theme/icon-m-next"
-                    visible: playlistManager.canNext
+                    enabled: playlistManager.canNext
                     onClicked: {
                         console.log("next button pressed")
-
                         mediaController.blockAutoNext = true
                         playlistManager.nextTrackClicked()
                     }
                 }
             }
 
-            // Progress Slider und Zeit
-            Column {
+            // 2. Track Title - Scrollend, sichtbar in Mini und Normal
+            Item {
+                id: titleContainer
                 width: parent.width
-                spacing: Theme.paddingSmall
+                height: mediaTitle.implicitHeight + Theme.paddingSmall
+                visible: playerState >= 1
+                clip: true
 
-                // Ändere den Column-Block für Progress Slider und Zeit zu:
+                Label {
+                    id: mediaTitle
+                    // Dynamische Breite basierend auf Text oder Container
+                    width: Math.max(parent.width, implicitWidth)
+                    font.pixelSize: Theme.fontSizeMedium
+                    font.bold: true
+                    horizontalAlignment: needsScrolling ? Text.AlignLeft : Text.AlignHCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideNone
+                    
+                    // Hilfseigenschaft für bessere Lesbarkeit
+                    property bool needsScrolling: implicitWidth > titleContainer.width
 
-                // Progress Slider und Zeit
-                Item {
+                    // Scrolling Animation - überarbeitet
+                    property int scrollDuration: 4000
+                    property int scrollPause: 1500
+
+                    SequentialAnimation {
+                        id: scrollAnim
+                        running: mediaTitle.needsScrolling
+                        loops: Animation.Infinite
+
+                        PauseAnimation { duration: mediaTitle.scrollPause }
+                        
+                        // Scroll nach rechts (zeige den Anfang -> Ende)
+                        NumberAnimation {
+                            target: mediaTitle
+                            property: "x"
+                            from: (titleContainer.width - mediaTitle.implicitWidth) / 2  // Start zentriert
+                            to: -(mediaTitle.implicitWidth - titleContainer.width) - Theme.paddingMedium  // Ende mit Padding
+                            duration: mediaTitle.scrollDuration
+                            easing.type: Easing.InOutQuad
+                        }
+                        
+                        PauseAnimation { duration: mediaTitle.scrollPause }
+                        
+                        // Scroll zurück nach links
+                        NumberAnimation {
+                            target: mediaTitle
+                            property: "x"
+                            to: (titleContainer.width - mediaTitle.implicitWidth) / 2  // Zurück zur Mitte
+                            from: -(mediaTitle.implicitWidth - titleContainer.width) - Theme.paddingMedium
+                            duration: mediaTitle.scrollDuration
+                            easing.type: Easing.InOutQuad
+                        }
+                    }
+
+                    onTextChanged: {
+                        if (applicationWindow.settings.debugLevel >= 2) {
+                            console.log("TITLE: Text changed to:", text, "implicitWidth:", implicitWidth, "containerWidth:", titleContainer.width, "needsScrolling:", needsScrolling)
+                        }
+                        
+                        if (needsScrolling) {
+                            // Starte linksbündig für Scrolling
+                            x = (titleContainer.width - implicitWidth) / 2
+                            scrollAnim.restart()
+                        } else {
+                            // Zentriere statischen Text
+                            x = 0
+                            scrollAnim.stop()
+                        }
+                    }
+                }
+            }
+
+            // 3. Progress Slider mit inline Zeit - Nur in Normal mode
+            Item {
+                id: progressContainer
+                width: parent.width
+                height: Math.max(Theme.fontSizeExtraSmall, Theme.paddingMedium) + Theme.paddingSmall
+                visible: playerState === 2
+
+                // Target time (visible when dragging) - Moved above the row
+                Label {
+                    id: targetTime
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: sliderRow.top
+                    anchors.bottomMargin: Theme.paddingSmall
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.highlightColor
+                    visible: progressSlider.pressed
+                    text: {
+                        if (progressSlider.pressed && mediaController.duration > 0) {
+                            var targetSeconds = (progressSlider.value / 100) * (mediaController.duration / 1000)
+                            return "→ " + (targetSeconds > 3599 ? 
+                                Format.formatDuration(targetSeconds, Formatter.DurationLong) :
+                                Format.formatDuration(targetSeconds, Formatter.DurationShort))
+                        }
+                        return ""
+                    }
+                }
+
+                // Row with aligned slider and time labels
+                Row {
+                    id: sliderRow
+                    anchors.centerIn: parent
                     width: parent.width
-                    height: progressSlider.height + timeRow.height + Theme.paddingSmall
+                    spacing: Theme.paddingMedium
+
+                    // Current time links
+                    Label {
+                        id: currentTime
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
+                        text: {
+                            var pos = mediaController.position / 1000
+                            return pos > 3599 ? 
+                                Format.formatDuration(pos, Formatter.DurationLong) :
+                                Format.formatDuration(pos, Formatter.DurationShort)
+                        }
+                    }
 
                     Slider {
                         id: progressSlider
-                        anchors.top: parent.top
-                        width: parent.width
+                        width: parent.width - currentTime.width - totalTime.width - parent.spacing * 2
+                        anchors.verticalCenter: parent.verticalCenter
                         minimumValue: 0
                         maximumValue: 100
                         enabled: mediaController.duration > 0
-                        visible: mediaController.duration > 0  // Remove isPlaying condition
-                        //height: Theme.itemSizeSmall  // Increase height for better touch target
-                        z: 10  // Ensure slider is above other elements
-                        
-                        // Handle drag and release - Claude Generated
+                        visible: mediaController.duration > 0
+                        height: Theme.paddingMedium
+                        z: 10
+
                         onPressedChanged: {
                             if (applicationWindow.settings.debugLevel >= 2) {
                                 console.log("SLIDER: Pressed state changed to", pressed)
                             }
                         }
-                        
-                        onClicked: {
-                            if (applicationWindow.settings.debugLevel >= 2) {
-                                console.log("SLIDER: Clicked at value", value)
-                            }
+                    }
+
+                    // Total time rechts
+                    Label {
+                        id: totalTime
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
+                        text: {
+                            var dur = mediaController.duration / 1000
+                            return dur > 3599 ? 
+                                Format.formatDuration(dur, Formatter.DurationLong) :
+                                Format.formatDuration(dur, Formatter.DurationShort)
                         }
                     }
-                    // Zeitanzeige
-                    Row {
-                        id: timeRow
-                        anchors.top: progressSlider.bottom
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: Theme.paddingLarge
+                }
+            }
 
-                        Label {
-                            id: playedTime
-                            property string pos: {
-                                if ((mediaController.position / 1000) > 3599)
-                                    return Format.formatDuration(mediaController.position / 1000, Formatter.DurationLong)
-                                else
-                                    return Format.formatDuration(mediaController.position / 1000, Formatter.DurationShort)
-                            }
-                            text: pos
-                            font.pixelSize: Theme.fontSizeExtraSmall
-                        }
+            // 4. Playlist Info mit Next Track - Nur in Normal mode
+            Label {
+                id: playlistInfo
+                width: parent.width
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryColor
+                horizontalAlignment: Text.AlignHCenter
+                visible: playerState === 2
+                wrapMode: Text.WordWrap
 
-                        Label {
-                            id: playTime
-                            property string dur: {
-                                if ((mediaController.duration / 1000) > 3599)
-                                    return Format.formatDuration(mediaController.duration / 1000, Formatter.DurationLong)
-                                else
-                                    return Format.formatDuration(mediaController.duration / 1000, Formatter.DurationShort)
+                text: {
+                    var infoText = ""
+                    
+                    // Sleep Timer hat Priorität
+                    if (applicationWindow.remainingSeconds > 0) {
+                        infoText = qsTr("Sleep in: %1")
+                            .arg(Format.formatDuration(applicationWindow.remainingSeconds, Formatter.DurationShort))
+                    } else {
+                        // Playlist Info
+                        if (playlistManager.totalTracks > 0) {
+                            infoText = playlistManager.playlistProgress + " • " + playlistManager.totalDurationFormatted
+                            
+                            // Next Track Info
+                            var nextIndex = playlistManager.currentIndex + 1
+                            if (nextIndex < playlistManager.totalTracks) {
+                                var nextTrackId = playlistManager.requestPlaylistItem(nextIndex)
+                                var nextTrackInfo = cacheManager.getTrackInfo(nextTrackId)
+                                if (nextTrackInfo) {
+                                    infoText += "\n" + qsTr("Next: %1 - %2").arg(nextTrackInfo.artist).arg(nextTrackInfo.title)
+                                }
                             }
-                            text: dur
-                            font.pixelSize: Theme.fontSizeExtraSmall
                         }
                     }
                     
-                    // Combined info display - Claude Generated
-                    Label {
-                        id: combinedInfo
-                        anchors.top: timeRow.bottom
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.topMargin: Theme.paddingSmall
-                        font.pixelSize: Theme.fontSizeExtraSmall
-                        color: Theme.secondaryColor
-                        
-                        // Priority: Sleep timer > Playlist info
-                        text: {
-                            if (applicationWindow.remainingSeconds > 0) {
-                                return qsTr("Sleep in: %1")
-                                    .arg(Format.formatDuration(applicationWindow.remainingSeconds, Formatter.DurationShort))
-                            } else if (playlistManager.totalTracks > 0) {
-                                return playlistManager.playlistProgress + " • " + playlistManager.totalDurationFormatted
-                            } else {
-                                return ""
-                            }
-                        }
-                        
-                        visible: text !== ""
-                    }
+                    return infoText
                 }
-
             }
-
         }
 
     }
@@ -359,6 +438,7 @@ DockedPanel {
         onListChanged:
         {
             nextButton.enabled = playlistManager.canNext
+            prevButton.enabled = playlistManager.canPrev
         }
     }
 

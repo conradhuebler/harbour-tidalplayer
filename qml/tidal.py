@@ -57,9 +57,10 @@ else:
 modules_to_import = [
     ('socket', 'socket'),
     ('requests', 'requests'),
-    ('json', 'json'), 
+    ('json', 'json', ),
+    ('typing_extensions', 'dateutil'),
     ('tidalapi', 'tidalapi (main)'),
-    ('pyotherside', 'pyotherside')
+    ('pyotherside', 'pyotherside', )
 ]
 
 debug_log("Importing standard modules...", level=2)
