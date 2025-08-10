@@ -2,6 +2,10 @@
 
 import sys
 import os
+import base64
+import hashlib
+import secrets
+import urllib.parse
 (major, minor, micro, release, serial) = sys.version_info
 sys.path.append("/usr/share/harbour-tidalplayer/lib/python" + str(major) + "." + str(minor) + "/site-packages/");
 
@@ -118,6 +122,41 @@ for module_path, classes in tidalapi_submodules:
 
 debug_log("All modules imported successfully", level=1)
 
+# PKCE (Proof Key for Code Exchange) helper functions for OAuth 2.1 
+def generate_pkce_pair():
+    """
+    Generate PKCE code verifier and challenge according to RFC 7636
+    Returns: (code_verifier, code_challenge)
+    """
+    # Generate cryptographically random 32-byte code verifier
+    code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode('utf-8').rstrip('=')
+    
+    # Create SHA256 challenge from verifier
+    challenge_bytes = hashlib.sha256(code_verifier.encode()).digest()
+    code_challenge = base64.urlsafe_b64encode(challenge_bytes).decode('utf-8').rstrip('=')
+    
+    debug_log(f"Generated PKCE pair - verifier length: {len(code_verifier)}, challenge length: {len(code_challenge)}", level=2)
+    return code_verifier, code_challenge
+
+def build_authorization_url(client_id, redirect_uri, code_challenge, state, scopes="r_usr"):
+    """
+    Build TIDAL OAuth 2.1 authorization URL with PKCE
+    """
+    params = {
+        'response_type': 'code',
+        'client_id': client_id,
+        'redirect_uri': redirect_uri,
+        'scope': scopes,
+        'code_challenge_method': 'S256',
+        'code_challenge': code_challenge,
+        'state': state
+    }
+    
+    base_url = "https://login.tidal.com/authorize"
+    auth_url = f"{base_url}?{urllib.parse.urlencode(params)}"
+    debug_log(f"Built authorization URL: {auth_url[:100]}...", level=2)
+    return auth_url
+
 
 class Tidal:
     def __init__(self):
@@ -128,6 +167,14 @@ class Tidal:
         self.album_search = 20
         self.track_search = 20
         self.artist_search = 20
+        
+        # OAuth 2.1 Web Flow state
+        self.oauth_state = None
+        self.oauth_web_enabled = True  # Prefer new OAuth method
+        
+        # TIDAL OAuth 2.1 PKCE Configuration
+        self.client_id = "6BDSRdpK9hqEBTgU"  # Official TIDAL PKCE client ID
+        self.redirect_uri = "http://localhost:8080/callback"  # Localhost for testing
 
         debug_log("Tidal class initialized, sending loadingStarted signal", level=2)
         pyotherside.send('loadingStarted')
@@ -350,6 +397,133 @@ class Tidal:
             pyotherside.send("oauth_failed")
             
         pyotherside.send('loadingFinished')
+
+    def request_oauth_web(self, scopes="r_usr"):
+        """
+        New TIDAL OAuth 2.1 Web Flow with PKCE (Proof Key for Code Exchange)
+        More secure than device flow, better user experience
+        """
+        debug_log("Starting OAuth 2.1 Web Flow with PKCE", level=1)
+        
+        try:
+            # Generate PKCE code verifier and challenge
+            code_verifier, code_challenge = generate_pkce_pair()
+            
+            # Generate secure random state for CSRF protection
+            state = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode('utf-8').rstrip('=')
+            
+            # Store OAuth state for later verification
+            self.oauth_state = {
+                'code_verifier': code_verifier,
+                'state': state,
+                'redirect_uri': self.redirect_uri,
+                'client_id': self.client_id,
+                'scopes': scopes
+            }
+            
+            debug_log(f"OAuth state stored - client_id: {self.client_id}, scopes: {scopes}", level=2)
+            
+            # Build authorization URL with PKCE parameters
+            auth_url = build_authorization_url(
+                client_id=self.client_id,
+                redirect_uri=self.redirect_uri, 
+                code_challenge=code_challenge,
+                state=state,
+                scopes=scopes
+            )
+            
+            debug_log("Sending authorization URL to QML WebView", level=1)
+            pyotherside.send("auth_url", auth_url)
+            
+        except Exception as e:
+            debug_log(f"Error starting OAuth web flow: {str(e)}", level=1, force=True)
+            pyotherside.send("oauth_failed", f"Failed to start OAuth: {str(e)}")
+
+    def exchange_authorization_code(self, authorization_code, received_state):
+        """
+        Exchange authorization code for access/refresh tokens
+        Part 2 of OAuth 2.1 Web Flow
+        """
+        debug_log(f"Starting token exchange with authorization code: {authorization_code[:10]}...", level=1)
+        
+        try:
+            # Validate OAuth state
+            if not self.oauth_state:
+                debug_log("CRITICAL: No OAuth state found for token exchange", level=1, force=True)
+                pyotherside.send("oauth_failed", "Invalid OAuth state")
+                return
+                
+            if received_state != self.oauth_state['state']:
+                debug_log("CRITICAL: State parameter mismatch - potential CSRF attack", level=1, force=True)
+                pyotherside.send("oauth_failed", "Invalid state parameter")
+                return
+                
+            # Prepare token exchange request
+            token_data = {
+                'grant_type': 'authorization_code',
+                'client_id': self.oauth_state['client_id'],
+                'code': authorization_code,
+                'redirect_uri': self.oauth_state['redirect_uri'],
+                'code_verifier': self.oauth_state['code_verifier']
+            }
+            
+            debug_log("Exchanging authorization code for tokens...", level=2)
+            
+            # Exchange code for tokens
+            response = requests.post(
+                'https://auth.tidal.com/v1/oauth2/token',
+                data=token_data,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                tokens = response.json()
+                debug_log(f"Token exchange successful - expires_in: {tokens.get('expires_in', 'unknown')}", level=1)
+                
+                # Initialize TidalAPI session with new tokens
+                if self.session:
+                    self.session.access_token = tokens['access_token']
+                    self.session.refresh_token = tokens.get('refresh_token', '')
+                    self.session.token_type = tokens.get('token_type', 'Bearer')
+                    
+                    # Calculate expiry time
+                    expires_in = tokens.get('expires_in', 86400)  # Default 24 hours
+                    import time
+                    self.session.expiry_time = int(time.time() + expires_in)
+                    
+                    # Verify login
+                    if self.session.check_login():
+                        debug_log("OAuth 2.1 login successful", level=1)
+                        pyotherside.send("get_token", 
+                                        self.session.token_type, 
+                                        self.session.access_token, 
+                                        self.session.refresh_token, 
+                                        self.session.expiry_time)
+                    else:
+                        debug_log("Token exchange successful but login verification failed", level=1, force=True)
+                        pyotherside.send("oauth_failed", "Login verification failed")
+                else:
+                    debug_log("CRITICAL: No session available for token storage", level=1, force=True)
+                    pyotherside.send("oauth_failed", "No session available")
+                    
+            else:
+                error_msg = f"Token exchange failed: {response.status_code} - {response.text}"
+                debug_log(error_msg, level=1, force=True)
+                pyotherside.send("oauth_failed", error_msg)
+                
+        except requests.RequestException as e:
+            error_msg = f"Network error during token exchange: {str(e)}"
+            debug_log(error_msg, level=1, force=True)
+            pyotherside.send("oauth_failed", error_msg)
+        except Exception as e:
+            error_msg = f"Unexpected error during token exchange: {str(e)}"
+            debug_log(error_msg, level=1, force=True)
+            pyotherside.send("oauth_failed", error_msg)
+        finally:
+            # Clear OAuth state after use
+            self.oauth_state = None
+            pyotherside.send('loadingFinished')
 
     def handle_track(self, track):
         try:

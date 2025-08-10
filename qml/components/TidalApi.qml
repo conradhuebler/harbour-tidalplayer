@@ -11,6 +11,7 @@ Item {
 
     signal loginSuccess()
     signal loginFailed()
+    signal oauthFailed(string message)
 
     // Search Signale
     signal trackSearchFinished()
@@ -324,6 +325,12 @@ Item {
             setHandler('get_url', function(newvalue) {
                 tidalApi.authUrl(newvalue)
             })
+            
+            // OAuth 2.1 Web Flow URL handler - Claude Generated
+            setHandler('auth_url', function(url) {
+                console.log("OAuth 2.1: Received authorization URL")
+                tidalApi.authUrl(url)
+            })
             setHandler('oauth_success', function() {
                 tidalApi.loginSuccess()
             })
@@ -340,6 +347,13 @@ Item {
                 tidalApi.loginFailed()
             })
             // lets remove soon one
+            
+            // OAuth 2.1 Web Flow handlers - Claude Generated
+            setHandler('oauth_failed', function(message) {
+                var errorMsg = message || "Unknown OAuth error"
+                console.log("OAuth 2.1 failed:", errorMsg)
+                tidalApi.oauthFailed(errorMsg)
+            })
 
             setHandler('get_token', function(type, token, rtoken, date) {
                 if (settings.debugLevel >= 3) {
@@ -869,6 +883,18 @@ Item {
         console.log("Request new login")
         pythonTidal.call('tidal.Tidaler.initialize', [quality])
         pythonTidal.call('tidal.Tidaler.request_oauth', [])
+    }
+    
+    // OAuth 2.1 Web Flow functions - Claude Generated
+    function request_oauth_web(scopes) {
+        console.log("Request OAuth 2.1 Web Flow with PKCE")
+        pythonTidal.call('tidal.Tidaler.initialize', [quality])
+        pythonTidal.call('tidal.Tidaler.request_oauth_web', [scopes || "r_usr"])
+    }
+    
+    function exchange_authorization_code(code, state) {
+        console.log("Exchange authorization code for tokens")
+        pythonTidal.call('tidal.Tidaler.exchange_authorization_code', [code, state])
     }
 
     function loginIn(tokenType, accessToken, refreshToken, expiryTime) {

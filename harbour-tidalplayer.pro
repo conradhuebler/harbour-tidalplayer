@@ -35,6 +35,12 @@ COPIES += tidalpython
 COPIES += mpegdash
 COPIES += ratelimit
 COPIES += typing
+COPIES += dateutil
+COPIES += dateutilparser
+COPIES += isodatelocal
+COPIES += futurelocal
+COPIES += pastlocal
+COPIES += sixlocal
 
 tidalpython.files = $$files(external/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
@@ -52,8 +58,22 @@ dateutil.files = $$files(external/dateutil-2.8.2/dateutil/*.py)
 dateutil.path  = $$OUT_PWD/python/dateutil
 
 dateutilparser.files = $$files(external/dateutil-2.8.2/dateutil/parser/*.py)
-dateutil.path  = $$OUT_PWD/python/dateutil/parser
+dateutilparser.path  = $$OUT_PWD/python/dateutil/parser
 
+# Local build copies (COPIES)
+isodatelocal.files = $$files(external/isodate-0.6.1/src/isodate/*.py)
+isodatelocal.path  = $$OUT_PWD/python/isodate
+
+futurelocal.files = $$files(external/python-future-1.0.0/src/future/*.py)
+futurelocal.path = $$OUT_PWD/python/future
+
+pastlocal.files = $$files(external/python-future-1.0.0/src/past/*.py)
+pastlocal.path = $$OUT_PWD/python/past
+
+sixlocal.files = external/six-1.12.0/six.py
+sixlocal.path = $$OUT_PWD/python/
+
+# Installation targets (INSTALLS)
 isodate.files = external/isodate-0.6.1/*
 isodate.path  = /usr/share/$${TARGET}/python/isodate
 
