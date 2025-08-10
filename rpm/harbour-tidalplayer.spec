@@ -65,7 +65,7 @@ rm -rf %{buildroot}
 
 # >> install post
 
-mkdir %{buildroot}%{_datadir}/%{name}/python
+mkdir -p %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
 ls python/dateutil/*
