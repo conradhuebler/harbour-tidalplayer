@@ -273,7 +273,35 @@ ApplicationWindow
         id: authCheckTimer
         interval: 1000  // Wait 1 second for settings to load
         repeat: false
+        property int restartCount: 0  // Track restart attempts
         onTriggered: {
+            // Don't perform auth check if backend has critical errors
+            if (tidalApi.criticalError) {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("AUTH_CHECK: Skipping authentication check - critical backend error detected")
+                }
+                return
+            }
+            
+            // If backend hasn't initialized yet, wait a bit longer (but not too long)
+            if (!tidalApi.backendInitialized && !tidalApi.criticalError) {
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("AUTH_CHECK: Backend still initializing, retrying in 1 second...")
+                }
+                // Restart timer with slightly longer delay, max 3 attempts
+                if (authCheckTimer.restartCount < 2) {
+                    authCheckTimer.restartCount++
+                    authCheckTimer.interval = 1500  // 1.5 seconds
+                    authCheckTimer.restart()
+                    return
+                } else {
+                    // After 3 attempts, proceed anyway (backend might be slow but working)
+                    if (applicationWindow.settings.debugLevel >= 1) {
+                        console.log("AUTH_CHECK: Proceeding after max retries, backend status unknown")
+                    }
+                }
+            }
+            
             var hasValidAuth = applicationWindow.settings.access_token && 
                              applicationWindow.settings.refresh_token &&
                              applicationWindow.settings.access_token !== "" &&
@@ -288,7 +316,7 @@ ApplicationWindow
                     console.log("AUTH_CHECK: No valid authentication - redirecting to settings")
                 }
                 showInfoNotification(qsTr("Welcome"), qsTr("Please log in to access Tidal music"))
-                pageStack.push(Qt.resolvedUrl("pages/Settings.qml"))
+                safeNavigateToSettings()
             } else {
                 if (applicationWindow.settings.debugLevel >= 1) {
                     console.log("AUTH_CHECK: User is authenticated - staying on main page")
@@ -688,6 +716,123 @@ ApplicationWindow
         }, 5000) // 5 seconds timeout
     }
 
+    // Persistent critical error dialog - Claude Generated
+    function showCriticalErrorDialog(title, message) {
+        console.log("CRITICAL DIALOG:", title, "-", message)
+        
+        if (criticalErrorDialog) {
+            criticalErrorDialog.destroy()
+        }
+        
+        // Create inline dialog component
+        var dialogComponent = Qt.createQmlObject('
+            import QtQuick 2.0
+            import Sailfish.Silica 1.0
+            
+            Dialog {
+                id: errorDialog
+                property string errorTitle: ""
+                property string errorMessage: ""
+                
+                canAccept: false
+                allowedOrientations: Orientation.All
+                
+                Column {
+                    anchors.centerIn: parent
+                    width: parent.width - Theme.paddingLarge * 2
+                    spacing: Theme.paddingLarge
+                    
+                    Icon {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        source: "image://theme/icon-l-attention"
+                        color: Theme.errorColor
+                    }
+                    
+                    Label {
+                        width: parent.width
+                        text: errorDialog.errorTitle
+                        font.pixelSize: Theme.fontSizeLarge
+                        font.bold: true
+                        color: Theme.errorColor
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+                    
+                    Label {
+                        width: parent.width
+                        text: errorDialog.errorMessage
+                        font.pixelSize: Theme.fontSizeMedium
+                        color: Theme.primaryColor
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+                    
+                    Column {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: Theme.paddingMedium
+                        
+                        Button {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: qsTr("Download Fix")
+                            onClicked: {
+                                Qt.openUrlExternally("https://sailfish.openrepos.net/lpr/personal/main/p/python3-typing_extensions-3.10.0.2-0.noarch.rpm")
+                            }
+                        }
+                        
+                        Button {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: qsTr("Close App")
+                            onClicked: {
+                                Qt.quit()
+                            }
+                        }
+                    }
+                }
+            }
+        ', applicationWindow, "criticalErrorDialog")
+        
+        if (dialogComponent) {
+            dialogComponent.errorTitle = title
+            dialogComponent.errorMessage = message
+            criticalErrorDialog = dialogComponent
+            pageStack.push(dialogComponent)
+        } else {
+            console.log("ERROR: Could not create inline dialog")
+            // Fallback to very long notification
+            notificationRemorse.execute(title + "\n" + message, function() {}, 30000)
+        }
+    }
+    
+    property var criticalErrorDialog: null
+
+    // Safe navigation function - blocks Settings navigation during critical errors
+    function safeNavigateToSettings() {
+        if (tidalApi.criticalError) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("NAVIGATION: Settings navigation blocked due to critical backend error")
+            }
+            return false
+        }
+        
+        pageStack.push(Qt.resolvedUrl("pages/Settings.qml"))
+        return true
+    }
+
+    // Monitor critical errors and prevent further navigation
+    Connections {
+        target: tidalApi
+        onCriticalErrorChanged: {
+            if (tidalApi.criticalError) {
+                // Stop any running timers that might navigate away
+                authCheckTimer.stop()
+                
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("CRITICAL: Backend error detected, stopping navigation timers")
+                }
+            }
+        }
+    }
+
     // Switch to main page after successful login
     function switchToMainPage() {
         if (settings.debugLevel >= 1) {
@@ -823,6 +968,7 @@ ApplicationWindow
                 applicationWindow.mainPage = this
                 
                 // Check if authentication is needed and redirect to settings
+                authCheckTimer.restartCount = 0  // Reset restart counter
                 authCheckTimer.start()
             }
         }
@@ -895,8 +1041,17 @@ ApplicationWindow
         onLoginFailed: {
             authManager.clearTokens()
             console.log("Login failed")
-            showErrorNotification(qsTr("Login Failed"), qsTr("Authentication failed. Please check your credentials."))
-            pageStack.push(Qt.resolvedUrl("pages/Settings.qml"))
+            
+            // Don't show login failure popup if backend has critical errors
+            if (!tidalApi.criticalError) {
+                showErrorNotification(qsTr("Login Failed"), qsTr("Authentication failed. Please check your credentials."))
+                safeNavigateToSettings()
+            } else {
+                // Backend is broken, don't push settings page
+                if (settings.debugLevel >= 1) {
+                    console.log("LOGIN: Skipping login failure handling - critical backend error detected")
+                }
+            }
         }
     }
 

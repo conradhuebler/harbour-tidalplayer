@@ -58,7 +58,9 @@ modules_to_import = [
     ('socket', 'socket'),
     ('requests', 'requests'),
     ('json', 'json', ),
-    ('typing_extensions', 'dateutil'),
+    ('typing_extensions', 'typing_extensions'),
+    ('dateutil', 'dateutil'),
+    ('isodate', 'isodate'),
     ('tidalapi', 'tidalapi (main)'),
     ('pyotherside', 'pyotherside', )
 ]

@@ -106,8 +106,23 @@ Item {
     
     // PERFORMANCE: Async-First API properties
     property bool loading: false
+    property bool criticalError: false  // Flag for critical backend errors that prevent login
+    property bool backendInitialized: false  // Flag for successful backend initialization
     property var pendingRequests: ({})  // Track pending requests by ID
     property int requestCounter: 0      // Generate unique request IDs
+    
+    // Critical Error Dialog - persistent and blocks other popups
+    function showCriticalError(title, message) {
+        console.log("CRITICAL ERROR:", title, "-", message)
+        
+        // Use the new persistent dialog function
+        applicationWindow.showCriticalErrorDialog(title, message)
+        
+        // Also log to console for debugging
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("CRITICAL: Backend is non-functional, login will fail")
+        }
+    }
     
     // Request queue for batching
     property var requestQueue: []
@@ -197,6 +212,57 @@ Item {
                     qsTr("Connection Error"), 
                     qsTr("Unable to connect to Tidal. Check your internet connection.")
                 )
+            } else if (errorStr.indexOf("ImportError") !== -1 || errorStr.indexOf("cannot import name") !== -1) {
+                // Python import errors - Critical for app functionality
+                criticalError = true  // Mark as critical error
+                
+                var importError = ""
+                var errorMessage = ""
+                
+                if (errorStr.indexOf("cannot import name 'NoReturn' from 'typing_extensions'") !== -1) {
+                    importError = qsTr("Missing Python dependency: typing_extensions with NoReturn support")
+                    errorMessage = importError + "\n\n" + 
+                                  qsTr("This is a known issue with outdated typing_extensions.\n") +
+                                  qsTr("Click 'Download Fix' to install the required version.\n") +
+                                  qsTr("After download, install with: pkcon install-local [filename]")
+                } else if (errorStr.indexOf("tidalapi") !== -1) {
+                    importError = qsTr("Failed to import Tidal API module")
+                    errorMessage = importError + "\n" + qsTr("App cannot function without this dependency.\nPlease reinstall the app or check Python installation.")
+                } else {
+                    importError = qsTr("Python import error detected")
+                    errorMessage = importError + "\n" + qsTr("App cannot function without this dependency.\nPlease reinstall the app or check Python installation.")
+                }
+                
+                // Use custom long-duration notification for critical errors
+                showCriticalError(qsTr("Critical Dependency Error"), errorMessage)
+            } else if (errorStr.indexOf("ModuleNotFoundError") !== -1) {
+                // Missing Python modules - also critical
+                criticalError = true
+                
+                var moduleName = "unknown"
+                var moduleMatch = errorStr.match(/ModuleNotFoundError: No module named '([^']+)'/)
+                if (moduleMatch && moduleMatch[1]) {
+                    moduleName = moduleMatch[1]
+                }
+                
+                showCriticalError(
+                    qsTr("Missing Python Module"), 
+                    qsTr("Python module '%1' is missing.\nApp cannot function without required dependencies.\nPlease reinstall the app.").arg(moduleName)
+                )
+            } else if (errorStr.indexOf("Cannot import module") !== -1) {
+                // PyOtherSide specific import errors - also critical
+                criticalError = true
+                
+                var moduleInfo = ""
+                var moduleMatch = errorStr.match(/Cannot import module: ([^\s]+)/)
+                if (moduleMatch && moduleMatch[1]) {
+                    moduleInfo = " (" + moduleMatch[1] + ")"
+                }
+                
+                showCriticalError(
+                    qsTr("Python Backend Failed"), 
+                    qsTr("Failed to import Python module%1.\nApp cannot function without working backend.\nCheck app installation and dependencies.").arg(moduleInfo)
+                )
             } else if (errorStr.indexOf("HTTPError: 400 Client Error") !== -1) {
                 // 400 errors can be temporary during session setup, so be less intrusive
                 if (applicationWindow.settings.debugLevel >= 2) {
@@ -209,9 +275,32 @@ Item {
                         qsTr("Tidal API request failed. This may be temporary - try again later.")
                     )
                 }
+            } else if (errorStr.indexOf("PYTHON: ✗ Failed to import") !== -1) {
+                // Custom Python import failure messages from tidal.py - also critical
+                criticalError = true
+                
+                var failureMatch = errorStr.match(/PYTHON: ✗ Failed to import ([^\s]+)/)
+                var moduleName = failureMatch && failureMatch[1] ? failureMatch[1] : "module"
+                
+                showCriticalError(
+                    qsTr("Python Import Failed"), 
+                    qsTr("Failed to import %1 module.\nApp cannot function without working Python backend.\nCheck dependencies and app installation.").arg(moduleName)
+                )
             } else {
-                // Generic errors - only show in debug mode and not during session setup
-                if (applicationWindow.settings.debugLevel >= 2 && !sessionReinitTimer.running) {
+                // Generic errors - show critical ones even during session setup
+                var isCritical = errorStr.indexOf("Traceback") !== -1 || 
+                               errorStr.indexOf("Exception") !== -1 ||
+                               errorStr.indexOf("Error:") !== -1
+                
+                if (isCritical) {
+                    // Extract a more readable error message
+                    var shortError = errorStr.split('\n').slice(-2, -1)[0] || errorStr.substring(0, 100)
+                    
+                    applicationWindow.showWarningNotification(
+                        qsTr("Python Error"), 
+                        qsTr("Backend error occurred") + (shortError ? ":\n" + shortError : "")
+                    )
+                } else if (applicationWindow.settings.debugLevel >= 2 && !sessionReinitTimer.running) {
                     console.log("DEBUG: Generic PyOtherSide error - may be harmless during session setup")
                 }
             }
@@ -701,13 +790,23 @@ Item {
                 console.log("TIDAL: Debug level synchronization:", applicationWindow.settings.debugLevel)
             }
             
-            importModule('tidal', function() {
+            // Only attempt to import if no critical errors detected
+            if (!criticalError) {
+                importModule('tidal', function() {
+                    // Backend successfully initialized
+                    backendInitialized = true
+                    
+                    if (applicationWindow.settings.debugLevel >= 1) {
+                        console.log("TIDAL: ✓ Python module 'tidal' imported successfully")
+                        console.log("TIDAL: Python backend is ready for API calls")
+                        console.log("TIDAL: Python debug output should now be filtered by QML debug level")
+                    }
+                })
+            } else {
                 if (applicationWindow.settings.debugLevel >= 1) {
-                    console.log("TIDAL: ✓ Python module 'tidal' imported successfully")
-                    console.log("TIDAL: Python backend is ready for API calls")
-                    console.log("TIDAL: Python debug output should now be filtered by QML debug level")
+                    console.log("TIDAL: ✗ Skipping module import due to critical backend error")
                 }
-            })
+            }
         }
 
 

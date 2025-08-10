@@ -7,7 +7,7 @@ DockedPanel {
     id: miniPlayerPanel
     width: parent.width
     height: getPlayerHeight()
-    open: true
+    open: tidalApi.loginTrue
     dock: Dock.Bottom
     property bool isFav: false
     

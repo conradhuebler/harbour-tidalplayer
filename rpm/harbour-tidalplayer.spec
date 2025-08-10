@@ -24,10 +24,10 @@ Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
 Requires:   python3-requests
-Requires:   python3-dateutil
 Requires:   python3-six
 Requires:   python3-devel
 Requires:   amber-mpris
+#Requires:   python3-typing_extensions
 Requires:   mpris-qt5-qml-plugin
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
@@ -66,25 +66,17 @@ rm -rf %{buildroot}
 # >> install post
 
 mkdir %{buildroot}%{_datadir}/%{name}/python
-cp -r python/*  %{buildroot}%{_datadir}/%{name}/python/
+cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
-#<<<<<<< HEAD
 ls python/dateutil/*
 ls python/isodate/*
 ls  %{buildroot}%{_datadir}/%{name}/python
-#cp -r python/* %{buildroot}%{_datadir}/%{name}/python/
-#cp -r mpegdash  %{buildroot}%{_datadir}/%{name}/python/
-#cp -r isodate  %{buildroot}%{_datadir}/%{name}/python/isodate
-#cp -r ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
-#cp -r typing_extensions/typing_extensions.py  %{buildroot}%{_datadir}/%{name}/python/typing_extensions.py
-#cp -r dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil
 
 cp -r python/mpegdash  %{buildroot}%{_datadir}/%{name}/python/mpegdash
 cp -r python/isodate  %{buildroot}%{_datadir}/%{name}/python/isodate
 cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
 cp -r python/typing_extensions  %{buildroot}%{_datadir}/%{name}/python/typing_extensions
 cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil
-#>>>>>>> Fix: downgrade typing extensions for 3.8 compat. bump version, update install
 
 rm -rf %{buildroot}/%{_datadir}/%{name}/share
 rm -rf %{buildroot}/%{_datadir}/%{name}/bin

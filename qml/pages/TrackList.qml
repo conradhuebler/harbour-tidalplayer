@@ -593,15 +593,6 @@ Item {
         }
     }
 
-    // Listen to playlist changes for filtering - Claude Generated
-    Connections {
-        target: playlistManager
-        onListChanged: {
-            if (type === "current") {
-                refreshList()
-            }
-        }
-    }
     
     Connections {
         target: tidalApi
@@ -662,7 +653,8 @@ Item {
     Connections {
         target: playlistManager
         onTrackInformation: {
-            if (type === "current") {
+            // For current playlist, this is handled by onListChanged -> refreshList() to avoid duplicates
+            if (type !== "current") {
                 listModel.append({
                     "title": title,
                     "artist": artist,
@@ -692,8 +684,8 @@ Item {
             console.log("update playlist")
             if (type === "current") {
                 console.log("update current playlist")
-                listModel.clear()
-                updateTimer.start()
+                // Use refreshList() to maintain search/filter functionality
+                refreshList()
             }
         }
     }
