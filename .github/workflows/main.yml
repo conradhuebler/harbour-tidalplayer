@@ -1,12 +1,15 @@
-name: Github CI build
+name: Build and Release RPMs
 
 on:
   push:
+    branches:
+      - master
     tags:
       - '0.2.*'
   pull_request:
     branches:
       - main
+      - master
 env:
   RELEASE: 5.0.0.43
 
@@ -43,8 +46,40 @@ jobs:
         release: ${{ env.RELEASE }}
         arch: i486
 
+    - name: List built RPMs
+      run: |
+        echo "Built RPM packages:"
+        ls -la RPMS/*.rpm || echo "No RPM files found"
+
+    - name: Upload RPM artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: harbour-tidalplayer-rpms-${{ github.event_name }}-${{ github.run_number }}
+        path: RPMS/*.rpm
+        retention-days: 90
+
+    - name: Create build summary
+      run: |
+        echo "## 🎵 Tidal Player RPM Build Complete" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Built packages:" >> $GITHUB_STEP_SUMMARY
+        echo "- aarch64 (ARM64)" >> $GITHUB_STEP_SUMMARY
+        echo "- armv7hl (ARM32)" >> $GITHUB_STEP_SUMMARY
+        echo "- i486 (x86)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]]; then
+          echo "🔄 **Master build** - RPMs available as workflow artifacts for testing" >> $GITHUB_STEP_SUMMARY
+        elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          echo "🧪 **PR build** - RPMs available as workflow artifacts for testing" >> $GITHUB_STEP_SUMMARY
+        elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          echo "🚀 **Release build** - RPMs will be attached to GitHub release" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📦 **Download artifacts**: Go to the 'Summary' tab of this workflow run to download the RPM packages" >> $GITHUB_STEP_SUMMARY
+
     - name: Extract Version Name
       id: extract_name
+      if: startsWith(github.ref, 'refs/tags/')
       uses: actions/github-script@v4
       with:
         result-encoding: string
@@ -52,6 +87,7 @@ jobs:
           return context.payload.ref.replace(/refs\/tags\//, '');
 
     - name: Create a Release
+      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
