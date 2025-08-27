@@ -146,13 +146,23 @@ Item {
         onTriggered: {
             if (requestQueue.length > 0) {
                 var request = requestQueue.shift()
-                console.log("Processing async request:", request.method)
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("ASYNC: Processing request:", request.method)
+                }
                 
-                // Call Python method and handle completion
-                pythonTidal.call(request.method, request.params, function(result) {
-                    console.log("Request completed:", request.method)
-                    completeRequest(request.id, result)
-                })
+                try {
+                    // Call Python method and handle completion
+                    pythonTidal.call(request.method, request.params, function(result) {
+                        if (applicationWindow.settings.debugLevel >= 2) {
+                            console.log("ASYNC: Request completed:", request.method)
+                        }
+                        completeRequest(request.id, result)
+                    })
+                } catch (error) {
+                    console.log("ASYNC: Request failed:", request.method, "Error:", error)
+                    // Complete request with null result to clean up
+                    completeRequest(request.id, null)
+                }
                 
                 // Continue processing if more requests
                 if (requestQueue.length > 0) {
@@ -1024,12 +1034,34 @@ Item {
 
     // Search Funktionen - Now Async-First
     function genericSearch(text) {
-        console.log("ASYNC: generic search", text)
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("SEARCH: Starting generic search for:", text)
+        }
+        
+        // Check authentication before allowing search
+        if (!isAuthenticated()) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("SEARCH: Cannot search - not authenticated")
+            }
+            applicationWindow.showWarningNotification(qsTr("Login Required"), qsTr("Please log in to search music"))
+            return false
+        }
+        
+        // Check if text is valid
+        if (!text || text.trim().length === 0) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("SEARCH: Empty search text, ignoring")
+            }
+            return false
+        }
+        
         // Clear previous results immediately for instant feedback
         searchResults({tracks: [], albums: [], artists: [], playlists: []})
         
-        return queueRequest("tidal.Tidaler.genericSearch", [text], function(result) {
-            console.log("Search completed for:", text)
+        return queueRequest("tidal.Tidaler.genericSearch", [text.trim()], function(result) {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("SEARCH: Search completed for:", text, "- Result:", result ? "success" : "failed")
+            }
         })
     }
 
