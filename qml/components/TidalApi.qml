@@ -147,7 +147,13 @@ Item {
             if (requestQueue.length > 0) {
                 var request = requestQueue.shift()
                 console.log("Processing async request:", request.method)
-                pythonTidal.call(request.method, request.params)
+                
+                // Call Python method and handle completion
+                pythonTidal.call(request.method, request.params, function(result) {
+                    console.log("Request completed:", request.method)
+                    completeRequest(request.id, result)
+                })
+                
                 // Continue processing if more requests
                 if (requestQueue.length > 0) {
                     start()

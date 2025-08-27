@@ -37,15 +37,39 @@ Item {
                 width: parent.width
                 placeholderText: qsTr("Type and Search")
                 text: ""
-                label: qsTr("Please wait for login ...")
-                enabled: tidalApi.loginTrue
+                label: tidalApi.loginTrue ? 
+                       (tidalApi.loading ? qsTr("Searching...") : qsTr("Find")) : 
+                       qsTr("Please wait for login ...")
+                enabled: tidalApi.loginTrue && !tidalApi.loading
 
-                EnterKey.enabled: text.length > 0
+                EnterKey.enabled: text.length > 0 && !tidalApi.loading
                 EnterKey.iconSource: "image://theme/icon-m-search"
                 EnterKey.onClicked: {
+                    if (applicationWindow.settings.debugLevel >= 1) {
+                        console.log("SEARCH: Starting search for:", text)
+                    }
                     listModel.clear()
                     tidalApi.genericSearch(text)
                     focus = false
+                }
+                
+                // Claude Generated: Clear search button when results are shown
+                IconButton {
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon.source: "image://theme/icon-m-clear"
+                    visible: listModel.count > 0 || searchField.text.length > 0
+                    enabled: !tidalApi.loading
+                    
+                    onClicked: {
+                        if (applicationWindow.settings.debugLevel >= 1) {
+                            console.log("SEARCH: Clearing search results")
+                        }
+                        searchField.text = ""
+                        listModel.clear()
+                        searchField.focus = true
+                    }
                 }
             }
 
@@ -93,6 +117,33 @@ Item {
                     checked: false
                 }
             }
+            
+            // Claude Generated: Search status and feedback
+            Column {
+                width: parent.width
+                spacing: Theme.paddingMedium
+                visible: tidalApi.loading || (searchField.text.length > 0 && listModel.count === 0 && !tidalApi.loading)
+                
+                // Loading indicator
+                BusyIndicator {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    running: tidalApi.loading
+                    visible: tidalApi.loading
+                    size: BusyIndicatorSize.Medium
+                }
+                
+                // No results message
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: tidalApi.loading ? qsTr("Searching...") : 
+                          (searchField.text.length > 0 ? qsTr("No results found for \"%1\"").arg(searchField.text) : "")
+                    color: Theme.secondaryColor
+                    font.pixelSize: Theme.fontSizeMedium
+                    visible: !tidalApi.loading && searchField.text.length > 0 && listModel.count === 0
+                    wrapMode: Text.WordWrap
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                }
+            }
         }
 
             // Suchergebnisse
@@ -122,11 +173,24 @@ Item {
     Connections {
         target: tidalApi
 
-        onLoginSuccess: searchField.label = qsTr("Find")
+        onLoginSuccess: {
+            searchField.label = qsTr("Find")
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("SEARCH: Login successful, search enabled")
+            }
+        }
 
-        onLoginFailed: searchField.label = qsTr("Please go to the settings and login via OAuth")
+        onLoginFailed: {
+            searchField.label = qsTr("Please go to the settings and login via OAuth")
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("SEARCH: Login failed, search disabled")
+            }
+        }
 
         onSearchResults: {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("SEARCH: Received search results")
+            }
             listModel.clear()
             addSearchResultsToModel(search_results)
         }
@@ -157,24 +221,36 @@ Item {
 
         // PERFORMANCE: Batch signal handlers for improved search performance
         onFoundTracksBatch: {
+            if (applicationWindow.settings.debugLevel >= 2) {
+                console.log("SEARCH: Adding", tracks_array.length, "tracks to results")
+            }
             tracks_array.forEach(function(track) {
                 listModel.append(createTrackItem(track))
             })
         }
         
         onFoundAlbumsBatch: {
+            if (applicationWindow.settings.debugLevel >= 2) {
+                console.log("SEARCH: Adding", albums_array.length, "albums to results")
+            }
             albums_array.forEach(function(album) {
                 listModel.append(createAlbumItem(album))
             })
         }
         
         onFoundArtistsBatch: {
+            if (applicationWindow.settings.debugLevel >= 2) {
+                console.log("SEARCH: Adding", artists_array.length, "artists to results")
+            }
             artists_array.forEach(function(artist) {
                 listModel.append(createArtistItem(artist))
             })
         }
         
         onFoundPlaylistsBatch: {
+            if (applicationWindow.settings.debugLevel >= 2) {
+                console.log("SEARCH: Adding", playlists_array.length, "playlists to results")
+            }
             playlists_array.forEach(function(playlist) {
                 listModel.append(createPlaylistItem(playlist))
             })
