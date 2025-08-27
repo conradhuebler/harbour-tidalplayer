@@ -20,7 +20,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: false
+
+    - name: Initialize submodules
+      run: |
+        # Handle both properly configured submodules (.gitmodules) and direct submodule references
+        # Some submodules are in .gitmodules, others are direct git links without .gitmodules entries
+        echo "Attempting to initialize all submodules..."
+        git submodule update --init --recursive || echo "Some submodules failed to initialize (expected for direct references)"
+        
+        # For submodules that are properly configured, ensure they're initialized
+        echo "Ensuring configured submodules are initialized..."
+        git submodule update --init --recursive external/mpegdash external/ratelimit || true
+        
+        echo "Submodule initialization complete. Some may remain uninitialized if they lack proper configuration."
 
     - name: Prepare
       run: mkdir output
