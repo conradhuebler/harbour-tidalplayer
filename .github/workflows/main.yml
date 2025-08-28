@@ -38,26 +38,12 @@ jobs:
     - name: Prepare
       run: mkdir output
 
-    - name: Build aarch64
-      id: build_aarch64
+    - name: Build single RPM (architecture independent)
+      id: build_rpm
       uses: coderus/github-sfos-build@sfos5
       with:
         release: ${{ env.RELEASE }}
         arch: aarch64
-      
-    - name: Build armv7hl
-      id: build_armv7hl
-      uses: coderus/github-sfos-build@sfos5
-      with:
-        release: ${{ env.RELEASE }}
-        arch: armv7hl
-
-    - name: Build i486
-      id: build_i486
-      uses: coderus/github-sfos-build@sfos5
-      with:
-        release: ${{ env.RELEASE }}
-        arch: i486
 
     - name: List built RPMs
       run: |
@@ -76,9 +62,7 @@ jobs:
         echo "## 🎵 Tidal Player RPM Build Complete" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Built packages:" >> $GITHUB_STEP_SUMMARY
-        echo "- aarch64 (ARM64)" >> $GITHUB_STEP_SUMMARY
-        echo "- armv7hl (ARM32)" >> $GITHUB_STEP_SUMMARY
-        echo "- i486 (x86)" >> $GITHUB_STEP_SUMMARY
+        echo "- Single RPM (Python/QML application, works on all Sailfish OS architectures)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]]; then
           echo "🔄 **Master build** - RPMs available as workflow artifacts for testing" >> $GITHUB_STEP_SUMMARY
