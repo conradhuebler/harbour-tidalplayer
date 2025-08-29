@@ -68,30 +68,27 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/
 sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
-ls python/dateutil/*
-ls python/isodate/*
-ls  %{buildroot}%{_datadir}/%{name}/python
 
-cp -r python/mpegdash  %{buildroot}%{_datadir}/%{name}/python/mpegdash
-cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
-cp -r python/typing_extensions  %{buildroot}%{_datadir}/%{name}/python/typing_extensions
-cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil
+# Copy python modules that were built by COPIES
+if [ -d python/mpegdash ]; then
+    cp -r python/mpegdash  %{buildroot}%{_datadir}/%{name}/python/mpegdash
+fi
+if [ -d python/ratelimit ]; then
+    cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
+fi
+if [ -d python/typing_extensions ]; then
+    cp -r python/typing_extensions  %{buildroot}%{_datadir}/%{name}/python/typing_extensions
+fi
+if [ -d python/dateutil ]; then
+    cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil
+fi
 
-cd %{buildroot}/%{_datadir}/%{name}/python/python-future
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf %{buildroot}/%{_datadir}/%{name}/python/python-future
+# Install setup.py packages using INSTALLS
+# python-future, isodate, and six are handled by INSTALLS in .pro file
 
-cd %{buildroot}/%{_datadir}/%{name}/python/isodate
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf %{buildroot}/%{_datadir}/%{name}/python/isodate
-
-cd %{buildroot}/%{_datadir}/%{name}/python/six
-python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
-rm -rf %{buildroot}/%{_datadir}/%{name}/python/six
-
+# Clean up any unwanted directories from INSTALLS
 rm -rf %{buildroot}/%{_datadir}/%{name}/share
 rm -rf %{buildroot}/%{_datadir}/%{name}/bin
-cd %_builddir
 
 
 # << install post
