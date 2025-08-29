@@ -72,5 +72,3 @@ INSTALLS += six
 INSTALLS += isodate
 INSTALLS += libs  
 INSTALLS += future
-INSTALLS += dateutil
-INSTALLS += dateutilparser
