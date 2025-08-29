@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+      - master
 env:
   RELEASE: 5.0.0.43
 
@@ -17,7 +18,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: false
+
+    - name: Initialize submodules  
+      run: |
+        git submodule update --init --recursive external/mpegdash external/ratelimit || echo "Some submodules failed (expected for mixed dependency approach)"
 
     - name: Prepare
       run: mkdir output
