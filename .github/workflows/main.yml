@@ -1,15 +1,12 @@
-name: Build and Release RPMs
+name: Github CI build
 
 on:
   push:
-    branches:
-      - master
     tags:
       - '0.2.*'
   pull_request:
     branches:
       - main
-      - master
 env:
   RELEASE: 5.0.0.43
 
@@ -20,63 +17,34 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: false
-
-    - name: Initialize submodules
-      run: |
-        # Handle both properly configured submodules (.gitmodules) and direct submodule references
-        # Some submodules are in .gitmodules, others are direct git links without .gitmodules entries
-        echo "Attempting to initialize all submodules..."
-        git submodule update --init --recursive || echo "Some submodules failed to initialize (expected for direct references)"
-        
-        # For submodules that are properly configured, ensure they're initialized
-        echo "Ensuring configured submodules are initialized..."
-        git submodule update --init --recursive external/mpegdash external/ratelimit || true
-        
-        echo "Submodule initialization complete. Some may remain uninitialized if they lack proper configuration."
+        submodules: true
 
     - name: Prepare
       run: mkdir output
 
-    - name: Build single RPM (architecture independent)
-      id: build_rpm
+    - name: Build aarch64
+      id: build_aarch64
       uses: coderus/github-sfos-build@sfos5
       with:
         release: ${{ env.RELEASE }}
         arch: aarch64
-
-    - name: List built RPMs
-      run: |
-        echo "Built RPM packages:"
-        ls -la RPMS/*.rpm || echo "No RPM files found"
-
-    - name: Upload RPM artifacts
-      uses: actions/upload-artifact@v4
+      
+    - name: Build armv7hl
+      id: build_armv7hl
+      uses: coderus/github-sfos-build@sfos5
       with:
-        name: harbour-tidalplayer-rpms-${{ github.event_name }}-${{ github.run_number }}
-        path: RPMS/*.rpm
-        retention-days: 90
+        release: ${{ env.RELEASE }}
+        arch: armv7hl
 
-    - name: Create build summary
-      run: |
-        echo "## 🎵 Tidal Player RPM Build Complete" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Built packages:" >> $GITHUB_STEP_SUMMARY
-        echo "- Single RPM (Python/QML application, works on all Sailfish OS architectures)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]]; then
-          echo "🔄 **Master build** - RPMs available as workflow artifacts for testing" >> $GITHUB_STEP_SUMMARY
-        elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          echo "🧪 **PR build** - RPMs available as workflow artifacts for testing" >> $GITHUB_STEP_SUMMARY
-        elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
-          echo "🚀 **Release build** - RPMs will be attached to GitHub release" >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📦 **Download artifacts**: Go to the 'Summary' tab of this workflow run to download the RPM packages" >> $GITHUB_STEP_SUMMARY
+    - name: Build i486
+      id: build_i486
+      uses: coderus/github-sfos-build@sfos5
+      with:
+        release: ${{ env.RELEASE }}
+        arch: i486
 
     - name: Extract Version Name
       id: extract_name
-      if: startsWith(github.ref, 'refs/tags/')
       uses: actions/github-script@v4
       with:
         result-encoding: string
@@ -84,7 +52,6 @@ jobs:
           return context.payload.ref.replace(/refs\/tags\//, '');
 
     - name: Create a Release
-      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

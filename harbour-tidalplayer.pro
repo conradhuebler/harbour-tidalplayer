@@ -37,12 +37,6 @@ COPIES += ratelimit
 COPIES += typing
 COPIES += dateutil
 COPIES += dateutilparser
-COPIES += isodate_setup
-COPIES += isodate_src
-COPIES += future_setup
-COPIES += future_src
-COPIES += six_setup
-COPIES += six_module
 
 tidalpython.files = $$files(external/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
@@ -62,25 +56,21 @@ dateutil.path  = $$OUT_PWD/python/dateutil
 dateutilparser.files = $$files(external/dateutil-2.8.2/dateutil/parser/*.py)
 dateutilparser.path  = $$OUT_PWD/python/dateutil/parser
 
-isodate_setup.files = external/isodate-0.6.1/setup.py
-isodate_setup.path  = $$OUT_PWD/python/isodate
+isodate.files = external/isodate-0.6.1/*
+isodate.path  = /usr/share/$${TARGET}/python/isodate
 
-isodate_src.files = external/isodate-0.6.1/src
-isodate_src.path  = $$OUT_PWD/python/isodate
+future.path =/usr/share/$${TARGET}/python/python-future
+future.files = external/python-future-1.0.0/*
 
-future_setup.path = $$OUT_PWD/python/python-future
-future_setup.files = external/python-future-1.0.0/setup.py
-
-future_src.path = $$OUT_PWD/python/python-future
-future_src.files = external/python-future-1.0.0/src
-
-six_setup.path = $$OUT_PWD/python/six
-six_setup.files = external/six-1.12.0/setup.py
-
-six_module.path = $$OUT_PWD/python/six
-six_module.files = external/six-1.12.0/six.py
+six.path =/usr/share/$${TARGET}/python/six
+six.files = external/six-1.12.0/*
 
 libs.path = /usr/share/$${TARGET}
 libs.files = external
 
-INSTALLS += libs
+INSTALLS += six
+INSTALLS += isodate
+INSTALLS += libs  
+INSTALLS += future
+INSTALLS += dateutil
+INSTALLS += dateutilparser
