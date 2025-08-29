@@ -76,6 +76,9 @@ cp -r python/mpegdash  %{buildroot}%{_datadir}/%{name}/python/mpegdash
 cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
 cp -r python/typing_extensions  %{buildroot}%{_datadir}/%{name}/python/typing_extensions
 cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil
+cp -r python/python-future  %{buildroot}%{_datadir}/%{name}/python/python-future
+cp -r python/isodate  %{buildroot}%{_datadir}/%{name}/python/isodate
+cp -r python/six  %{buildroot}%{_datadir}/%{name}/python/six
 
 cd %{buildroot}/%{_datadir}/%{name}/python/python-future
 python3 setup.py install --root=%{buildroot} --prefix=%{_datadir}/%{name}/
