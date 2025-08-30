@@ -7,7 +7,6 @@ Name:       harbour-tidalplayer
 
 # >> macros
 # << macros
-BuildArch:  noarch
 
 %{!?qtc_qmake:%define qtc_qmake %qmake}
 %{!?qtc_qmake5:%define qtc_qmake5 %qmake5}

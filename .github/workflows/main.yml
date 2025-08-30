@@ -27,18 +27,42 @@ jobs:
     - name: Prepare
       run: mkdir output
 
-    - name: Build noarch
-      id: build_noarch
+    - name: Build aarch64
+      id: build_aarch64
       uses: coderus/github-sfos-build@sfos5
       with:
         release: ${{ env.RELEASE }}
-        arch: noarch
+        arch: aarch64
     
-    - name: Debug build output
+    - name: Debug build output aarch64
       run: |
-        echo "=== Build output noarch ==="
+        echo "=== Build output aarch64 ==="
         find . -name "*.rpm" -ls || echo "No RPM files found"
         ls -la RPMS/ || echo "RPMS directory not found"
+      
+    - name: Build armv7hl
+      id: build_armv7hl
+      uses: coderus/github-sfos-build@sfos5
+      with:
+        release: ${{ env.RELEASE }}
+        arch: armv7hl
+
+    - name: Debug build output armv7hl
+      run: |
+        echo "=== Build output armv7hl ==="
+        find . -name "*.rpm" -ls || echo "No RPM files found"
+
+    - name: Build i486
+      id: build_i486
+      uses: coderus/github-sfos-build@sfos5
+      with:
+        release: ${{ env.RELEASE }}
+        arch: i486
+
+    - name: Debug build output i486
+      run: |
+        echo "=== Build output i486 ==="
+        find . -name "*.rpm" -ls || echo "No RPM files found"
 
     - name: Collect RPM files
       run: |
