@@ -1,1 +1,4 @@
 harbour-tidalplayer.pro.user
+__pycache__/
+*.pyc
+*.pyo
