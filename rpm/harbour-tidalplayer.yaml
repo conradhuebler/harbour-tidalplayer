@@ -2,6 +2,8 @@ Name: harbour-tidalplayer
 Summary: Tidal player for Sailfish OS
 Version: 0.1.0
 Release: 1
+# Architecture-independent package (Python/QML application)
+BuildArch: noarch
 # The contents of the Group field should be one of the groups listed here:
 # http://gitorious.org/meego-developer-tools/spectacle/blobs/master/data/GROUPS
 Group: Qt/Qt
