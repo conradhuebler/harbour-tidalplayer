@@ -1,6 +1,6 @@
 Name: harbour-tidalplayer
 Summary: Tidal player for Sailfish OS
-Version: 0.1.0
+Version: 0.3.0
 Release: 1
 # The contents of the Group field should be one of the groups listed here:
 # http://gitorious.org/meego-developer-tools/spectacle/blobs/master/data/GROUPS
@@ -31,16 +31,19 @@ PkgConfigBR:
 # PkgBR:
 #   - package-needed-to-build
 
+# Package architecture
+BuildArch: noarch
+
 # Runtime dependencies which are not automatically detected
 Requires:
   - sailfishsilica-qt5 >= 0.10.9 
   - pyotherside-qml-plugin-python3-qt5
   - libsailfishapp-launcher
   - python3-requests
-  - python-dateutil
   - python3-six
   - python3-devel
   - amber-mpris
+  - mpris-qt5-qml-plugin
 
 # All installed files
 Files:
