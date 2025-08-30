@@ -81,3 +81,28 @@ and
 - PyOtherSide
 - Tidal API credentials
 
+## 📦 Getting Test Builds
+
+### Automatic RPM Builds
+This project automatically builds RPM packages for all Sailfish OS architectures:
+
+**For Testing Latest Features:**
+- 🔄 **Master Branch Builds** - Every push to master triggers automatic builds
+- 🧪 **Pull Request Builds** - Every PR gets tested with automatic builds
+- 📥 **Download Location** - Go to [Actions](../../actions), click on latest build, download artifacts
+
+**For Stable Releases:**
+- 🚀 **Tagged Releases** - Official releases with changelog in [Releases](../../releases)
+- 📋 **Release Notes** - Complete changelog and installation instructions
+
+### Supported Architectures
+- **aarch64** - Modern ARM64 devices (Xperia 10 II/III/IV, etc.)
+- **armv7hl** - Older ARM32 devices (Jolla Phone, Xperia X, etc.)  
+- **i486** - x86 emulator and Intel-based devices
+
+### Installation
+1. Download the appropriate RPM for your device architecture
+2. Transfer to your Sailfish OS device
+3. Install via Settings → System → Software Updates → Manual Installation
+4. Or use `pkcon install-local harbour-tidalplayer-*.rpm` from terminal
+
