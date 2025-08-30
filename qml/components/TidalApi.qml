@@ -166,7 +166,7 @@ Item {
                 
                 // Continue processing if more requests
                 if (requestQueue.length > 0) {
-                    start()
+                    requestProcessingTimer.start()
                 }
             } else {
                 processingQueue = false
