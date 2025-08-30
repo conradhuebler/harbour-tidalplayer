@@ -31,6 +31,9 @@ PkgConfigBR:
 # PkgBR:
 #   - package-needed-to-build
 
+# Package architecture
+BuildArch: noarch
+
 # Runtime dependencies which are not automatically detected
 Requires:
   - sailfishsilica-qt5 >= 0.10.9 

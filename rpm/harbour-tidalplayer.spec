@@ -35,6 +35,7 @@ BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(python3)
 BuildRequires:  desktop-file-utils
+BuildArch:      noarch
 
 %description
 A native Tidal Player for Sailfish OS written in python
