@@ -1056,7 +1056,7 @@ Item {
         }
         
         // Clear previous results immediately for instant feedback
-        searchResults({tracks: [], albums: [], artists: [], playlists: []})
+        // searchResults({tracks: [], albums: [], artists: [], playlists: []})
         
         return queueRequest("tidal.Tidaler.genericSearch", [text.trim()], function(result) {
             if (applicationWindow.settings.debugLevel >= 1) {

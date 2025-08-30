@@ -43,7 +43,7 @@ Item {
                 enabled: tidalApi.loginTrue && !tidalApi.loading
 
                 EnterKey.enabled: text.length > 0 && !tidalApi.loading
-                EnterKey.iconSource: "image://theme/icon-m-search"
+                EnterKey.iconSource: ""
                 EnterKey.onClicked: {
                     if (applicationWindow.settings.debugLevel >= 1) {
                         console.log("SEARCH: Starting search for:", text)
@@ -53,22 +53,26 @@ Item {
                     focus = false
                 }
                 
-                // Claude Generated: Clear search button when results are shown
+                // Claude Generated: Search/Clear button that changes based on state
                 IconButton {
                     anchors.right: parent.right
                     anchors.rightMargin: Theme.horizontalPageMargin
                     anchors.verticalCenter: parent.verticalCenter
-                    icon.source: "image://theme/icon-m-clear"
-                    visible: listModel.count > 0 || searchField.text.length > 0
+                    icon.source: searchField.text.length > 0 ? "image://theme/icon-m-clear" : "image://theme/icon-m-search"
+                    visible: true
                     enabled: !tidalApi.loading
                     
                     onClicked: {
-                        if (applicationWindow.settings.debugLevel >= 1) {
-                            console.log("SEARCH: Clearing search results")
+                        if (searchField.text.length > 0) {
+                            // Clear functionality when there's text
+                            if (applicationWindow.settings.debugLevel >= 1) {
+                                console.log("SEARCH: Clearing search results")
+                            }
+                            searchField.text = ""
+                            listModel.clear()
+                            searchField.focus = true
                         }
-                        searchField.text = ""
-                        listModel.clear()
-                        searchField.focus = true
+                        // Note: Search functionality is handled by EnterKey.onClicked
                     }
                 }
             }
