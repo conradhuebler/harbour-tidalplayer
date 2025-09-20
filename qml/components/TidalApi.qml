@@ -148,11 +148,13 @@ Item {
                 var request = requestQueue.shift()
                 console.log("Processing async request:", request.method)
                 pythonTidal.call(request.method, request.params)
+
                 // Continue processing if more requests
                 if (requestQueue.length > 0) {
                     start()
                 }
             } else {
+                // Reset processing state when queue is empty
                 processingQueue = false
                 if (Object.keys(pendingRequests).length === 0) {
                     loading = false
@@ -455,6 +457,9 @@ Item {
             setHandler('foundTracksBatch', function(tracks_array) {
                 console.log("Received tracks batch:", tracks_array.length, "tracks")
                 tidalApi.foundTracksBatch(tracks_array)
+
+                // ROOT CAUSE FIX: Complete the search request when first results arrive
+                completeSearchRequest("foundTracksBatch", tracks_array)
             })
 
             setHandler('foundArtistsBatch', function(artists_array) {
@@ -921,7 +926,7 @@ Item {
     
     function queueRequest(method, params, callback) {
         var signature = generateRequestSignature(method, params)
-        
+
         // PERFORMANCE: Check if result is cached
         var cachedResult = isRequestCached(signature)
         if (cachedResult) {
@@ -977,11 +982,13 @@ Item {
     }
     
     function processRequestQueue() {
-        if (processingQueue || requestQueue.length === 0) return
-        
+        if (processingQueue || requestQueue.length === 0) {
+            return
+        }
+
         processingQueue = true
         loading = true
-        
+
         // Start the dedicated request processing timer
         requestProcessingTimer.start()
     }
@@ -1008,10 +1015,22 @@ Item {
             }
             
             delete pendingRequests[requestId]
-            
-            // Check if all requests completed
-            if (Object.keys(pendingRequests).length === 0) {
+
+            // CRITICAL FIX: Reset processingQueue when all requests completed
+            var remainingRequests = Object.keys(pendingRequests).length
+            var queueEmpty = requestQueue.length === 0
+
+            // Check if all requests completed AND queue is empty
+            if (remainingRequests === 0) {
                 loading = false
+
+                // CRITICAL: Reset processingQueue if no more work to do
+                if (queueEmpty) {
+                    processingQueue = false
+                } else {
+                    // Trigger processing of remaining queue items
+                    processRequestQueue()
+                }
             }
         }
     }
@@ -1019,9 +1038,10 @@ Item {
     // Search Funktionen - Now Async-First
     function genericSearch(text) {
         console.log("ASYNC: generic search", text)
+
         // Clear previous results immediately for instant feedback
         searchResults({tracks: [], albums: [], artists: [], playlists: []})
-        
+
         return queueRequest("tidal.Tidaler.genericSearch", [text], function(result) {
             console.log("Search completed for:", text)
         })
@@ -1089,17 +1109,31 @@ Item {
     // Timer for delayed session reinitialization after login
     Timer {
         id: sessionReinitTimer
-        interval: 100  // Wait 2 seconds for login to fully settle
+        interval: 2000  // Wait 2 seconds for login to fully settle (was 100ms)
         repeat: false
         onTriggered: {
-            if (applicationWindow.settings.debugLevel >= 1) {
-                console.log("LOGIN: Executing forced Python session reinitialization")
+            // Check if there are active requests before reinitializing
+            if (Object.keys(pendingRequests).length > 0) {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("LOGIN: Delaying session reinitialization - active requests in progress")
+                }
+                // Retry after another 1 second
+                interval = 1000
+                restart()
+                return
             }
+
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("LOGIN: Executing delayed Python session reinitialization")
+            }
+
             // Force full reinitialization to ensure session works properly
             pythonTidal.call('tidal.Tidaler.initialize', [applicationWindow.settings.audio_quality], function() {
                 if (applicationWindow.settings.debugLevel >= 1) {
                     console.log("LOGIN: Session reinitialization completed")
                 }
+                // Reset interval back to default for next time
+                interval = 2000
             })
         }
     }
@@ -1326,6 +1360,30 @@ Item {
 
     function getFavorits(artistid) {
         pythonTidal.call('tidal.Tidaler.getFavorits', [artistid])
+    }
+
+
+    // ROOT CAUSE FIX: Complete search requests when Python results arrive
+    function completeSearchRequest(resultType, resultData) {
+        // Find active genericSearch requests and complete them
+        var completedRequests = []
+        for (var requestId in pendingRequests) {
+            var request = pendingRequests[requestId]
+            if (request.method === "tidal.Tidaler.genericSearch") {
+                completedRequests.push(requestId)
+            }
+        }
+
+        // Complete all search requests
+        for (var i = 0; i < completedRequests.length; i++) {
+            completeRequest(completedRequests[i], {type: resultType, data: resultData})
+        }
+
+        // FALLBACK: If no pending requests found, force reset processing state
+        if (completedRequests.length === 0 && processingQueue) {
+            processingQueue = false
+            loading = false
+        }
     }
 }
 

@@ -134,7 +134,7 @@ class Tidal:
 
     def initialize(self, quality="HIGH"):
         debug_log(f"Initializing TidalAPI with quality: {quality}", level=1)
-        
+
         try:
             # Enhanced quality selection with debug info
             quality_mapping = {
@@ -190,7 +190,7 @@ class Tidal:
                     debug_log("Login check method available", level=2)
             else:
                 debug_log("WARNING: TidalAPI Session creation returned None", level=1, force=True)
-                
+
         except AttributeError as e:
             debug_log(f"CRITICAL: TidalAPI class missing: {str(e)}", level=1, force=True)
             debug_log("This indicates a TidalAPI installation problem", level=1, force=True)
@@ -438,7 +438,11 @@ class Tidal:
             else:
                 pyotherside.send(signal_name, data, data2)
         except Exception as e:
-            print(f"Error sending object: {e}")
+            debug_log(f"ERROR: Failed to send signal '{signal_name}': {str(e)}", level=1, force=True)
+            debug_log(f"ERROR: Signal data type: {type(data)}", level=2)
+            # Don't let signal failures stop the search process
+            return False
+        return True
 
     def handle_playlist(self, playlist):
         """Handler für Playlist-Informationen"""
@@ -482,11 +486,24 @@ class Tidal:
 
     def genericSearch(self, text):
         pyotherside.send('loadingStarted')
-        result = self.session.search(text)
+        debug_log(f"SEARCH: Starting generic search for: '{text}'", level=1)
 
-        # OLD: Individual signals (many bridge calls)
-        # NEW: Batch processing for better performance
-        search_results = {
+        try:
+            # Validate session before search
+            if not self.validateSession():
+                debug_log("SESSION: Invalid session before search - attempting reinitialization", level=1, force=True)
+                self.initialize()
+                if not self.validateSession():
+                    debug_log("SESSION: Still invalid after reinitialization", level=1, force=True)
+                    pyotherside.send('apiError', "Session invalid - please log in again")
+                    return None
+
+            debug_log("SEARCH: Session validated, performing search", level=2)
+            result = self.session.search(text)
+
+            # OLD: Individual signals (many bridge calls)
+            # NEW: Batch processing for better performance
+            search_results = {
             "tracks": [],
             "artists": [],
             "albums": [],
@@ -495,61 +512,92 @@ class Tidal:
             "mixes": []
         }
 
-        # Batch process tracks
-        if "tracks" in result:
-            for track in result["tracks"]:
-                if track_info := self.handle_track(track):
-                    search_results["tracks"].append(track_info)
-                    self.send_object("cacheTrack", track_info)
+            # Batch process tracks
+            if "tracks" in result:
+                for track in result["tracks"]:
+                    if track_info := self.handle_track(track):
+                        search_results["tracks"].append(track_info)
+                        # Database errors should not stop search processing
+                        if not self.send_object("cacheTrack", track_info):
+                            debug_log("CACHE: Failed to cache track - continuing search", level=2)
 
-        # Batch process artists
-        if "artists" in result:
-            for artist in result["artists"]:
-                if artist_info := self.handle_artist(artist):
-                    search_results["artists"].append(artist_info)
-                    self.send_object("cacheArtist", artist_info)
+            # Batch process artists
+            if "artists" in result:
+                for artist in result["artists"]:
+                    if artist_info := self.handle_artist(artist):
+                        search_results["artists"].append(artist_info)
+                        # Database errors should not stop search processing
+                        if not self.send_object("cacheArtist", artist_info):
+                            debug_log("CACHE: Failed to cache artist - continuing search", level=2)
 
-        # Batch process albums
-        if "albums" in result:
-            for album in result["albums"]:
-                if album_info := self.handle_album(album):
-                    search_results["albums"].append(album_info)
-                    self.send_object("cacheAlbum", album_info)
+            # Batch process albums
+            if "albums" in result:
+                for album in result["albums"]:
+                    if album_info := self.handle_album(album):
+                        search_results["albums"].append(album_info)
+                        # Database errors should not stop search processing
+                        if not self.send_object("cacheAlbum", album_info):
+                            debug_log("CACHE: Failed to cache album - continuing search", level=2)
 
-        # Batch process playlists
-        if "playlists" in result:
-            for playlist in result["playlists"]:
-                if playlist_info := self.handle_playlist(playlist):
-                    search_results["playlists"].append(playlist_info)
+            # Batch process playlists
+            if "playlists" in result:
+                for playlist in result["playlists"]:
+                    if playlist_info := self.handle_playlist(playlist):
+                        search_results["playlists"].append(playlist_info)
 
-        # Batch process videos
-        if "videos" in result:
-            for video in result["videos"]:
-                if video_info := self.handle_video(video):
-                    search_results["videos"].append(video_info)
+            # Batch process videos
+            if "videos" in result:
+                for video in result["videos"]:
+                    if video_info := self.handle_video(video):
+                        search_results["videos"].append(video_info)
 
-        # Batch process mixes
-        if "mixes" in result:
-            for mix in result["mixes"]:
-                if mix_info := self.handle_mix(mix):
-                    search_results["mixes"].append(mix_info)
+            # Batch process mixes
+            if "mixes" in result:
+                for mix in result["mixes"]:
+                    if mix_info := self.handle_mix(mix):
+                        search_results["mixes"].append(mix_info)
 
-        # PERFORMANCE: Send all results in batches instead of individually
-        if search_results["tracks"]:
-            pyotherside.send("foundTracksBatch", search_results["tracks"])
-        if search_results["artists"]:
-            pyotherside.send("foundArtistsBatch", search_results["artists"])
-        if search_results["albums"]:
-            pyotherside.send("foundAlbumsBatch", search_results["albums"])
-        if search_results["playlists"]:
-            pyotherside.send("foundPlaylistsBatch", search_results["playlists"])
-        if search_results["videos"]:
-            pyotherside.send("foundVideosBatch", search_results["videos"])
-        if search_results["mixes"]:
-            pyotherside.send("foundMixesBatch", search_results["mixes"])
+            # PERFORMANCE: Send all results in batches instead of individually
+            if search_results["tracks"]:
+                pyotherside.send("foundTracksBatch", search_results["tracks"])
+            if search_results["artists"]:
+                pyotherside.send("foundArtistsBatch", search_results["artists"])
+            if search_results["albums"]:
+                pyotherside.send("foundAlbumsBatch", search_results["albums"])
+            if search_results["playlists"]:
+                pyotherside.send("foundPlaylistsBatch", search_results["playlists"])
+            if search_results["videos"]:
+                pyotherside.send("foundVideosBatch", search_results["videos"])
+            if search_results["mixes"]:
+                pyotherside.send("foundMixesBatch", search_results["mixes"])
 
-        pyotherside.send('loadingFinished')
-        return result
+            debug_log(f"SEARCH: Successfully processed search results", level=2)
+            return result
+
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 401:
+                debug_log("SEARCH: 401 Unauthorized - session expired", level=1, force=True)
+                pyotherside.send('apiError', "Authentication expired - please log in again")
+                # Clear session to force reinitialization
+                self.session = None
+                self.session_initialized = False
+            elif e.response.status_code == 403:
+                debug_log("SEARCH: 403 Forbidden - access denied", level=1, force=True)
+                pyotherside.send('apiError', "Access denied - check your subscription")
+            else:
+                debug_log(f"SEARCH: HTTP Error {e.response.status_code}: {e}", level=1, force=True)
+                pyotherside.send('apiError', f"API Error: {e.response.status_code}")
+            return None
+        except requests.exceptions.ConnectionError as e:
+            debug_log(f"SEARCH: Connection error: {e}", level=1, force=True)
+            pyotherside.send('apiError', "Connection error - check internet connection")
+            return None
+        except Exception as e:
+            debug_log(f"SEARCH: Unexpected error: {str(e)} (Type: {type(e).__name__})", level=1, force=True)
+            pyotherside.send('apiError', f"Search failed: {str(e)}")
+            return None
+        finally:
+            pyotherside.send('loadingFinished')
 
     def getMixInfo(self, id):
         try:
