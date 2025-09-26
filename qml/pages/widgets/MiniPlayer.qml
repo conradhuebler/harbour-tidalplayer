@@ -15,7 +15,7 @@ DockedPanel {
     property int playerState: 2  // 0=Hidden, 1=Mini, 2=Normal
     property real hiddenHeight: 0
     property real miniHeight: Theme.itemSizeLarge * 1.5 + Theme.paddingLarge
-    property real normalHeight: Theme.itemSizeExtraLarge * 2.0
+    property real normalHeight: Theme.itemSizeExtraLarge * 2.25
     
     function getPlayerHeight() {
         switch(playerState) {
@@ -147,6 +147,9 @@ DockedPanel {
                     IconButton {
                         id: favButton
                         icon.source: "image://theme/icon-s-favorite"
+                        width: nextButton.width
+                        height: nextButton.height
+                        scale: 1.5
                         highlighted: miniPlayerPanel.isFav
                         opacity: highlighted ? 1.0 : 0.3
                         onClicked: {
@@ -254,7 +257,7 @@ DockedPanel {
                 Label {
                     id: targetTime
                     anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: sliderRow.top
+                    anchors.bottom: sliderRow.bottom
                     anchors.bottomMargin: Theme.paddingSmall
                     font.pixelSize: Theme.fontSizeExtraSmall
                     color: Theme.highlightColor
@@ -299,7 +302,7 @@ DockedPanel {
                         maximumValue: 100
                         enabled: mediaController.duration > 0
                         visible: mediaController.duration > 0
-                        height: Theme.paddingMedium
+                        //height: Theme.paddingMedium
                         z: 10
 
                         onPressedChanged: {
@@ -330,6 +333,7 @@ DockedPanel {
                 id: playlistInfo
                 width: parent.width
                 font.pixelSize: Theme.fontSizeExtraSmall
+                anchors.topMargin: Theme.paddingLarge
                 color: Theme.secondaryColor
                 horizontalAlignment: Text.AlignHCenter
                 visible: playerState === 2
