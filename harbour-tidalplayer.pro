@@ -37,6 +37,7 @@ COPIES += ratelimit
 COPIES += typing
 COPIES += dateutil
 COPIES += dateutilparser
+# COPIES += aes
 
 tidalpython.files = $$files(external/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
@@ -65,6 +66,10 @@ future.files = external/python-future-1.0.0/*
 six.path =/usr/share/$${TARGET}/python/six
 six.files = external/six-1.12.0/*
 
+aes.path = /usr/share/$${TARGET}/python/pyaes
+aes.files = $$files(external/pyaes-1.6.1/pyaes/*.py)
+
 INSTALLS += six
 INSTALLS += isodate
 INSTALLS += future
+INSTALLS += aes
