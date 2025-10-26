@@ -8,6 +8,37 @@ Page {
     id: page
     allowedOrientations: Orientation.All
 
+    // Configuration values - Claude Generated
+    ConfigurationValue {
+        id: useNewHomescreen
+        key: "/useNewHomescreen"
+        defaultValue: false
+    }
+
+    ConfigurationValue {
+        id: mail
+        key: "/mail"
+        defaultValue: ""
+    }
+
+    ConfigurationValue {
+        id: defaultPlayAction
+        key: "/defaultPlayAction"
+        defaultValue: "replace"
+    }
+
+    ConfigurationValue {
+        id: debugLevelConfig
+        key: "/debugLevel"
+        defaultValue: 0
+    }
+
+    ConfigurationValue {
+        id: enableUrlCachingConfig
+        key: "/enableUrlCaching"
+        defaultValue: false
+    }
+
     // Auto-refresh timer for status display - Claude Generated
     Timer {
         id: statusUpdateTimer
@@ -108,6 +139,25 @@ Page {
                 onCheckedChanged: {
                     applicationWindow.settings.useNewHomescreen = checked
                     useNewHomescreen.value = checked
+                }
+            }
+
+            Button {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    margins: Theme.horizontalPageMargin
+                }
+                text: qsTr("Homescreen Layout")
+                description: qsTr("Configure sections and ordering for the new homescreen")
+                //visible: applicationWindow.settings.useNewHomescreen || false
+                //enabled: tidalApi.loginTrue
+                onClicked: {
+                    if (tidalApi.loginTrue) {
+                        pageStack.push(Qt.resolvedUrl("HomescreenSettings.qml"), {
+                            homescreenManager: applicationWindow.homescreenManager
+                        })
+                    }
                 }
             }
 

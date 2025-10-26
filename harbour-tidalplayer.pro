@@ -14,6 +14,9 @@ TARGET = harbour-tidalplayer
 
 CONFIG += sailfishapp_qml  file_copies
 
+# Force noarch build for Python/QML only app
+QMAKE_RPM_SPEC_BUILDARCH = noarch
+
 SOURCES +=
 
 OTHER_FILES += harbour-tidalplayer.desktop \

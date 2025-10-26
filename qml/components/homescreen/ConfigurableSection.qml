@@ -17,11 +17,8 @@ Item {
     property int maxItems: 8
     property int sectionOrder: 0
     
-    // Drag & drop properties (disabled in carousel)
+    // Display-only mode (drag functionality moved to settings)
     property bool dragEnabled: false
-    property bool dragging: false
-    property int dragStartY: 0
-    property real dragOffset: 0
     
     // Visual state
     property bool expanded: true
@@ -34,8 +31,6 @@ Item {
     property var onSectionVisibilityChanged: null
     property var onSectionConfigChanged: null
     property var onSectionCacheCleared: null
-    property var onSectionDragged: null
-    property var onSectionDragEnded: null
     
     // Sizing
     property int headerHeight: 70
@@ -53,33 +48,6 @@ Item {
         radius: Theme.paddingSmall
     }
     
-    // Visual feedback during drag
-    Rectangle {
-        id: dragBackground
-        anchors.fill: parent
-        color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-        radius: Theme.paddingSmall
-        opacity: dragging ? 0.8 : 0.0
-        
-        Behavior on opacity {
-            FadeAnimation { duration: 200 }
-        }
-    }
-    
-    // Drop target indicator
-    Rectangle {
-        id: dropIndicator
-        width: parent.width
-        height: 2
-        color: Theme.highlightColor
-        opacity: 0.0
-        anchors.top: parent.top
-        anchors.topMargin: -1
-        
-        Behavior on opacity {
-            FadeAnimation { duration: 150 }
-        }
-    }
     
     Column {
         id: sectionColumn
@@ -92,15 +60,6 @@ Item {
             width: parent.width
             height: headerHeight
             
-            // Drag handle (disabled in carousel)
-            Item {
-                id: dragHandle
-                width: 0
-                height: 0
-                anchors.left: parent.left
-                anchors.leftMargin: 0
-                visible: false
-            }
             
             // Section title and controls
             Row {
@@ -155,16 +114,6 @@ Item {
                     opacity: isLoading ? 1.0 : 0.0
                 }
                 
-                // Visibility toggle (only visible in edit mode)
-                Switch {
-                    checked: sectionEnabled
-                    anchors.verticalCenter: parent.verticalCenter
-                    automaticCheck: false
-                    visible: dragEnabled
-                    onClicked: {
-                        toggleSectionVisibility()
-                    }
-                }
             }
             
             // Separator line
@@ -355,45 +304,6 @@ Item {
         }
     }
     
-    // DRAG & DROP SUPPORT
-    
-    MouseArea {
-        id: dragArea
-        anchors.fill: parent
-        anchors.topMargin: 0
-        anchors.bottomMargin: parent.height - headerHeight
-        enabled: dragEnabled
-        
-        drag.target: configurableSection
-        drag.axis: Drag.YAxis
-        drag.minimumY: 0
-        drag.maximumY: parent ? parent.height - configurableSection.height : 0
-        
-        onPressed: {
-            dragStartY = mouse.y
-            dragging = true
-            dragOffset = 0
-        }
-        
-        onPositionChanged: {
-            if (dragging) {
-                dragOffset = mouse.y - dragStartY
-                // Signal drag position change to parent
-                if (configurableSection.parent && configurableSection.parent.onSectionDragged) {
-                    configurableSection.parent.onSectionDragged(configurableSection, dragOffset)
-                }
-            }
-        }
-        
-        onReleased: {
-            dragging = false
-            // Signal drag end to parent
-            if (configurableSection.parent && configurableSection.parent.onSectionDragEnded) {
-                configurableSection.parent.onSectionDragEnded(configurableSection, dragOffset)
-            }
-            dragOffset = 0
-        }
-    }
     
     // SECTION MANAGEMENT FUNCTIONS
     
@@ -556,18 +466,14 @@ Item {
         isLoading = loading
     }
     
-    // Show drop indicator
-    function showDropIndicator(show) {
-        dropIndicator.opacity = show ? 1.0 : 0.0
-    }
-    
-    // Get section info for drag operations
+    // Get section info for configuration
     function getSectionInfo() {
         return {
             sectionId: sectionId,
             sectionOrder: sectionOrder,
             sectionTitle: sectionTitle,
-            height: height
+            enabled: sectionEnabled,
+            maxItems: maxItems
         }
     }
     
