@@ -494,7 +494,8 @@ Item {
         SearchField {
             id: searchField
             anchors.centerIn: parent
-            width: parent.width - Theme.paddingLarge * 2
+            anchors.rightMargin: Theme.paddingLarge * 2
+            width: parent.width - Theme.paddingLarge * 4
             placeholderText: qsTr("Search in playlist...")
             
             onTextChanged: {
@@ -510,6 +511,7 @@ Item {
                 }
             }
         }
+
         
         // Close button
         IconButton {
