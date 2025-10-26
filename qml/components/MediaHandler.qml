@@ -103,7 +103,7 @@ Item {
             
             // Handle URL expiry (403 Forbidden) - fallback to API (only if caching enabled)
             var errorStr = String(error)
-            if ((errorStr.includes("Forbidden") || errorStr.includes("403")) && applicationWindow.settings.enableUrlCaching) {
+            if ((errorStr.contains("Forbidden") || errorStr.contains("403")) && applicationWindow.settings.enableUrlCaching) {
                 if (applicationWindow.settings.debugLevel >= 1) {
                     console.log("MediaHandler: URL expired (403) - falling back to API for current track")
                 }
