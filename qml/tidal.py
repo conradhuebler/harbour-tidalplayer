@@ -295,7 +295,7 @@ class Tidal:
                 return
                 
             debug_log("Calling TidalAPI login_oauth()...", level=2)
-            self.login, self.future = self.session.login_oauth()
+            self.login, self.future = self.session.login_oauth() #login_pkce() #
             
             if not self.login:
                 debug_log("CRITICAL: OAuth login object is None", level=1, force=True)
@@ -352,6 +352,9 @@ class Tidal:
         pyotherside.send('loadingFinished')
 
     def handle_track(self, track):
+        if track is None:
+            print(f"Track is None.")
+            return None        
         try:
             return {
                 "trackid": str(track.id),
@@ -371,6 +374,9 @@ class Tidal:
             return None
 
     def handle_artist(self, artist):
+        if artist is None:
+            print(f"Artist is None.")
+            return None        
         try:
             artisti = {
                 "artistid": str(artist.id),
@@ -395,6 +401,9 @@ class Tidal:
         return artisti
 
     def handle_album(self, album):
+        if album is None:
+            print(f"Album is None.")
+            return None        
         try:
             return {
                 "albumid": int(album.id),
@@ -412,6 +421,9 @@ class Tidal:
             return None
 
     def handle_video(self, video):
+        if video is None:
+            print(f"Video is None.")
+            return None
         try:
             return {
                 "videoid": str(video.id),
