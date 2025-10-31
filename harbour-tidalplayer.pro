@@ -67,7 +67,7 @@ six.path =/usr/share/$${TARGET}/python/six
 six.files = external/six-1.12.0/*
 
 aes.path = /usr/share/$${TARGET}/python/pyaes
-aes.files = $$files(external/pyaes-1.6.1/pyaes/*.py)
+aes.files = $$files(external/pyaes/pyaes/*.py)
 
 INSTALLS += six
 INSTALLS += isodate
