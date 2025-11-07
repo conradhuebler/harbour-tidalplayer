@@ -109,3 +109,32 @@ some exception handling
    catch the important exceptions and visualize them to use, maybe re-login button
 quick goto-current playlist from player ?
 
+# get master incl. pull request
+
+## Clone the repo
+git clone https://github.com/OWNER/REPO.git
+cd REPO
+
+## Fetch the pull request (replace NUMBER with the PR number)
+git fetch origin pull/NUMBER/head:pr-NUMBER
+
+## Checkout the PR branch
+git checkout pr-NUMBER
+
+## Now rebase or merge on top of master if you want
+git fetch origin master
+git rebase origin/master   # or git merge origin/master
+
+
+# submodules handling
+git submodule init
+git submodule update
+
+
+/usr/local/lib/python3.8/site-packages
+/usr/lib/python3.8/site
+
+#use typing_extensions-3.10.0.2-py3.8.egg-info/
+# typing_extensions.py must be in python folder (content of subfolder not needed)
+
+#use isodate not from py but from isodate folder (without version)

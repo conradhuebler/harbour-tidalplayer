@@ -11,5 +11,6 @@ Name=Tidal Player
 # a different app name in German locale (de).
 Name[de]=Tidal Player
 [X-Sailjail]
-ApplicationName=TidalPlayer
 Permissions=Internet;Audio
+OrganizationName=oarg.pawelspoon
+ApplicationName=TidalPlayer

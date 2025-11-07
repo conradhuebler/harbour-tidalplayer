@@ -13,10 +13,11 @@ Name:       harbour-tidalplayer
 %{!?qtc_make:%define qtc_make make}
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    Tidal player for Sailfish OS
-Version:    0.3.0
-Release:    1
+Version:    0.1.0
+Release:    20
 Group:      Qt/Qt
 License:    LICENSE
+BuildArch:  noarch
 URL:        https://github.com/sailfishos
 Source0:    %{name}-%{version}.tar.bz2
 Source100:  harbour-tidalplayer.yaml
@@ -24,18 +25,17 @@ Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5
 Requires:   libsailfishapp-launcher
 Requires:   python3-requests
+Requires:   python-dateutil
 Requires:   python3-six
 Requires:   python3-devel
 Requires:   amber-mpris
-#Requires:   python3-typing_extensions
-Requires:   mpris-qt5-qml-plugin
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(python3)
 BuildRequires:  desktop-file-utils
-BuildArch:      noarch
+# BuildArch:      noarch
 
 %description
 A native Tidal Player for Sailfish OS written in python
@@ -68,7 +68,6 @@ rm -rf %{buildroot}
 
 mkdir -p %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/
-sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
 
 # Copy python modules that were built by COPIES
 if [ -d python/mpegdash ]; then
@@ -77,8 +76,11 @@ fi
 if [ -d python/ratelimit ]; then
     cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
 fi
-if [ -d python/typing_extensions ]; then
-    cp -r python/typing_extensions  %{buildroot}%{_datadir}/%{name}/python/typing_extensions
+if [ -f python/typing_extensions.py ]; then
+    cp -r python/typing_extensions.py  %{buildroot}%{_datadir}/%{name}/python/typing_extensions.py
+fi
+if [ -f python/six.py ]; then
+    cp -r python/six.py  %{buildroot}%{_datadir}/%{name}/python/six.py
 fi
 if [ -d python/dateutil ]; then
     cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil

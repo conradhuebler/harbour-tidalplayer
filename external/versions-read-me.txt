@@ -1,0 +1,41 @@
+dateutil
+  file copy
+  https://github.com/dateutil/dateutil
+  2.8.2
+
+isodate
+  file copy
+  https://github.com/gweis/isodate
+  0.6.1 
+
+mpegdash
+  submodule
+
+pyaes
+  submodule
+
+python-future
+  file copy
+  https://github.com/PythonCharmers/python-future
+  1.0.0
+
+ratelimit
+  submodule
+
+six
+  file copy
+  https://github.com/benjaminp/six
+  1.12.0
+
+tidalapi
+  file copy
+  https://github.com/EbbLabs/python-tidal 
+  unpacked 0.8.8 version
+
+typing_extensions
+  file copy
+  the contained files in not from from py !!  neither 4.12 nor 4.15 did work
+  it is whatever gets downloaded when you click on fix button: 
+  https://sailfish.openrepos.net/lpr/personal/main/p/python3-typing_extensions-3.10.0.2-0.noarch.rpm
+  unpacked and only typing_extensions.py used
+
