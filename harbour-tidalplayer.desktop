@@ -12,5 +12,5 @@ Name=Tidal Player
 Name[de]=Tidal Player
 [X-Sailjail]
 Permissions=Internet;Audio
-OrganizationName=oarg.pawelspoon
+OrganizationName=harbour-tidalplayer
 ApplicationName=TidalPlayer
