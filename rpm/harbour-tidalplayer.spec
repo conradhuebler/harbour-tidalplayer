@@ -14,7 +14,7 @@ Name:       harbour-tidalplayer
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    Tidal player for Sailfish OS
 Version:    0.1.0
-Release:    20
+Release:    22
 Group:      Qt/Qt
 License:    LICENSE
 BuildArch:  noarch

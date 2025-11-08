@@ -14,3 +14,7 @@ Name[de]=Tidal Player
 Permissions=Internet;Audio
 OrganizationName=harbour-tidalplayer
 ApplicationName=TidalPlayer
+
+[X-HarbourBackup]
+BackupPathList=.local/share/harbour-tidalplayer:.config/harbour-tidalplayer
+BackupConfigList=
