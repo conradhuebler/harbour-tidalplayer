@@ -5,104 +5,103 @@
     <name></name>
     <message id="tidal-save-login-help">
         <source>Save password to the encrypted device storage to perform automatic re-login.</source>
-        <translation type="unfinished"></translation>
+        <translation>Passwort im verschlüsselten Gerätespeicher speichern um automatisches Anmelden zu aktivieren.</translation>
     </message>
     <message id="tidal-save-password-help">
-        <source></source>
-        <oldsource>Save password to the encrypted device storage to perform automatic re-login.</oldsource>
-        <translation type="unfinished"></translation>
+        <source>Save password to the encrypted device storage to perform automatic re-login.</source>
+        <translation>Passwort im verschlüsselten Gerätespeicher speichern um automatisches Anmelden zu aktivieren.</translation>
     </message>
 </context>
 <context>
     <name>Account</name>
     <message>
         <source>Test login</source>
-        <translation type="unfinished"></translation>
+        <translation>Login testen</translation>
     </message>
 </context>
 <context>
     <name>AlbumPage</name>
     <message>
         <source>Play Album</source>
-        <translation type="unfinished"></translation>
+        <translation>Album abspielen</translation>
     </message>
     <message>
         <source>Show Playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Wiedergabeliste anzeigen</translation>
     </message>
     <message>
         <source>Album Info</source>
-        <translation type="unfinished"></translation>
+        <translation>Album-Info</translation>
     </message>
 </context>
 <context>
     <name>ArtistPage</name>
     <message>
         <source>Artist Info</source>
-        <translation type="unfinished"></translation>
+        <translation>Künstler-Info</translation>
     </message>
 </context>
 <context>
     <name>CoverPage</name>
     <message>
         <source>Tidal Player</source>
-        <translation type="unfinished"></translation>
+        <translation>Tidal Player</translation>
     </message>
 </context>
 <context>
     <name>FirstPage</name>
     <message>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Einstellungen</translation>
     </message>
     <message>
         <source>Tidal Player</source>
-        <translation type="unfinished"></translation>
+        <translation>Tidal Player</translation>
     </message>
     <message>
         <source>Show Playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Wiedergabeliste anzeigen</translation>
     </message>
 </context>
 <context>
     <name>MiniPlayer</name>
     <message>
         <source>Error: Problem with allocating resources</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler: Problem beim Zuweisen von Ressourcen</translation>
     </message>
     <message>
         <source>Error: Media service error</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler: Mediendienst-Fehler</translation>
     </message>
     <message>
         <source>Error: Video or Audio format is not supported</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler: Video- oder Audioformat wird nicht unterstützt</translation>
     </message>
     <message>
         <source>Error: Access denied to the video</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler: Zugriff auf das Video verweigert</translation>
     </message>
     <message>
         <source>Error: Network error</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler: Netzwerkfehler</translation>
     </message>
 </context>
 <context>
     <name>OAuth</name>
     <message>
         <source>Login with OAuth</source>
-        <translation type="unfinished"></translation>
+        <translation>Mit OAuth anmelden</translation>
     </message>
 </context>
 <context>
     <name>PlaylistPage</name>
     <message>
         <source>Clear</source>
-        <translation type="unfinished"></translation>
+        <translation>Löschen</translation>
     </message>
     <message>
         <source>Playlist tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Wiedergabelisten-Titel</translation>
     </message>
 </context>
 <context>
@@ -120,7 +119,7 @@
     <name>TrackPage</name>
     <message>
         <source>Track Info</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel-Info</translation>
     </message>
 </context>
 </TS>
