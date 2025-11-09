@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
+import Qt.labs.settings 1.0
 import "widgets"
 
 import "personalLists"
@@ -7,6 +8,104 @@ import "personalLists"
 Item {
     id: personalPage
     anchors.fill: parent
+
+    // PERFORMANCE: Simple cache for instant display on startup
+    property var cachedRecentItems: []
+    property var cachedForyouItems: []
+    property var cachedArtistItems: []
+    property var cachedAlbumItems: []
+    property var cachedTrackItems: []
+    property var cachedPlaylistItems: []
+    property var cachedDailyMixItems: []
+    property var cachedRadioMixItems: []
+    property bool initialLoadComplete: false
+
+    // Settings-based cache storage
+    Settings {
+        id: cache
+        category: "PersonalPageCache"
+
+        property string recentItems: "[]"
+        property string foryouItems: "[]"
+        property string artistItems: "[]"
+        property string albumItems: "[]"
+        property string trackItems: "[]"
+        property string playlistItems: "[]"
+        property string dailyMixItems: "[]"
+        property string radioMixItems: "[]"
+        property string lastCacheTime: ""
+    }
+
+    // PERFORMANCE: Cache helper functions
+    function loadCachedData() {
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("Personal: Loading cached data for instant display")
+        }
+
+        try {
+            // Load and display cached items immediately
+            if (cache.recentItems !== "[]") {
+                var items = JSON.parse(cache.recentItems)
+                items.forEach(function(item) {
+                    if (item.type === "album") recentList.addAlbum(item.data)
+                    else if (item.type === "mix") recentList.addMix(item.data)
+                    else if (item.type === "artist") recentList.addArtist(item.data)
+                    else if (item.type === "playlist") recentList.addPlaylist(item.data)
+                    else if (item.type === "track") recentList.addTrack(item.data)
+                })
+            }
+
+            if (cache.foryouItems !== "[]") {
+                var foryou = JSON.parse(cache.foryouItems)
+                foryou.forEach(function(item) {
+                    if (item.type === "album") foryouList.addAlbum(item.data)
+                    else if (item.type === "artist") foryouList.addArtist(item.data)
+                    else if (item.type === "playlist") foryouList.addPlaylist(item.data)
+                    else if (item.type === "mix") foryouList.addMix(item.data)
+                })
+            }
+
+            // Load other sections (simplified - only if visible)
+            if (applicationWindow.settings.topartistList && cache.artistItems !== "[]") {
+                JSON.parse(cache.artistItems).forEach(function(item) {
+                    artistList.addArtist(item.data)
+                })
+            }
+
+            if (applicationWindow.settings.topalbumsList && cache.albumItems !== "[]") {
+                JSON.parse(cache.albumItems).forEach(function(item) {
+                    albumsList.addAlbum(item.data)
+                })
+            }
+
+            if (applicationWindow.settings.toptrackList && cache.trackItems !== "[]") {
+                JSON.parse(cache.trackItems).forEach(function(item) {
+                    tracksList.addTrack(item.data)
+                })
+            }
+
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("Personal: Cached data loaded successfully")
+            }
+        } catch (error) {
+            console.error("Personal: Error loading cached data:", error)
+        }
+    }
+
+    function cacheItem(listId, type, data) {
+        // Simple caching - just store last N items
+        var cacheKey = listId + "Items"
+        var current = cache[cacheKey] !== "[]" ? JSON.parse(cache[cacheKey]) : []
+
+        // Add new item (limit to 20 items per section)
+        current.push({type: type, data: data})
+        if (current.length > 20) {
+            current.shift()  // Remove oldest
+        }
+
+        cache[cacheKey] = JSON.stringify(current)
+        cache.lastCacheTime = new Date().toISOString()
+    }
 
     SilicaFlickable {
         id: flick
@@ -242,62 +341,75 @@ Item {
         onRecentAlbum:
         {
             recentList.addAlbum(album_info)
+            cacheItem("recent", "album", album_info)
         }
 
         onRecentMix:
         {
             recentList.addMix(mix_info)
+            cacheItem("recent", "mix", mix_info)
         }
 
         onRecentArtist:
         {
             recentList.addArtist(artist_info)
+            cacheItem("recent", "artist", artist_info)
         }
 
         onRecentPlaylist:
         {
             recentList.addPlaylist(playlist_info)
+            cacheItem("recent", "playlist", playlist_info)
         }
 
         onRecentTrack:
         {
             recentList.addTrack(track_info)
+            cacheItem("recent", "track", track_info)
         }
 
         onForyouAlbum:
         {
             foryouList.addAlbum(album_info)
+            cacheItem("foryou", "album", album_info)
         }
 
         onForyouArtist:
         {
             foryouList.addArtist(artist_info)
+            cacheItem("foryou", "artist", artist_info)
         }
 
         onForyouPlaylist:
         {
             foryouList.addPlaylist(playlist_info)
+            cacheItem("foryou", "playlist", playlist_info)
         }
 
         onForyouMix:
         {
             foryouList.addMix(mix_info)
+            cacheItem("foryou", "mix", mix_info)
         }
 
         onPersonalPlaylistAdded: {
             playlistList.addPlaylist(playlist_info)
+            cacheItem("playlist", "playlist", playlist_info)
         }
 
         onFavArtists: {
             artistList.addArtist(artist_info)
+            cacheItem("artist", "artist", artist_info)
         }
 
         onFavAlbums: {
             albumsList.addAlbum(album_info)
+            cacheItem("album", "album", album_info)
         }
 
         onFavTracks: {
             tracksList.addTrack(track_info)
+            cacheItem("track", "track", track_info)
         }
 
         onCustomMix: {
@@ -314,26 +426,65 @@ Item {
         }
 
         onLoginSuccess: {
-            console.log("Loading personal content")
-            tidalApi.getHomepage() // loads recent, for you
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("Personal: Login successful - Priority loading enabled")
+            }
+
+            // PERFORMANCE: Priority-based loading for faster startup
+            // Phase 1: IMMEDIATE (0ms) - Critical content only
+            tidalApi.getHomepage() // Loads recent + popular (most important)
+
+            // Phase 2: 1 second delay - Favorites
+            Qt.callLater(function() {
+                if (applicationWindow.settings.debugLevel >= 1) {
+                    console.log("Personal: Loading favorites (Phase 2)")
+                }
+                tidalApi.getFavorits() // Fav artists, albums, tracks
+            })
+
+            // Phase 3: 2 second delay - Secondary content (only if enabled)
+            phaseThreeTimer.start()
+        }
+    }
+
+    // PERFORMANCE: Timer for delayed loading (Phase 3)
+    Timer {
+        id: phaseThreeTimer
+        interval: 2000
+        repeat: false
+        onTriggered: {
+            if (applicationWindow.settings.debugLevel >= 1) {
+                console.log("Personal: Loading secondary content (Phase 3)")
+            }
+
             if (applicationWindow.settings.personalPlaylistList) {
-                console.log("Loading personal playlists")
                 tidalApi.getPersonalPlaylists()
             }
             if (applicationWindow.settings.dailyMixesList) {
-                console.log("Loading daily mixes")
                 tidalApi.getDailyMixes()
             }
             if (applicationWindow.settings.radioMixesList) {
-                console.log("Loading radio mixes")
                 tidalApi.getRadioMixes()
             }
             if (applicationWindow.settings.topArtistsList) {
-                console.log("Loading recent top artists")
-                tidalApi.getTopArtists() // loads top artists
+                tidalApi.getTopArtists()
             }
-            console.log("Loading favorites")
-            tidalApi.getFavorits() // loads fav artists, fav albums, fav tracks
+
+            initialLoadComplete = true
+        }
+    }
+
+    // PERFORMANCE: Load cached data on component creation
+    Component.onCompleted: {
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("Personal: Component completed - loading cache")
+        }
+
+        // Load cached content immediately for instant display
+        loadCachedData()
+
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("Personal: Cached content displayed, waiting for fresh data")
         }
     }
 }
