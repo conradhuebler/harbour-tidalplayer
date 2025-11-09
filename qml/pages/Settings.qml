@@ -149,7 +149,7 @@ Page {
                     margins: Theme.horizontalPageMargin
                 }
                 text: qsTr("Homescreen Layout")
-                description: qsTr("Configure sections and ordering for the new homescreen")
+                //description: qsTr("Configure sections and ordering for the new homescreen")
                 //visible: applicationWindow.settings.useNewHomescreen || false
                 //enabled: tidalApi.loginTrue
                 onClicked: {
