@@ -139,7 +139,7 @@ TARGET        = harbour-tidalplayer
 first: all
 ####### Build rules
 
-harbour-tidalplayer: python/tidalapi/__init__.py python/tidalapi/album.py python/tidalapi/artist.py python/tidalapi/exceptions.py python/tidalapi/genre.py python/tidalapi/media.py python/tidalapi/mix.py python/tidalapi/page.py python/tidalapi/playlist.py python/tidalapi/request.py python/tidalapi/session.py python/tidalapi/types.py python/tidalapi/user.py python/mpegdash/__init__.py python/mpegdash/nodes.py python/mpegdash/parser.py python/mpegdash/prettyprinter.py python/mpegdash/utils.py python/ratelimit/__init__.py python/ratelimit/decorators.py python/ratelimit/exception.py python/ratelimit/utils.py python/typing_extensions/_typed_dict_test_helper.py python/typing_extensions/test_typing_extensions.py python/typing_extensions/typing_extensions.py python/dateutil/__init__.py python/dateutil/_common.py python/dateutil/easter.py python/dateutil/relativedelta.py python/dateutil/rrule.py python/dateutil/tzwin.py python/dateutil/utils.py python/dateutil/parser/__init__.py python/dateutil/parser/_parser.py python/dateutil/parser/isoparser.py python/isodate/setup.py python/isodate/src python/python-future/setup.py python/python-future/src python/six/setup.py python/six/six.py $(OBJECTS)  
+harbour-tidalplayer: python/tidalapi/__init__.py python/tidalapi/album.py python/tidalapi/artist.py python/tidalapi/exceptions.py python/tidalapi/genre.py python/tidalapi/media.py python/tidalapi/mix.py python/tidalapi/page.py python/tidalapi/playlist.py python/tidalapi/request.py python/tidalapi/session.py python/tidalapi/types.py python/tidalapi/user.py python/tidalapi/workers.py python/mpegdash/__init__.py python/mpegdash/nodes.py python/mpegdash/parser.py python/mpegdash/prettyprinter.py python/mpegdash/utils.py python/ratelimit/__init__.py python/ratelimit/decorators.py python/ratelimit/exception.py python/ratelimit/utils.py python/typing_extensions/_typed_dict_test_helper.py python/typing_extensions/test_typing_extensions.py python/typing_extensions/typing_extensions.py python/dateutil/__init__.py python/dateutil/_common.py python/dateutil/easter.py python/dateutil/relativedelta.py python/dateutil/rrule.py python/dateutil/tzwin.py python/dateutil/utils.py python/dateutil/parser/__init__.py python/dateutil/parser/_parser.py python/dateutil/parser/isoparser.py python/isodate/setup.py python/isodate/src python/python-future/setup.py python/python-future/src python/six/setup.py python/six/six.py  python/pyaes/__init__.py python/pyaes/aes.py python/pyaes/blockfeeder.py python/pyaes/util.py $(OBJECTS)  
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
 Makefile: harbour-tidalplayer.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
@@ -311,7 +311,7 @@ dist: distdir FORCE
 distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
-	$(COPY_FILE) --parents external/tidalapi/__init__.py external/tidalapi/album.py external/tidalapi/artist.py external/tidalapi/exceptions.py external/tidalapi/genre.py external/tidalapi/media.py external/tidalapi/mix.py external/tidalapi/page.py external/tidalapi/playlist.py external/tidalapi/request.py external/tidalapi/session.py external/tidalapi/types.py external/tidalapi/user.py $(DISTDIR)/
+	$(COPY_FILE) --parents external/tidalapi/__init__.py external/tidalapi/album.py external/tidalapi/artist.py external/tidalapi/exceptions.py external/tidalapi/genre.py external/tidalapi/media.py external/tidalapi/mix.py external/tidalapi/page.py external/tidalapi/playlist.py external/tidalapi/request.py external/tidalapi/session.py external/tidalapi/types.py external/tidalapi/user.py external/tidalapi/workers.py $(DISTDIR)/
 	$(COPY_FILE) --parents external/mpegdash/mpegdash/__init__.py external/mpegdash/mpegdash/nodes.py external/mpegdash/mpegdash/parser.py external/mpegdash/mpegdash/prettyprinter.py external/mpegdash/mpegdash/utils.py $(DISTDIR)/
 	$(COPY_FILE) --parents external/ratelimit/ratelimit/__init__.py external/ratelimit/ratelimit/decorators.py external/ratelimit/ratelimit/exception.py external/ratelimit/ratelimit/utils.py $(DISTDIR)/
 	$(COPY_FILE) --parents external/typing_extensions-4.12.2/src/_typed_dict_test_helper.py external/typing_extensions-4.12.2/src/test_typing_extensions.py external/typing_extensions-4.12.2/src/typing_extensions.py $(DISTDIR)/
@@ -323,6 +323,8 @@ distdir: FORCE
 	$(COPY_FILE) --parents external/python-future-1.0.0/src $(DISTDIR)/
 	$(COPY_FILE) --parents external/six-1.12.0/setup.py $(DISTDIR)/
 	$(COPY_FILE) --parents external/six-1.12.0/six.py $(DISTDIR)/
+	$(COPY_FILE) --parents external/pyaes-1.6.1/setup.py $(DISTDIR)/
+	$(COPY_FILE) --parents external/pyaes-1.6.1/pyaes $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
 
 
@@ -480,6 +482,23 @@ python/six/setup.py: external/six-1.12.0/setup.py
 compiler_copy_six_module_make_all: python/six/six.py
 python/six/six.py: external/six-1.12.0/six.py
 	$(QINSTALL) external/six-1.12.0/six.py python/six/six.py
+
+compiler_copy_pyaes_setup_make_all: python/pyaes/setup.py
+python/pyaes/setup.py: external/pyaes-1.6.1/setup.py
+	$(QINSTALL) external/pyaes-1.6.1/setup.py python/pyaes/setup.py
+
+compiler_copy_pyaes_make_all: python/pyaes/__init__.py python/pyaes/aes.py python/pyaes/blockfeeder.py python/pyaes/util.py
+python/pyaes/__init__.py: external/pyaes-1.6.1/pyaes/__init__.py
+    $(QINSTALL) external/pyaes-1.6.1/pyaes/__init__.py python/pyaes/__init__.py
+
+python/pyaes/aes.py: external/pyaes-1.6.1/pyaes/aes.py
+    $(QINSTALL) external/pyaes-1.6.1/pyaes/aes.py python/pyaes/aes.py
+
+python/pyaes/blockfeeder.py: external/pyaes-1.6.1/pyaes/blockfeeder.py
+    $(QINSTALL) external/pyaes-1.6.1/pyaes/blockfeeder.py python/pyaes/blockfeeder.py
+
+python/pyaes/util.py: external/pyaes-1.6.1/pyaes/util.py
+    $(QINSTALL) external/pyaes-1.6.1/pyaes/util.py python/pyaes/util.py
 
 compiler_rcc_make_all:
 compiler_rcc_clean:

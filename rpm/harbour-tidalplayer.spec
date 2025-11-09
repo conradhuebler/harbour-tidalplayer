@@ -35,6 +35,7 @@ BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(python3)
 BuildRequires:  desktop-file-utils
+# BuildArch:      noarch
 
 %description
 A native Tidal Player for Sailfish OS written in python
@@ -67,7 +68,6 @@ rm -rf %{buildroot}
 
 mkdir -p %{buildroot}%{_datadir}/%{name}/python
 cp -r python/tidalapi  %{buildroot}%{_datadir}/%{name}/python/
-sed -i  '114d'  %{buildroot}%{_datadir}/%{name}/python/tidalapi/user.py
 
 # Copy python modules that were built by COPIES
 if [ -d python/mpegdash ]; then
@@ -76,8 +76,11 @@ fi
 if [ -d python/ratelimit ]; then
 cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
 fi
-if [ -d python/typing_extensions ]; then
-cp -r python/typing_extensions  %{buildroot}%{_datadir}/%{name}/python/typing_extensions
+if [ -f python/typing_extensions.py ]; then
+    cp -r python/typing_extensions.py  %{buildroot}%{_datadir}/%{name}/python/typing_extensions.py
+fi
+if [ -f python/six.py ]; then
+    cp -r python/six.py  %{buildroot}%{_datadir}/%{name}/python/six.py
 fi
 if [ -d python/dateutil ]; then
 cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil

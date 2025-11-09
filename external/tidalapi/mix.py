@@ -97,10 +97,12 @@ class Mix:
 
         try:
             request = self.request.request("GET", "pages/mix", params=params)
-        except ObjectNotFound:
-            raise ObjectNotFound("Mix not found")
-        except TooManyRequests:
-            raise TooManyRequests("Mix unavailable")
+        except ObjectNotFound as e:
+            e.args = ("Mix with id %s not found" % mix_id,)
+            raise e
+        except TooManyRequests as e:
+            e.args = ("Mix unavailable",)
+            raise e
         else:
             result = self.session.parse_page(request.json())
             assert not isinstance(result, list)
@@ -178,16 +180,22 @@ class TextInfo:
 class MixV2:
     """A mix from TIDALs v2 api endpoint."""
 
-    date_added: Optional[datetime] = None
-    title: Optional[str] = None
-    id: Optional[str] = None
     mix_type: Optional[MixType] = None
+    country_code: Optional[str] = None
+    date_added: Optional[datetime] = None
+    id: Optional[str] = None
+    artifact_id_type: Optional[str] = None
+    content_behavior: Optional[str] = None
     images: Optional[ImageResponse] = None
     detail_images: Optional[ImageResponse] = None
     master = False
+    is_stable_id = False
+    title: Optional[str] = None
+    sub_title: Optional[str] = None
+    short_subtitle: Optional[str] = None
     title_text_info: Optional[TextInfo] = None
     sub_title_text_info: Optional[TextInfo] = None
-    sub_title: Optional[str] = None
+    short_subtitle_text_info: Optional[TextInfo] = None
     updated: Optional[datetime] = None
     _retrieved = False
     _items: Optional[List[Union["Video", "Track"]]] = None
@@ -211,10 +219,12 @@ class MixV2:
         params = {"mixId": mix_id, "deviceType": "BROWSER"}
         try:
             request = self.request.request("GET", "pages/mix", params=params)
-        except ObjectNotFound:
-            raise ObjectNotFound("Mix not found")
-        except TooManyRequests:
-            raise TooManyRequests("Mix unavailable")
+        except ObjectNotFound as e:
+            e.args = ("Mix with id %s not found" % mix_id,)
+            raise e
+        except TooManyRequests as e:
+            e.args = ("Mix unavailable",)
+            raise e
         else:
             result = self.session.parse_page(request.json())
             assert not isinstance(result, list)
@@ -234,38 +244,84 @@ class MixV2:
         :param json_obj: The json of a mix to be parsed
         :return: A copy of the parsed mix
         """
-        date_added = json_obj.get("dateAdded")
-        self.date_added = dateutil.parser.isoparse(date_added) if date_added else None
-        self.title = json_obj["title"]
+
         self.id = json_obj["id"]
-        self.title = json_obj["title"]
-        self.mix_type = MixType(json_obj["mixType"])
-        images = json_obj["images"]
-        self.images = ImageResponse(
-            small=images["SMALL"]["url"],
-            medium=images["MEDIUM"]["url"],
-            large=images["LARGE"]["url"],
-        )
-        detail_images = json_obj["detailImages"]
-        self.detail_images = ImageResponse(
-            small=detail_images["SMALL"]["url"],
-            medium=detail_images["MEDIUM"]["url"],
-            large=detail_images["LARGE"]["url"],
-        )
-        self.master = json_obj["master"]
-        title_text_info = json_obj["titleTextInfo"]
-        self.title_text_info = TextInfo(
-            text=title_text_info["text"],
-            color=title_text_info["color"],
-        )
-        sub_title_text_info = json_obj["subTitleTextInfo"]
-        self.sub_title_text_info = TextInfo(
-            text=sub_title_text_info["text"],
-            color=sub_title_text_info["color"],
-        )
-        self.sub_title = json_obj["subTitle"]
-        updated = json_obj.get("updated")
-        self.date_added = dateutil.parser.isoparse(updated) if date_added else None
+        if json_obj.get("mixType"):
+            date_added = json_obj.get("dateAdded")
+            self.date_added = (
+                dateutil.parser.isoparse(date_added) if date_added else None
+            )
+            self.title = json_obj["title"]
+            self.sub_title = json_obj["subTitle"]
+            images = json_obj["images"]
+            self.images = ImageResponse(
+                small=images["SMALL"]["url"],
+                medium=images["MEDIUM"]["url"],
+                large=images["LARGE"]["url"],
+            )
+            detail_images = json_obj["detailImages"]
+            self.detail_images = ImageResponse(
+                small=detail_images["SMALL"]["url"],
+                medium=detail_images["MEDIUM"]["url"],
+                large=detail_images["LARGE"]["url"],
+            )
+            self.master = json_obj["master"]
+            title_text_info = json_obj["titleTextInfo"]
+            self.title_text_info = TextInfo(
+                text=title_text_info["text"],
+                color=title_text_info["color"],
+            )
+            sub_title_text_info = json_obj["subTitleTextInfo"]
+            self.sub_title_text_info = TextInfo(
+                text=sub_title_text_info["text"],
+                color=sub_title_text_info["color"],
+            )
+            updated = json_obj.get("updated")
+            self.updated = dateutil.parser.isoparse(updated) if updated else None
+        elif json_obj.get("type"):
+            # Certain mix types (e.g. when returned from Page) must be parsed differently. Why, TIDAL?
+            self.country_code = json_obj.get("countryCode", None)
+            self.is_stable_id = json_obj.get("isStableId", False)
+            self.artifact_id_type = json_obj.get("trackGroupId", None)
+            self.content_behavior = json_obj.get("contentBehavior", None)
+
+            images = json_obj["mixImages"]
+            self.images = ImageResponse(
+                small=images[0]["url"],
+                medium=images[1]["url"],
+                large=images[0]["url"],
+            )
+
+            detail_images = json_obj["detailMixImages"]
+            self.detail_images = ImageResponse(
+                small=detail_images[0]["url"],
+                medium=detail_images[1]["url"],
+                large=detail_images[2]["url"],
+            )
+
+            title_text_info = json_obj["titleTextInfo"]
+            self.title_text_info = TextInfo(
+                text=title_text_info["text"],
+                color=title_text_info["color"],
+            )
+            self.title = title_text_info["text"]
+
+            sub_title_text_info = json_obj["subtitleTextInfo"]
+            self.sub_title_text_info = TextInfo(
+                text=sub_title_text_info["text"],
+                color=sub_title_text_info["color"],
+            )
+            self.sub_title = sub_title_text_info["text"]
+
+            short_subtitle_text_info = json_obj["shortSubtitleTextInfo"]
+            self.short_subtitle_text_info = TextInfo(
+                text=sub_title_text_info["text"],
+                color=sub_title_text_info["color"],
+            )
+            self.short_subtitle = short_subtitle_text_info["text"]
+
+            if json_obj.get("updated"):
+                self.updated = datetime.fromtimestamp(json_obj["updated"] / 1000)
 
         return copy.copy(self)
 

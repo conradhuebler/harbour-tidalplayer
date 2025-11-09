@@ -44,7 +44,7 @@ Dialog {
         }
 
         onLoginFailed: {
-            mainLabel.text = "Failed"
+            //mainLabel.text = "Failed" //<- mainLabel is not defined
         }
     }
 

@@ -8,6 +8,12 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Sa Nov 08 2025 Pawel Spoon <pawel@ich-habe-fertig.com>
+- fixed external references
+- resize mini player
+- fix desktop file and thus local playlists
+- remove nemomobile.mpris
+
 * Sa June 28 2025 Pawel Spoon <pawel@ich-habe-fertig.com>
 - added artist radio
 - swipe up on mini player to goto current playlists

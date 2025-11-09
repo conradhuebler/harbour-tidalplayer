@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 # Copyright (C) 2023- The Tidalapi Developers
 # Copyright (C) 2019-2022 morguldir
 # Copyright (C) 2014 Thomas Amland
@@ -25,10 +26,12 @@ from typing import TYPE_CHECKING, List, Mapping, Optional, Union, cast
 from warnings import warn
 
 import dateutil.parser
-from typing import NoReturn
+from typing_extensions import NoReturn
 
-from tidalapi.exceptions import ObjectNotFound, TooManyRequests
+from tidalapi.exceptions import MetadataNotAvailable, ObjectNotFound, TooManyRequests
 from tidalapi.types import JsonObj
+
+from . import mix
 
 if TYPE_CHECKING:
     from tidalapi.album import Album
@@ -64,10 +67,12 @@ class Artist:
         if self.id:
             try:
                 request = self.request.request("GET", "artists/%s" % self.id)
-            except ObjectNotFound:
-                raise ObjectNotFound("Artist not found")
-            except TooManyRequests:
-                raise TooManyRequests("Artist unavailable")
+            except ObjectNotFound as e:
+                e.args = ("Artist with id %s not found" % self.id,)
+                raise e
+            except TooManyRequests as e:
+                e.args = ("Artist unavailable",)
+                raise e
             else:
                 self.request.map_json(request.json(), parse=self.parse_artist)
 
@@ -228,21 +233,47 @@ class Artist:
             ),
         )
 
-    def get_radio(self) -> List["Track"]:
-        """Queries TIDAL for the artist radio, which is a mix of tracks that are similar
-        to what the artist makes.
+    def get_radio(self, limit: int = 100) -> List["Track"]:
+        """Queries TIDAL for the artist radio, i.e. a list of tracks similar to this
+        artist.
 
         :return: A list of :class:`Tracks <tidalapi.media.Track>`
         """
-        params = {"limit": 100}
-        return cast(
-            List["Track"],
-            self.request.map_request(
-                f"artists/{self.id}/radio",
-                params=params,
-                parse=self.session.parse_track,
-            ),
-        )
+        params = {"limit": limit}
+
+        try:
+            request = self.request.request(
+                "GET", "artists/%s/radio" % self.id, params=params
+            )
+        except ObjectNotFound:
+            raise MetadataNotAvailable("Track radio not available for this track")
+        except TooManyRequests as e:
+            e.args = ("Track radio unavailable",)
+            raise e
+        else:
+            json_obj = request.json()
+            radio = self.request.map_json(json_obj, parse=self.session.parse_track)
+            assert isinstance(radio, list)
+            return cast(List["Track"], radio)
+
+    def get_radio_mix(self) -> mix.Mix:
+        """Queries TIDAL for the artist radio, i.e. mix of tracks that are similar to
+        this artist.
+
+        :return: A :class:`Mix <tidalapi.mix.Mix>`
+        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio mix is available
+        """
+
+        try:
+            request = self.request.request("GET", "artists/%s/mix" % self.id)
+        except ObjectNotFound:
+            raise MetadataNotAvailable("Artist radio not available for this artist")
+        except TooManyRequests as e:
+            e.args = ("Artist radio unavailable",)
+            raise e
+        else:
+            json_obj = request.json()
+            return self.session.mix(json_obj.get("id"))
 
     def items(self) -> List[NoReturn]:
         """The artist page does not supply any items. This only exists for symmetry with

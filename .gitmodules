@@ -4,3 +4,6 @@
 [submodule "external/ratelimit"]
 	path = external/ratelimit
 	url = https://github.com/tomasbasham/ratelimit
+[submodule "external/pyaes"]
+	path = external/pyaes
+	url = https://github.com/ricmoo/pyaes

@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
+import "widgets"
 
 import "personalLists"
 
@@ -8,13 +9,18 @@ Item {
     anchors.fill: parent
 
     SilicaFlickable {
+        id: flick
         anchors.fill: parent
         contentHeight: mainColumn.height
 
+
+        // todo: function to hide all search fields but current one
+        // or one search field for all sections?
         Column {
             id: mainColumn
             width: parent.width
             spacing: Theme.paddingMedium
+            property bool showFilterArtist : true
 
             PageHeader {
                 title: "Personal Collection"
@@ -24,8 +30,27 @@ Item {
             SectionHeader {
                 text: qsTr("Recently played")
                 visible: applicationWindow.settings.recentList
+                //height: (filter.visible ? filter.height*2 : filter.height)
+                MouseArea {
+                  anchors.fill: parent
+                  onClicked: filterRecentlyPlayed.visible = ! filterRecentlyPlayed.visible
+                }
+                // does not work as expected, it would also need to increase height of SessionHeader
+                /*SearchField {
+                    id: filterRecentlyPlayed
+                    labelVisible: false
+                    visible: false
+                    anchors.margins: Theme.paddingMedium
+                    anchors.top: sectionHeader.bottom
+                }*/
             }
-
+            SearchField {
+                id: filterRecentlyPlayed
+                labelVisible: false
+                visible: false
+                anchors.margins: Theme.paddingMedium
+                onTextChanged: recentList.filterText = text
+            }
             HorizontalList {
                 id: recentList
                 visible: applicationWindow.settings.recentList
@@ -35,8 +60,18 @@ Item {
             SectionHeader {
                 text: qsTr("Popular playlists")
                 visible: applicationWindow.settings.yourList
+                MouseArea {
+                  anchors.fill: parent
+                  onClicked: filterPopularPlaylists.visible = ! filterPopularPlaylists.visible
+                }                
             }
-
+            SearchField {
+                id: filterPopularPlaylists
+                labelVisible: false
+                visible: false
+                anchors.margins: Theme.paddingMedium
+                onTextChanged: foryouList.filterText = text
+            }
             HorizontalList {
                 id: foryouList
                 visible: applicationWindow.settings.yourList
@@ -46,17 +81,62 @@ Item {
             SectionHeader {
                 visible: applicationWindow.settings.topartistList
                 text: qsTr("Top Artists")
+                MouseArea {
+                  anchors.fill: parent
+                  onClicked:  {
+                        filterTopArtists.visible = ! filterTopArtists.visible
+                        if (filterTopArtists.visible) {
+                            filterTopArtists.forceActiveFocus()
+                        }
+                    }
+                }     
             }
-
+            SearchField {
+                id: filterTopArtists
+                placeholderText: "Filter artists"
+                visible: false
+                anchors.margins: Theme.paddingMedium
+                property int debounceInterval: 600
+                Timer {
+                    id: debounceTimer
+                    interval: filterTopArtists.debounceInterval
+                    repeat: false
+                    onTriggered: {
+                        console.log("Debounce timer triggered, applying filter: " + filterTopArtists.text)
+                        artistList.filterText = filterTopArtists.text
+                    }
+                }
+                onTextChanged: {
+                    console.log("Debounce timer restart")
+                    debounceTimer.restart()
+                }
+            }
             HorizontalList {
                 visible: applicationWindow.settings.topartistList
                 id: artistList
+                //property string filterText: ""
             }
 
             // Top Albums Section
             SectionHeader {
                 visible: applicationWindow.settings.topalbumsList
                 text: qsTr("Top Albums")
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked:  {
+                        filterAlbum.visible = ! filterAlbum.visible
+                        if (filterAlbum.visible) {
+                            filterAlbum.forceActiveFocus()
+                        }
+                    }
+                }
+            }
+            SearchField {
+                id: filterAlbum
+                placeholderText: "Filter albums"
+                visible: false
+                anchors.margins: Theme.paddingMedium
+                onTextChanged: albumsList.filterText = text
             }
             HorizontalList {
                 visible: applicationWindow.settings.topalbumsList
@@ -67,7 +147,18 @@ Item {
             SectionHeader {
                 visible: applicationWindow.settings.toptrackList
                 text: qsTr("Top Tracks")
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: filterTracks.visible = ! filterTracks.visible
+                }
             }
+            SearchField {
+                id: filterTracks
+                placeholderText: "Filter tracks"
+                visible: false
+                anchors.margins: Theme.paddingMedium
+                onTextChanged: tracksList.filterText = text
+            }            
             HorizontalList {
                 visible: applicationWindow.settings.toptrackList
                 id: tracksList
@@ -77,8 +168,18 @@ Item {
             SectionHeader {
                 visible: applicationWindow.settings.personalPlaylistList
                 text: qsTr("Personal Playlists")
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: filterPlaylists.visible = ! filterPlaylists.visible
+                }                
             }
-
+            SearchField {
+                id: filterPlaylists
+                placeholderText: "Filter playlists"
+                visible: false
+                anchors.margins: Theme.paddingMedium
+                onTextChanged: playlistList.filterText = text
+            }
             HorizontalList {
                 visible: applicationWindow.settings.personalPlaylistList
                 id: playlistList
