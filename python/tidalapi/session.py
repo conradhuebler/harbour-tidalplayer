@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import annotations, print_function, unicode_literals
+from __future__ import annotations
 
 import base64
 import concurrent.futures
@@ -47,6 +47,7 @@ from typing import (
 )
 from urllib.parse import parse_qs, urlencode, urlsplit
 
+import pyaes
 import requests
 from requests.exceptions import HTTPError
 
@@ -113,14 +114,15 @@ class Config:
     api_v1_location: str = "https://api.tidal.com/v1/"
     api_v2_location: str = "https://api.tidal.com/v2/"
     openapi_v2_location: str = "https://openapi.tidal.com/v2/"
-    api_token: str
     client_id: str
     client_secret: str
     image_url: str = "https://resources.tidal.com/images/%s/%ix%i.jpg"
+    image_url_origin: str = "https://resources.tidal.com/images/%s/origin.jpg"
     item_limit: int
     quality: str
     video_quality: str
     video_url: str = "https://resources.tidal.com/videos/%s/%ix%i.mp4"
+    video_url_origin: str = "https://resources.tidal.com/videos/%s/origin.mp4"
     # Necessary for PKCE authorization only
     client_unique_key: str
     code_verifier: str
@@ -151,65 +153,21 @@ class Config:
         else:
             self.item_limit = item_limit
 
-        self.api_token = eval("\x67\x6c\x6f\x62\x61\x6c\x73".encode("437"))()[
-            "\x5f\x5f\x6e\x61\x6d\x65\x5f\x5f".encode(
-                "".join(map(chr, [105, 105, 99, 115, 97][::-1]))
-            ).decode("".join(map(chr, [117, 116, 70, 95, 56])))
-        ]
-        self.api_token += "." + eval(
-            "\x74\x79\x70\x65\x28\x73\x65\x6c\x66\x29\x2e\x5f\x5f\x6e\x61\x6d\x65\x5f\x5f".encode(
-                "".join(map(chr, [105, 105, 99, 115, 97][::-1]))
-            ).decode(
-                "".join(map(chr, [117, 116, 70, 95, 56]))
-            )
-        )
-        token = self.api_token
-        token = token[:8] + token[16:]
-        self.api_token = list(
-            (base64.b64decode("d3RjaThkamFfbHlhQnBKaWQuMkMwb3puT2ZtaXhnMA==").decode())
-        )
-        tok = "".join(([chr(ord(x) - 2) for x in token[-6:]]))
-        token2 = token
-        token = token[:9]
-        token += tok
-        tok2 = "".join(([chr(ord(x) - 2) for x in token[:-7]]))
-        token = token[8:]
-        token = tok2 + token
-        self.api_token = list(
-            (base64.b64decode("enJVZzRiWF9IalZfVm5rZ2MuMkF0bURsUGRvZzRldA==").decode())
-        )
-        for word in token:
-            self.api_token.remove(word)
-        self.api_token = "".join(self.api_token)
-        string = ""
-        save = False
-        if not isinstance(token2, str):
-            save = True
-            string = "".encode("ISO-8859-1")
-            token2 = token2.encode("ISO-8859-1")
-        tok = string.join(([chr(ord(x) + 24) for x in token2[:-7]]))
-        token2 = token2[8:]
-        token2 = tok + token2
-        tok2 = string.join(([chr(ord(x) + 23) for x in token2[-6:]]))
-        token2 = token2[:9]
-        token2 += tok2
-        self.client_id = list(
-            (
-                base64.b64decode(
-                    "VoxKgUt8aHlEhEZ5cYhKgVAucVp2hnOFUH1WgE5+QlY2"
-                    "dWtYVEptd2x2YnR0UDd3bE1scmM3MnNlND0="
-                ).decode("ISO-8859-1")
-            )
-        )
-        if save:
-            token2.decode("ISO-8859-1").encode("utf-16")
-            self.client_id = [x.encode("ISO-8859-1") for x in self.client_id]
-        for word in token2:
-            self.client_id.remove(word)
-        self.client_id = "".join(self.client_id)
-        self.client_secret = self.client_id
-        self.client_id = self.api_token
-        # PKCE Authorization. We will keep the former `client_id` as a fallback / will only be used for non PCKE
+        # OAuth Client Authorization
+        self.client_id = base64.b64decode(
+            base64.b64decode(b"WmxneVNuaGtiVzUw")
+            + base64.b64decode(b"V2xkTE1HbDRWQT09")
+        ).decode("utf-8")
+        self.client_secret = base64.b64decode(
+            base64.b64decode(b"TVU1dU9VRm1SRUZxZUhKblNrWktZa3RPVjB4bFFY")
+            + base64.b64decode(b"bExSMVpIYlVsT2RWaFFVRXhJVmxoQmRuaEJaejA9")
+        ).decode("utf-8")
+
+        # If client_secret not supplied, fall back to client_id (matching original behavior)
+        if not self.client_secret and self.client_id:
+            self.client_secret = self.client_id
+
+        # PKCE Client Authorization. We will keep the former `client_id` as a fallback / will only be used for non PCKE
         # authorizations.
         self.client_unique_key = format(random.getrandbits(64), "02x")
         self.code_verifier = base64.urlsafe_b64encode(os.urandom(32))[:-1].decode(
@@ -268,9 +226,10 @@ class Session:
     refresh_token: Optional[str] = None
     #: The type of access token, e.g. Bearer
     token_type: Optional[str] = None
-    #: The id for a TIDAL session, you also need this to use load_oauth_session
+    #: The session id for a TIDAL session, you also need this to use load_oauth_session
     session_id: Optional[str] = None
     country_code: Optional[str] = None
+    locale: Optional[str] = None
     #: A :class:`.User` object containing the currently logged in user.
     user: Optional[Union["FetchedUser", "LoggedInUser", "PlaylistCreator"]] = None
 
@@ -281,15 +240,6 @@ class Session:
         # Objects for keeping the session across all modules.
         self.request = request.Requests(session=self)
         self.genre = genre.Genre(session=self)
-
-        # self.parse_artists = self.artist().parse_artists
-        # self.parse_playlist = self.playlist().parse
-
-        # self.parse_track = self.track().parse_track
-        # self.parse_video = self.video().parse_video
-        # self.parse_media = self.track().parse_media
-        # self.parse_mix = self.mix().parse
-        # self.parse_v2_mix = self.mixv2().parse
 
         self.parse_user = user.User(self, None).parse
         self.page = page.Page(self, "")
@@ -360,6 +310,7 @@ class Session:
 
     def parse_playlist(self, obj: JsonObj) -> playlist.Playlist:
         """Parse a playlist from the given response."""
+        # Note: When parsing playlists from v2 response, "data" field must be parsed
         return self.playlist().parse(obj)
 
     def parse_folder(self, obj: JsonObj) -> playlist.Folder:
@@ -452,6 +403,7 @@ class Session:
 
         self.session_id = json["sessionId"]
         self.country_code = json["countryCode"]
+        self.locale = "en_US"  # TODO Get locale from system configuration
         self.user = user.User(self, user_id=json["userId"]).factory()
 
         return True
@@ -633,14 +585,14 @@ class Session:
                 "is_pkce": {"data": self.is_pkce},
                 # "expiry_time": {"data": self.expiry_time},
             }
-            with session_file.open("w") as outfile:
-                json.dump(data, outfile)
+            with session_file.open("w") as file:
+                json.dump(data, file)
 
     def load_session_from_file(self, session_file: Path):
         try:
-            with open(session_file) as f:
+            with session_file.open("r") as file:
                 log.info("Loading session from %s...", session_file)
-                data = json.load(f)
+                data = json.load(file)
         except Exception as e:
             log.info("Could not load session from %s: %s", session_file, e)
             return False
@@ -718,6 +670,7 @@ class Session:
         json = session.json()
         self.session_id = json["sessionId"]
         self.country_code = json["countryCode"]
+        self.locale = "en_US"  # TODO Set locale from system configuration
         self.user = user.User(self, user_id=json["userId"]).factory()
         self.is_pkce = is_pkce_token
 
@@ -955,7 +908,13 @@ class Session:
                 base_url=self.config.openapi_v2_location,
             ).json()
             if res["data"]:
-                return [self.track(tr["id"]) for tr in res["data"]]
+                tracks = []
+                for tr in res["data"]:
+                    try:
+                        tracks.append(self.track(tr["id"]))
+                    except ObjectNotFound:
+                        continue
+                return tracks
             else:
                 log.warning("No matching tracks found for ISRC '%s'", isrc)
                 raise ObjectNotFound
@@ -1081,13 +1040,25 @@ class Session:
 
         return user.User(session=self, user_id=user_id).factory()
 
-    def home(self) -> page.Page:
+    def home(self, use_legacy_endpoint: bool = False) -> page.Page:
         """
-        Retrieves the Home page, as seen on https://listen.tidal.com
+        Retrieves the Home page, as seen on https://listen.tidal.com, using either the V2 or V1 (legacy) endpoint
 
+        :param use_legacy_endpoint: (Optional) Request Page from legacy endpoint.
         :return: A :class:`.Page` object with the :class:`.PageCategory` list from the home page
         """
-        return self.page.get("pages/home")
+        if not use_legacy_endpoint:
+            params = {"deviceType": "BROWSER", "locale": self.locale, "platform": "WEB"}
+
+            json_obj = self.request.request(
+                "GET",
+                "home/feed/static",
+                base_url=self.config.api_v2_location,
+                params=params,
+            ).json()
+            return self.page.parse(json_obj)
+        else:
+            return self.page.get("pages/home")
 
     def explore(self) -> page.Page:
         """

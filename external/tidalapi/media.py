@@ -53,6 +53,8 @@ from tidalapi.exceptions import (
 )
 from tidalapi.types import JsonObj
 
+from . import mix
+
 
 class Quality(str, Enum):
     low_96k: str = "LOW"
@@ -329,10 +331,12 @@ class Track(Media):
 
         try:
             request = self.requests.request("GET", "tracks/%s" % media_id)
-        except ObjectNotFound:
-            raise ObjectNotFound("Track not found or unavailable")
-        except TooManyRequests:
-            raise TooManyRequests("Track unavailable")
+        except ObjectNotFound as e:
+            e.args = ("Track with id %s not found" % media_id,)
+            raise e
+        except TooManyRequests as e:
+            e.args = ("Track unavailable",)
+            raise e
         else:
             json_obj = request.json()
             track = self.requests.map_json(json_obj, parse=self.parse_track)
@@ -362,8 +366,9 @@ class Track(Media):
             )
         except ObjectNotFound:
             raise URLNotAvailable("URL not available for this track")
-        except TooManyRequests:
-            raise TooManyRequests("URL Unavailable")
+        except TooManyRequests as e:
+            e.args = ("URL unavailable",)
+            raise e
         else:
             json_obj = request.json()
             return cast(str, json_obj["urls"][0])
@@ -378,8 +383,9 @@ class Track(Media):
             request = self.requests.request("GET", "tracks/%s/lyrics" % self.id)
         except ObjectNotFound:
             raise MetadataNotAvailable("No lyrics exists for this track")
-        except TooManyRequests:
-            raise TooManyRequests("Lyrics unavailable")
+        except TooManyRequests as e:
+            e.args = ("Lyrics unavailable",)
+            raise e
         else:
             json_obj = request.json()
             lyrics = self.requests.map_json(json_obj, parse=Lyrics().parse)
@@ -387,11 +393,11 @@ class Track(Media):
             return cast("Lyrics", lyrics)
 
     def get_track_radio(self, limit: int = 100) -> List["Track"]:
-        """Queries TIDAL for the track radio, which is a mix of tracks that are similar
-        to this track.
+        """Queries TIDAL for the track radio mix as a list of tracks similar to this
+        track.
 
         :return: A list of :class:`Tracks <tidalapi.media.Track>`
-        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio is available
+        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio mix is available
         """
         params = {"limit": limit}
 
@@ -401,13 +407,32 @@ class Track(Media):
             )
         except ObjectNotFound:
             raise MetadataNotAvailable("Track radio not available for this track")
-        except TooManyRequests:
-            raise TooManyRequests("Track radio unavailable)")
+        except TooManyRequests as e:
+            e.args = ("Track radio unavailable",)
+            raise e
         else:
             json_obj = request.json()
             tracks = self.requests.map_json(json_obj, parse=self.session.parse_track)
             assert isinstance(tracks, list)
             return cast(List["Track"], tracks)
+
+    def get_radio_mix(self) -> mix.Mix:
+        """Queries TIDAL for the track radio mix of tracks that are similar to this
+        track.
+
+        :return: A :class:`Mix <tidalapi.mix.Mix>`
+        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio mix is available
+        """
+        try:
+            request = self.requests.request("GET", "tracks/%s/mix" % self.id)
+        except ObjectNotFound:
+            raise MetadataNotAvailable("Track radio not available for this track")
+        except TooManyRequests as e:
+            e.args = ("Track radio unavailable",)
+            raise e
+        else:
+            json_obj = request.json()
+            return self.session.mix(json_obj.get("id"))
 
     def get_stream(self) -> "Stream":
         """Retrieves the track streaming object, allowing for audio transmission.
@@ -428,8 +453,9 @@ class Track(Media):
             )
         except ObjectNotFound:
             raise StreamNotAvailable("Stream not available for this track")
-        except TooManyRequests:
-            raise TooManyRequests("Stream unavailable")
+        except TooManyRequests as e:
+            e.args = ("Stream unavailable",)
+            raise e
         else:
             json_obj = request.json()
             stream = self.requests.map_json(json_obj, parse=Stream().parse)
@@ -846,10 +872,12 @@ class Video(Media):
 
         try:
             request = self.requests.request("GET", "videos/%s" % self.id)
-        except ObjectNotFound:
-            raise ObjectNotFound("Video not found or unavailable")
-        except TooManyRequests:
-            raise TooManyRequests("Video unavailable")
+        except ObjectNotFound as e:
+            e.args = ("Video with id %s not found" % media_id,)
+            raise e
+        except TooManyRequests as e:
+            e.args = ("Video unavailable",)
+            raise e
         else:
             json_obj = request.json()
             video = self.requests.map_json(json_obj, parse=self.parse_video)
@@ -874,8 +902,9 @@ class Video(Media):
             )
         except ObjectNotFound:
             raise URLNotAvailable("URL not available for this video")
-        except TooManyRequests:
-            raise TooManyRequests("URL unavailable)")
+        except TooManyRequests as e:
+            e.args = ("URL unavailable",)
+            raise e
         else:
             json_obj = request.json()
             return cast(str, json_obj["urls"][0])

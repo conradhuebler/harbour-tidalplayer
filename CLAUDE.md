@@ -93,10 +93,13 @@ The project requires specific Python packages available through OpenRepos:
 
 ### External Dependencies
 - `external/python-tidal/`: Custom Tidal API client (patched version)
-- `external/dateutil-2.8.2/`: Python dateutil library
-- `external/mpegdash/`: MPEG-DASH support
+- `external/dateutil/`: Python dateutil library
 - `external/isodate/`: ISO date parsing
+- `external/mpegdash/`: MPEG-DASH support
+- `external/pyaes/`: A pure-Python implementation of the AES block cipher algorithm
+- `external/python-future/`: is the missing compatibility layer between Python 2 and Python 3. 
 - `external/ratelimit/`: API rate limiting
+- `external/six/`: Six is a Python 2 and 3 compatibility library
 
 ## Important Files
 
@@ -104,7 +107,6 @@ The project requires specific Python packages available through OpenRepos:
 - `qml/harbour-tidalplayer.qml`: Main application window and global state
 - `qml/tidal.py`: Core Python API client
 - `rpm/harbour-tidalplayer.spec`: RPM packaging specification
-- Line 114 of `external/python-tidal/tidalapi/user.py` is removed during packaging (see spec file)
 
 ## Development Notes
 

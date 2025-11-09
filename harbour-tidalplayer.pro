@@ -35,8 +35,16 @@ COPIES += tidalpython
 COPIES += mpegdash
 COPIES += ratelimit
 COPIES += typing
-COPIES += dateutil
-COPIES += dateutilparser
+COPIES += six
+
+typing.files = external/typing_extensions/src/typing_extensions.py
+typing.path = $$OUT_PWD/python
+
+six.path = $$OUT_PWD/python
+six.files = external/six/six.py
+
+isodate.files = external/isodate/src/isodate/*
+isodate.path  = /usr/share/$${TARGET}/python/isodate
 
 tidalpython.files = $$files(external/tidalapi/*.py)
 tidalpython.path  = $$OUT_PWD/python/tidalapi
@@ -47,24 +55,16 @@ mpegdash.path  = $$OUT_PWD/python/mpegdash
 ratelimit.files = $$files(external/ratelimit/ratelimit/*.py)
 ratelimit.path  = $$OUT_PWD/python/ratelimit
 
-typing.files = $$files(external/typing_extensions-4.12.2/src/*.py)
-typing.path  = $$OUT_PWD/python/typing_extensions
-
-dateutil.files = $$files(external/dateutil-2.8.2/dateutil/*.py)
-dateutil.path  = $$OUT_PWD/python/dateutil
-
-dateutilparser.files = $$files(external/dateutil-2.8.2/dateutil/parser/*.py)
-dateutilparser.path  = $$OUT_PWD/python/dateutil/parser
-
-isodate.files = external/isodate-0.6.1/*
-isodate.path  = /usr/share/$${TARGET}/python/isodate
+dateutil.path = /usr/share/$${TARGET}/python/dateutil
+dateutil.files = external/dateutil/dateutil/*
 
 future.path =/usr/share/$${TARGET}/python/python-future
-future.files = external/python-future-1.0.0/*
+future.files = external/python-future/*
 
-six.path =/usr/share/$${TARGET}/python/six
-six.files = external/six-1.12.0/*
+aes.path = /usr/share/$${TARGET}/python/pyaes
+aes.files = $$files(external/pyaes/pyaes/*.py)
 
-INSTALLS += six
 INSTALLS += isodate
 INSTALLS += future
+INSTALLS += aes
+INSTALLS += dateutil

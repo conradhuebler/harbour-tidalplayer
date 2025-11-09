@@ -1,7 +1,8 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtMultimedia 5.6
-import org.nemomobile.mpris 1.0
+// import org.nemomobile.mpris 1.0
+import Amber.Mpris 1.0
 
 DockedPanel {
     id: miniPlayerPanel

@@ -13,6 +13,50 @@ SilicaListView {
     property string placeholderHint : "Placeholder Hint"
     property string placeholderText : "Placeholder Text"
 
+    property string filterText: ""
+    property var _allItems: [] // to store all items (unfiltered) for later filtering
+
+
+    // --- Helper to reset and filter the model ---
+    function resetModelFromAllItems() {
+        model.clear()
+        for (var i = 0; i < _allItems.length; ++i) {
+            model.append(_allItems[i])
+        }
+    }
+
+    function applyFilter() {
+        model.clear()
+        if (!filterText || filterText.trim() === "") {
+            // No filter: restore all items
+            for (var i = 0; i < _allItems.length; ++i) {
+                model.append(_allItems[i])
+            }
+        } else {
+            var f = filterText.toLowerCase()
+            for (var i = 0; i < _allItems.length; ++i) {
+                var item = _allItems[i]
+                // Filter by title or name
+                if ((item.title && item.title.toLowerCase().indexOf(f) !== -1) ||
+                    (item.name && item.name.toLowerCase().indexOf(f) !== -1)) {
+                    model.append(item)
+                }
+            }
+        }
+    }
+
+    // --- React to filterText changes ---
+    onFilterTextChanged: { 
+        console.log("Filter text changed to: " + filterText)
+        applyFilter()
+        //positionViewAtBeginning()
+    }
+
+    function addItem(item) {
+        model.append(item)
+        _allItems.push(item)
+    }
+
     function addTrack(track_info)
     {
         //console.log(track_info)
@@ -20,7 +64,7 @@ SilicaListView {
              console.error("track_info is undefined. skip append to model")
              return;
         }
-        model.append({
+        var item = {
             "title": track_info.title,
             "image": track_info.image,
             "trackid": track_info.trackid,
@@ -29,7 +73,8 @@ SilicaListView {
             "albumid": -1,  
             "mixid": "",         
             "type" : typeTrack
-        })
+        }
+        addItem(item)
     }
 
     function addAlbum(album_info)
@@ -39,7 +84,7 @@ SilicaListView {
              console.error("album_info is undefined. skip append to model")
              return;
         }
-        model.append({
+        var item = {
             "title": album_info.title,
             "image": album_info.image,
             "albumid": album_info.albumid,
@@ -48,7 +93,8 @@ SilicaListView {
             "trackid" : "",
             "mixid": "",
             "type" : typeAlbum
-        })
+        }
+        addItem(item)
     }
 
     function addArtist(artist_info)
@@ -58,7 +104,7 @@ SilicaListView {
              console.error("artist_info is undefined. skip append to model")
              return;
         }
-        model.append({
+        var item = {
             "name": artist_info.name,
             "title": artist_info.name,
             "image": artist_info.image,
@@ -68,7 +114,8 @@ SilicaListView {
             "trackid" : "",
             "mixid" : "",
             "type" : typeArtist
-        })
+        }
+        addItem(item)  
     }
 
     function addPlaylist(playlist_info)
@@ -83,7 +130,7 @@ SilicaListView {
         if (settings.debugLevel >= 2) {
             console.log("PLAYLIST: addPlaylist", playlist_info.title, playlist_info.playlistid)
         }
-        model.append({
+        var item = {
             "title": playlist_info.title,
             "image": playlist_info.image,
             "playlistid": playlist_info.playlistid,
@@ -92,7 +139,8 @@ SilicaListView {
             "trackid" : "",
             "mixid": "",
             "type" : typePlaylist
-        })
+        }
+        addItem(item)  
     }
 
     function addMix(mix_info)
@@ -104,7 +152,7 @@ SilicaListView {
         if (settings.debugLevel >= 2) {
             console.log("MIX: addMix", mix_info.title, mix_info.mixid, mix_info.image)
         }
-        model.append({
+        var item = {
             "title": mix_info.title,
             "mixid": mix_info.mixid,
             "image": mix_info.image,            
@@ -113,7 +161,8 @@ SilicaListView {
             "playlistid":"",
             "trackid" : "",
             "type" : typeMix
-        })
+        }
+        addItem(item)      
     }
 
 
@@ -145,6 +194,8 @@ SilicaListView {
     width: Theme.itemSizeLarge * 2
     height: root.height
     contentHeight: height
+
+
 
                 Column {
                     anchors {

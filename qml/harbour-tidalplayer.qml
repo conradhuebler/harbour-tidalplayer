@@ -771,13 +771,13 @@ ApplicationWindow
                         anchors.horizontalCenter: parent.horizontalCenter
                         spacing: Theme.paddingMedium
                         
-                        Button {
+                        /*Button {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: qsTr("Download Fix")
                             onClicked: {
                                 Qt.openUrlExternally("https://sailfish.openrepos.net/lpr/personal/main/p/python3-typing_extensions-3.10.0.2-0.noarch.rpm")
                             }
-                        }
+                        }*/
                         
                         Button {
                             anchors.horizontalCenter: parent.horizontalCenter
