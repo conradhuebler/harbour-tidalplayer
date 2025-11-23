@@ -13,7 +13,7 @@ Name:       harbour-tidalplayer
 %{!?qtc_make:%define qtc_make make}
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    Tidal player for Sailfish OS
-Version:    0.3.0
+Version:    0.3.2
 Release:    1
 Group:      Qt/Qt
 License:    LICENSE
@@ -76,10 +76,10 @@ if [ -d python/ratelimit ]; then
 cp -r python/ratelimit  %{buildroot}%{_datadir}/%{name}/python/ratelimit
 fi
 if [ -f python/typing_extensions.py ]; then
-    cp -r python/typing_extensions.py  %{buildroot}%{_datadir}/%{name}/python/typing_extensions.py
+cp -r python/typing_extensions.py  %{buildroot}%{_datadir}/%{name}/python/typing_extensions.py
 fi
 if [ -f python/six.py ]; then
-    cp -r python/six.py  %{buildroot}%{_datadir}/%{name}/python/six.py
+cp -r python/six.py  %{buildroot}%{_datadir}/%{name}/python/six.py
 fi
 if [ -d python/dateutil ]; then
 cp -r python/dateutil  %{buildroot}%{_datadir}/%{name}/python/dateutil

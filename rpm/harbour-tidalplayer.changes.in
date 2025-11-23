@@ -8,6 +8,12 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Sun Nov 23 2025 Pawel Spoon <pawel@ich-habe-fertig.com>
+- continue listen broke: replaced with history
+- fixed some minor log errors (pause() etc.)
+- first trial of include search - reset into re-init session
+- longpress on mini player will navigate to playlist too
+
 * Sa Nov 08 2025 Pawel Spoon <pawel@ich-habe-fertig.com>
 - fixed external references
 - resize mini player

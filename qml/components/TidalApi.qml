@@ -868,7 +868,6 @@ Item {
         applicationWindow.showErrorNotification(qsTr("Login Failed"), qsTr("Unable to authenticate with Tidal. Please check your credentials."))
     }
 
-
     // Login Funktionen
     function getOAuth() {
         console.log("Request new login")
@@ -1049,6 +1048,47 @@ Item {
 
     function reInit() {
         console.log("Re-initializing Tidal session")
+        // re-init Tiadal Api.qml
+        // Clear queued/pending/active requests and caches to avoid stale search state
+        try {
+            // Stop request processing timer to avoid races
+            requestProcessingTimer.stop()
+        } catch (e) { /* ignore */ }
+
+        // Empty the request queue
+        requestQueue = []
+
+        // Clear pending requests and notify callbacks with null (optional)
+        for (var pid in pendingRequests) {
+            try {
+                var pr = pendingRequests[pid]
+                if (pr && pr.callbacks) {
+                    for (var i = 0; i < pr.callbacks.length; ++i) {
+                        try { pr.callbacks[i](null) } catch (e) { /* ignore callback errors */ }
+                    }
+                } else if (pr && pr.callback) {
+                    try { pr.callback(null) } catch (e) { /* ignore */ }
+                }
+            } catch (e) { /* ignore */ }
+            delete pendingRequests[pid]
+        }
+
+        // Clear active dedupe map
+        for (var sig in activeRequests) {
+            delete activeRequests[sig]
+        }
+
+        // Clear request result cache
+        requestCache = ({})
+
+        // Reset processing flags/counters
+        processingQueue = false
+        loading = false
+        requestCounter = 0
+
+        // Also run existing cache cleanup for safety
+        cleanRequestCache()
+        // re-init python Tidal session
         pythonTidal.call('tidal.Tidaler.initialize', [])
     }
 
