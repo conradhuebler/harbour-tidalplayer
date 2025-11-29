@@ -1,4 +1,5 @@
 module Opal.Delegates
+version 1.0
 # This file is part of Opal.Delegates.
 # SPDX-FileCopyrightText: 2023 Peter G. (nephros)
 # SPDX-FileCopyrightText: 2024 Mirian Margiani

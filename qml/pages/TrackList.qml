@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import Opal.Delegates 1.0 as D
+// import Opal.Delegates 1.0 as D
+import "../modules/Opal/Delegates" 1.0  as Del
 
 Item {
     id: root
@@ -249,90 +250,39 @@ Item {
             id: listModel
         }
 
-        delegate: ListItem {
+        delegate: Del.TwoLineDelegate { //ListItem {
             id: listEntry
             width: parent.width
             contentHeight: isItemSelected(model.index) ? root.selectedItemHeight : root.normalItemHeight
             highlighted: isItemSelected(model.index)
 
-            Rectangle {
-                visible: listEntry.highlighted
-                anchors.fill: parent
-                color: Theme.rgba(Theme.highlightBackgroundColor, highlightOpacity)
-                z: -1
-            }
+            leftItem :
+                Image {
+                id: coverImage
+                width: listEntry.highlighted ? Theme.itemSizeExtraLarge : Theme.itemSizeMedium
+                height: width
+                fillMode: Image.PreserveAspectCrop
+                source: model.image || ""
+                asynchronous: true
 
-            Row {
-                id: contentRow
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    margins: Theme.horizontalPageMargin
-                    verticalCenter: parent.verticalCenter
+                Behavior on width { NumberAnimation { duration: 150 } }
                 }
-                spacing: Theme.paddingMedium
 
-                Label {
+            rightItem: 
+                   Label {
                     visible: listEntry.highlighted
                     text: "▶"
                     color: selectedTextColor
                     font.pixelSize: root.selectedFontSize
                     width: visible ? implicitWidth : 0
                     verticalAlignment: Text.AlignVCenter
-                    height: coverImage.height
                 }
 
-                Image {
-                    id: coverImage
-                    width: listEntry.highlighted ? Theme.itemSizeLarge : Theme.itemSizeMedium
-                    height: width
-                    fillMode: Image.PreserveAspectCrop
-                    source: model.image || ""
-                    asynchronous: true
-                    
-                    Behavior on width { NumberAnimation { duration: 150 } }
-                }
-
-                Column {
-                    width: parent.width - coverImage.width - parent.spacing
-                    spacing: listEntry.highlighted ? Theme.paddingMedium : Theme.paddingSmall
-
-                    Label {
-                        width: parent.width
-                        text: model.title
-                        color: listEntry.highlighted ? selectedTextColor : normalTextColor
-                        font.pixelSize: listEntry.highlighted ? root.selectedFontSize : root.normalFontSize
-                        font.bold: listEntry.highlighted
-                        truncationMode: TruncationMode.Elide
-                    }
-
-                    Row {
-                        width: parent.width
-                        spacing: Theme.paddingSmall
-
-                        Label {
-                            text: model.artist
-                            color: listEntry.highlighted ? selectedSecondaryColor : normalSecondaryColor
-                            font.pixelSize: listEntry.highlighted ? root.normalFontSize : Theme.fontSizeSmall
-                            font.bold: listEntry.highlighted
-                        }
-
-                        Label {
-                            text: " • "
-                            color: listEntry.highlighted ? selectedSecondaryColor : normalSecondaryColor
-                            font.pixelSize: listEntry.highlighted ? root.normalFontSize : Theme.fontSizeSmall
-                        }
-
-                        Label {
-                            property string dur: (model.duration > 3599)
-                                ? Format.formatDuration(model.duration, Formatter.DurationLong)
-                                : Format.formatDuration(model.duration, Formatter.DurationShort)
-                            text: dur
-                            color: listEntry.highlighted ? selectedSecondaryColor : normalSecondaryColor
-                            font.pixelSize: listEntry.highlighted ? root.normalFontSize : Theme.fontSizeSmall
-                        }
-                    }
-                }
+            text: model.title
+            description: { model.artist + " • " +
+                ((model.duration > 3599)
+                         ? Format.formatDuration(model.duration, Formatter.DurationLong)
+                         : Format.formatDuration(model.duration, Formatter.DurationShort))
             }
 
             onClicked: {
