@@ -27,6 +27,9 @@ OTHER_FILES += harbour-tidalplayer.desktop \
         qml/pages/Personal.qml\
         qml/pages/Settings.qml\
         qml/tidal.py \
+        qml/modules/Opal/*.* \
+        qml/modules/Opal/*/*.* \
+        qml/modules/Opal/*/*/*.* \
         qml/pages/dialogs/Account.qml \
         qml/pages/dialogs/OAuth.qml \
         rpm/harbour-tidalplayer.changes.in\
@@ -71,3 +74,8 @@ INSTALLS += isodate
 INSTALLS += future
 INSTALLS += aes
 INSTALLS += dateutil
+
+include(libs/opal-cached-defines.pri)
+
+QML_IMPORT_PATH += "qml/modules"
+

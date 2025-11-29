@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
+import Opal.Delegates 1.0 as D
 
 Item {
     id: root
