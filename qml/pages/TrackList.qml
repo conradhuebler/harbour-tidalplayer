@@ -278,6 +278,14 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                 }
 
+            textLabel.palette {
+                // just as an example
+                // primaryColor: normalColor
+                // highlightedColor: highlightColor
+            }
+            textLabel.font.bold: isItemSelected(model.index)
+            textLabel.highlighted: isItemSelected(model.index)
+
             text: model.title
             description: { model.artist + " • " +
                 ((model.duration > 3599)
