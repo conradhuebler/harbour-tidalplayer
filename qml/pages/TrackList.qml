@@ -252,7 +252,9 @@ Item {
 
 
         height: parent.height
-        // contentHeight: height
+        contentHeight: listModel.count * root.normalItemHeight
+        bottomMargin: Theme.paddingLarge
+
         clip: true  // prevents visual overruns
 
         PullDownMenu {
