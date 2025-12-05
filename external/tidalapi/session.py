@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023- The Tidalapi Developers
 # Copyright (C) 2019-2022 morguldir
 # Copyright (C) 2014 Thomas Amland
@@ -741,8 +739,9 @@ class Session:
         request = self.request_session.post(url, params)
         json = request.json()
         if request.status_code != 200:
-            raise AuthenticationError("Authentication failed")
-            # raise AuthenticationError(Authentication failed json["error"], json["error_description"])
+            raise AuthenticationError(
+                f"Authentication failed with error '{json['error']}: {json['error_description']}'"
+            )
         if not request.ok:
             log.warning("The refresh token has expired, a new login is required.")
             return False

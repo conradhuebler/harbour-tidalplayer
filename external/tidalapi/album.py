@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023- The Tidalapi Developers
 # Copyright (C) 2019-2022 morguldir
 # Copyright (C) 2014 Thomas Amland
@@ -91,6 +89,7 @@ class Album:
                 request = self.request.request("GET", "albums/%s" % self.id)
             except ObjectNotFound as e:
                 e.args = ("Album with id %s not found" % self.id,)
+                raise e
             except TooManyRequests as e:
                 e.args = ("Album unavailable",)
                 raise e
