@@ -45,6 +45,20 @@ DockedPanel {
         
         preventStealing: true
         propagateComposedEvents: false
+
+        // long-press timer
+        Timer {
+            id: longPressTimer
+            interval: 600   // ms for long press
+            repeat: false
+            running: false
+            onTriggered: {
+                console.log("LONG PRESS detected - show playlist")
+                applicationWindow.mainPage.showPlaylist()
+                // stop further gesture processing for this press
+                longPressTimer.stop()
+            }
+        }        
         
         onPressed: {
             startY = mouse.y
@@ -54,6 +68,11 @@ DockedPanel {
             
             mouse.accepted = !touchOnControls && !touchOnProgressArea
             
+            // start long-press detection only for touches we accepted
+            if (mouse.accepted) {
+                longPressTimer.start()
+            }
+
             if (applicationWindow.settings.debugLevel >= 3) {
                 console.log("SWIPE: Touch at", mouse.x, mouse.y, "controls:", touchOnControls, "progress:", touchOnProgressArea, "accepted:", mouse.accepted)
             }
@@ -66,6 +85,13 @@ DockedPanel {
         }
 
         onReleased: {
+            // cancel long-press timer if it didn't fire
+            var shortClick = false
+            if (longPressTimer.running) {
+                longPressTimer.stop()
+                shortClick = true
+            }    
+            
             var delta = startY - mouse.y
             
             // Upward swipe: Show playlist
@@ -77,13 +103,20 @@ DockedPanel {
             } 
             // Tap gesture: Toggle between Mini and Normal mode
             else if (Math.abs(delta) < Theme.paddingMedium) {
-                if (playerState === 1) {
-                    playerState = 2  // Mini -> Normal
-                } else if (playerState === 2) {
-                    playerState = 1  // Normal -> Mini
+                if (shortClick) {
+                    console.log("TAP detected - toggle Mini/Normal mode")                
+                    if (playerState === 1) {
+                        playerState = 2  // Mini -> Normal
+                    } else if (playerState === 2) {
+                        playerState = 1  // Normal -> Mini
+                    }
                 }
             }
         }
+
+        onCanceled: {
+            if (longPressTimer.running) longPressTimer.stop()
+        }        
     }    
 
     // Hintergrundbild

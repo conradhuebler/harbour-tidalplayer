@@ -950,9 +950,13 @@ class Tidal:
         for item in page:
             self.tryHandleArtist("topArtist", item)
 
+    #todo: rename method
     def getPageContinueListen(self):
-        return self.session.page.get("pages/CONTINUE_LISTEN_TO/view-all")
+        return self.session.page.get("pages/HISTORY_MIXES/view-all") # CONTINUE_LISTEN_TO was removed
 
+    def getPageNewTrackSuggestions(self):
+        return self.session.page.get("pages/NEW_TRACK_SUGGESTIONS/view-all")
+    
     def getPagePopularPlaylists(self):
         return self.session.page.get("pages/POPULAR_PLAYLISTS/view-all")
 
