@@ -2,6 +2,7 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 // import Opal.Delegates 1.0 as D
 import "../modules/Opal/Delegates" 1.0  as Del
+import "../modules/Opal/DragDrop" 1.0 as Drag
 
 Item {
     id: root
@@ -38,8 +39,10 @@ Item {
                     console.log("TRACKLIST: Smooth scrolling to track", targetIndex)
                 }
                 // Enable animation temporarily, then use positionViewAtIndex
+                // if targetIndex near start, use Begin to avoid empty space above
+                var useCenter = targetIndex > Math.floor(tracks.height / root.normalItemHeight / 2)
                 tracks.animateScrolling = true
-                tracks.positionViewAtIndex(targetIndex, ListView.Center)
+                tracks.positionViewAtIndex(targetIndex, useCenter ? ListView.Center : ListView.Contain)
                 // Disable animation after scroll completes
                 scrollAnimationTimer.start()
             }
@@ -201,7 +204,6 @@ Item {
     SilicaListView {
         id: tracks
         anchors.fill: parent
-        // highlightFollowsCurrentItem: true //introduced by Pawel for removing of tracks
 
         // PERFORMANCE: Virtual scrolling optimizations
         cacheBuffer: Math.max(height * 2, 0)  // Cache 2 screens worth of content, never negative
@@ -223,13 +225,35 @@ Item {
                 easing.type: Easing.OutCubic
             }
         }
-        
-        header: PageHeader {
-            title: root.title
+
+        // Create a drag handler for the SilicaListView.
+        Drag.ViewDragHandler {
+            id: viewDragHandler1
+            listView: parent
+            active: type==="current" ? true:false // todo: in fact enable when a playlist and when activated
+
+            // Setting the flickable explicitly is only necessary when
+            // the list view itself is not the main flickable of a page.
+            // Usually, a page in a Sailfish app has either a column or
+            // a list view at its root. In this case, setting the flickable
+            // explicitly is not required.
+            // flickable: flick
         }
+        
+        header: root.title === "" ? null : headerComponent
+
+        Component {
+            id: headerComponent
+            PageHeader {
+                id: pageHeader
+                title: root.title
+            }
+        }
+
+
         height: parent.height
-        contentHeight: height
-        clip: true  // Verhindert Überläufe
+        // contentHeight: height
+        clip: true  // prevents visual overruns
 
         PullDownMenu {
             // this works only when parent does not define any other menues
@@ -255,6 +279,9 @@ Item {
             width: parent.width
             contentHeight: isItemSelected(model.index) ? root.selectedItemHeight : root.normalItemHeight
             highlighted: isItemSelected(model.index)
+
+            // Register the drag handler in the delegate.
+            dragHandler: viewDragHandler1
 
             leftItem :
                 Image {
@@ -299,8 +326,7 @@ Item {
                     playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
                 } else {
                     playlistManager.playTrack(model.trackid)
-                }
-                
+                }                
                 // Auto-clear search with smooth delay if only one result - Claude Generated
                 if (type === "current" && searchVisible && root.filteredCount === 1) {
                     if (applicationWindow.settings.debugLevel >= 1) {
