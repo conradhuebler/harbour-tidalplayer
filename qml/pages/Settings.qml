@@ -476,8 +476,6 @@ Page {
                 onClicked: {
 
                     authManager.checkAndLogin()
-                    // seems that tidalApi.ini does not get called
-                    // pause(10000)
                     tidalApi.reInit()
                 }
             }
