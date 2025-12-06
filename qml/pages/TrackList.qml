@@ -338,25 +338,6 @@ Item {
             visible: type === "playlist"
         }
 
-        /*Button {
-            onClicked: enableEditMode(!editMode)
-        }*/
-
-        PushUpMenu {
-            // this works only when parent does not define any other menues
-            MenuItem {
-                text: qsTr("Edit mode")
-                onClicked: {
-                    if (type === "current" ) {
-                        console.log("toggling playlist editmode")
-                        editMode = ! editMode
-                        enableEditMode(editMode)
-                    }
-                }
-                visible: type === "current"
-            }
-            visible: type === "current"
-        }
         model: ListModel {
             id: listModel
         }
@@ -669,6 +650,7 @@ Item {
 
         VerticalScrollDecorator {}
     }
+
     
     // Floating search overlay for current playlist - Claude Generated
     Rectangle {
@@ -748,7 +730,8 @@ Item {
         id: searchButton
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        anchors.margins: Theme.paddingLarge
+        anchors.rightMargin: Theme.paddingLarge
+        anchors.bottomMargin: Theme.paddingLarge * 3
         icon.source: "image://theme/icon-m-search"
         visible: type === "current" && root.totalTracks > 0
         z: 99
@@ -781,6 +764,33 @@ Item {
         }
     }
     
+    IconButton {
+        id: editButton
+        anchors.top: searchButton.bottom
+        anchors.right: parent.right
+        anchors.rightMargin: editMode ? Theme.paddingLarge * 4 : Theme.paddingLarge
+        anchors.bottomMargin: Theme.paddingLarge
+
+        icon.source: editMode
+            ? "image://theme/icon-m-file-audio"      // exit edit mode
+            : "image://theme/icon-m-edit"      // enter edit mode
+
+        visible: type === "current"
+        z: 99
+
+        // Simple fade-in/out, consistent with search button
+        opacity: 1.0
+        Behavior on opacity {
+            NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+        }
+
+        onClicked: {
+            console.log("Toggling edit mode")
+            editMode = !editMode
+            enableEditMode(editMode)
+        }
+    }
+
     // Timer for delayed focus - Claude Generated
     Timer {
         id: focusTimer
