@@ -16,12 +16,18 @@ Item {
     property alias model: listModel
     property int totalTracks: playlistManager.totalTracks  // For search field visibility
     
+    // Edit mode state
+    property bool editMode: false
+    // True while an item is being dragged/reordered
+    property bool dragActive: false
+
     // Search state - Claude Generated
     property bool searchVisible: false
     property int filteredCount: 0
     
     // Auto-scroll to current track - Claude Generated
     onCurrentIndexChanged: {
+        if (editMode) return
         if (type === "current" && currentIndex >= 0 && currentIndex < listModel.count) {
             // Use timer to ensure ListView is ready
             autoScrollTimer.targetIndex = currentIndex
@@ -34,6 +40,16 @@ Item {
         interval: 300  // Delay to ensure ListView is ready
         property int targetIndex: -1
         onTriggered: {
+            // If a drag operation is in progress, postpone the auto-scroll
+            if (dragActive) {
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("TRACKLIST: Auto-scroll postponed because drag is active")
+                }
+                // Try again shortly after
+                autoScrollTimer.restart()
+                return
+            }
+
             if (targetIndex >= 0 && targetIndex < listModel.count) {
                 if (applicationWindow.settings.debugLevel >= 2) {
                     console.log("TRACKLIST: Smooth scrolling to track", targetIndex)
@@ -93,67 +109,85 @@ Item {
     property var originalPlaylistData: []
     
     function refreshList() {
-        listModel.clear()
-        
-        if (type === "current") {
-            var searchText = ""
-            var hasFilter = false
-            
-            // Check if search field exists and has content
-            if (typeof searchField !== 'undefined' && searchField && searchField.visible) {
-                searchText = searchField.text.toLowerCase()
-                hasFilter = searchText.length > 0
-                
-                if (applicationWindow.settings.debugLevel >= 2) {
-                    console.log("SEARCH: Field found - text:", searchField.text, "searchText:", searchText, "hasFilter:", hasFilter)
-                }
-            } else {
-                if (applicationWindow.settings.debugLevel >= 2) {
-                    console.log("SEARCH: Field not found or not visible - type:", type, "totalTracks:", root.totalTracks)
-                }
-            }
-            
-            if (applicationWindow.settings.debugLevel >= 1) {
-                console.log("TRACKLIST: Filtering with search:", searchText, "hasFilter:", hasFilter, "playlistSize:", playlistManager.size)
-            }
-            
-            var filteredCount = 0
-            for (var i = 0; i < playlistManager.size; ++i) {
-                var id = playlistManager.requestPlaylistItem(i)
-                var track = cacheManager.getTrackInfo(id)
-                
-                if (track) {
-                    var matchesFilter = !hasFilter || 
-                        track.title.toLowerCase().indexOf(searchText) >= 0 ||
-                        track.artist.toLowerCase().indexOf(searchText) >= 0 ||
-                        track.album.toLowerCase().indexOf(searchText) >= 0
-                    
-                    if (matchesFilter) {
-                        listModel.append({
-                            "title": track.title,
-                            "artist": track.artist,
-                            "album": track.album,
-                            "id": track.id,
-                            "trackid": track.id,
-                            "duration": track.duration,
-                            "image": track.image,
-                            "index": i  // Keep original index for playback
-                        })
-                        filteredCount++
-                    } else if (applicationWindow.settings.debugLevel >= 2) {
-                        console.log("SEARCH: Filtered out:", track.title, "by", track.artist)
-                    }
-                }
-            }
-            
-            root.filteredCount = filteredCount
-            
-            if (applicationWindow.settings.debugLevel >= 1) {
-                console.log("TRACKLIST: Filter result:", filteredCount, "of", playlistManager.size, "tracks shown")
-            }
-        } else {
-            // Original logic for non-current playlists
+        // Perform an in-place update of `listModel` so we don't clear/recreate
+        // delegates. This preserves focus, selection and scroll position.
+        if (type !== "current") {
+            // Keep previous behavior for non-current lists
             updateTimer.start()
+            return
+        }
+
+        var searchText = ""
+        var hasFilter = false
+        if (typeof searchField !== 'undefined' && searchField && searchField.visible) {
+            searchText = searchField.text.toLowerCase()
+            hasFilter = searchText.length > 0
+        }
+
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("TRACKLIST: refreshList (in-place). filter=", hasFilter ? searchText : '<none>', "playlistSize=", playlistManager.size)
+        }
+
+        // Build new items array without touching the model yet
+        var newItems = []
+        for (var i = 0; i < playlistManager.size; ++i) {
+            var id = playlistManager.requestPlaylistItem(i)
+            var track = cacheManager.getTrackInfo(id)
+            if (!track) continue
+
+            var matchesFilter = !hasFilter ||
+                track.title.toLowerCase().indexOf(searchText) >= 0 ||
+                track.artist.toLowerCase().indexOf(searchText) >= 0 ||
+                track.album.toLowerCase().indexOf(searchText) >= 0
+
+            if (matchesFilter) {
+                newItems.push({
+                    "title": track.title,
+                    "artist": track.artist,
+                    "album": track.album,
+                    "id": track.id,
+                    "trackid": track.id,
+                    "duration": track.duration,
+                    "image": track.image,
+                    "index": i
+                })
+            }
+        }
+
+        // Preserve scroll position and current active focus
+        var savedContentY = tracks.contentY
+        var savedAnimate = tracks.animateScrolling
+        var savedHasFocus = (Qt.application.activeFocusItem !== null)
+        var savedFocusItem = Qt.application.activeFocusItem
+
+        // Temporarily disable animated scrolling while we adjust model
+        tracks.animateScrolling = false
+
+        // Update model in-place: set existing entries, remove extras, append new ones
+        var common = Math.min(listModel.count, newItems.length)
+        for (var j = 0; j < common; ++j) {
+            listModel.set(j, newItems[j])
+        }
+        // Remove trailing items if any
+        while (listModel.count > newItems.length) {
+            listModel.remove(listModel.count - 1)
+        }
+        // Append additional items
+        for (var k = common; k < newItems.length; ++k) {
+            listModel.append(newItems[k])
+        }
+
+        // Update filteredCount and keep debug log
+        root.filteredCount = newItems.length
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("TRACKLIST: refreshed in-place, items=", newItems.length)
+        }
+
+        // Restore scroll/focus
+        tracks.contentY = savedContentY
+        tracks.animateScrolling = savedAnimate
+        if (savedHasFocus && savedFocusItem) {
+            savedFocusItem.forceActiveFocus()
         }
     }
 
@@ -171,6 +205,7 @@ Item {
     
     // Create a function to determine if item is selected
     function isItemSelected(index) {
+        if (editMode) return false
         return type === "current" && index === root.currentIndex
     }
 
@@ -199,6 +234,19 @@ Item {
                 }
             }
         }
+    }
+
+    function enableEditMode(editMode) {
+        if (editMode) {
+            searchButton.visible = false
+            searchVisible = false
+            autoScrollTimer.stop()
+            scrollAnimationTimer.stop()
+            tracks.animateScrolling = false
+            return
+        }
+        // disabled
+        searchButton.visible = true
     }
 
     SilicaListView {
@@ -230,14 +278,30 @@ Item {
         Drag.ViewDragHandler {
             id: viewDragHandler1
             listView: parent
-            active: type==="current" ? true:false // todo: in fact enable when a playlist and when activated
+            active: (type==="current" && editMode )? true:false
+            handleMove: false // We handle the move ourselves
+            property int dragStartIndex : -1
 
-            // Setting the flickable explicitly is only necessary when
-            // the list view itself is not the main flickable of a page.
-            // Usually, a page in a Sailfish app has either a column or
-            // a list view at its root. In this case, setting the flickable
-            // explicitly is not required.
-            // flickable: flick
+            onItemMoved: function(from, to) {
+                console.log("itemMoved - from " + from + " to " + to + ", dragStartIndex= " + dragStartIndex)
+                if (dragStartIndex == -1) {
+                    dragStartIndex = from
+                    dragActive = true
+                }
+            }
+            
+            onItemDropped: function(from, curr, to) {
+                console.log("Drag-drop operation: originalIndex=", from, "currentIndex=", curr, "finalIndex=", to, "stardIndex=",dragStartIndex)
+                if (from !== to && type === "current") {
+                    console.log("Calling moveTrack with from=", from, "to=", to)
+                    // Call the moveTrack function in PlaylistManager
+                    listModel.move(dragStartIndex, to, 1)
+                    playlistManager.moveTrack(dragStartIndex, to, true)
+                    root.refreshList()
+                }
+                dragStartIndex = -1
+                dragActive = false
+            }
         }
         
         header: root.title === "" ? null : headerComponent
@@ -272,6 +336,25 @@ Item {
             visible: type === "playlist"
         }
 
+        /*Button {
+            onClicked: enableEditMode(!editMode)
+        }*/
+
+        PushUpMenu {
+            // this works only when parent does not define any other menues
+            MenuItem {
+                text: qsTr("Edit mode")
+                onClicked: {
+                    if (type === "current" ) {
+                        console.log("toggling playlist editmode")
+                        editMode = ! editMode
+                        enableEditMode(editMode)
+                    }
+                }
+                visible: type === "current"
+            }
+            visible: type === "current"
+        }
         model: ListModel {
             id: listModel
         }
@@ -284,6 +367,8 @@ Item {
 
             // Register the drag handler in the delegate.
             dragHandler: viewDragHandler1
+            // Ensure drag handle is visible and properly configured
+            enableDefaultGrabHandle: type === "current" && editMode
 
             leftItem :
                 Image {
@@ -323,6 +408,9 @@ Item {
             }
 
             onClicked: {
+                // dont play in edit mode
+                if (editMode) return
+
                 // Play track first
                 if (type === "current") {
                     playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
@@ -657,7 +745,14 @@ Item {
         }
 
         onCurrentTrack: {
+            // Avoid auto-scrolling while user is actively dragging/reordering
             if (type === "current") {
+                if (dragActive) {
+                    if (applicationWindow.settings.debugLevel >= 2) {
+                        console.log("TRACKLIST: Skipping onCurrentTrack auto-scroll because drag is active")
+                    }
+                    return
+                }
                 tracks.positionViewAtIndex(position, ListView.Contain)
             }
         }
