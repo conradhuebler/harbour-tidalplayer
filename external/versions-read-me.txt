@@ -30,7 +30,7 @@ six
 tidalapi
   file copy
   https://github.com/EbbLabs/python-tidal 
-  unpacked 0.8.8 version
+  unpacked 0.8.9 version
 
 typing_extensions
   file copy
