@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Copyright (C) 2023- The Tidalapi Developers
 # Copyright (C) 2019-2022 morguldir
 # Copyright (C) 2014 Thomas Amland
@@ -159,7 +157,7 @@ class Requests(object):
             if err := http_error_to_tidal_error(e):
                 raise err from e
             else:
-                raise  # re raise last error, usually HTTPError
+                raise  # re-raise last error, usually HTTPError
         return request
 
     def get_latest_err_response(self) -> dict:
