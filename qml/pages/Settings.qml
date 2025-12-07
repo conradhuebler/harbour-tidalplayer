@@ -474,7 +474,6 @@ Page {
                 text: qsTr("Re-Init session")
                 visible: tidalApi.loginTrue
                 onClicked: {
-
                     authManager.checkAndLogin()
                     tidalApi.reInit()
                 }

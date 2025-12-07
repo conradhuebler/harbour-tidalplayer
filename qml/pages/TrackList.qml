@@ -2,6 +2,7 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 // import Opal.Delegates 1.0 as D
 import "../modules/Opal/Delegates" 1.0  as Del
+import "../modules/Opal/DragDrop" 1.0 as Drag
 
 Item {
     id: root
@@ -15,12 +16,18 @@ Item {
     property alias model: listModel
     property int totalTracks: playlistManager.totalTracks  // For search field visibility
     
+    // Edit mode state
+    property bool editMode: false
+    // True while an item is being dragged/reordered
+    property bool dragActive: false
+
     // Search state - Claude Generated
     property bool searchVisible: false
     property int filteredCount: 0
     
     // Auto-scroll to current track - Claude Generated
     onCurrentIndexChanged: {
+        if (editMode) return
         if (type === "current" && currentIndex >= 0 && currentIndex < listModel.count) {
             // Use timer to ensure ListView is ready
             autoScrollTimer.targetIndex = currentIndex
@@ -33,13 +40,25 @@ Item {
         interval: 300  // Delay to ensure ListView is ready
         property int targetIndex: -1
         onTriggered: {
+            // If a drag operation is in progress, postpone the auto-scroll
+            if (dragActive) {
+                if (applicationWindow.settings.debugLevel >= 2) {
+                    console.log("TRACKLIST: Auto-scroll postponed because drag is active")
+                }
+                // Try again shortly after
+                autoScrollTimer.restart()
+                return
+            }
+
             if (targetIndex >= 0 && targetIndex < listModel.count) {
                 if (applicationWindow.settings.debugLevel >= 2) {
                     console.log("TRACKLIST: Smooth scrolling to track", targetIndex)
                 }
                 // Enable animation temporarily, then use positionViewAtIndex
+                // if targetIndex near start, use Begin to avoid empty space above
+                var useCenter = targetIndex > Math.floor(tracks.height / root.normalItemHeight / 2)
                 tracks.animateScrolling = true
-                tracks.positionViewAtIndex(targetIndex, ListView.Center)
+                tracks.positionViewAtIndex(targetIndex, useCenter ? ListView.Center : ListView.Contain)
                 // Disable animation after scroll completes
                 scrollAnimationTimer.start()
             }
@@ -90,67 +109,85 @@ Item {
     property var originalPlaylistData: []
     
     function refreshList() {
-        listModel.clear()
-        
-        if (type === "current") {
-            var searchText = ""
-            var hasFilter = false
-            
-            // Check if search field exists and has content
-            if (typeof searchField !== 'undefined' && searchField && searchField.visible) {
-                searchText = searchField.text.toLowerCase()
-                hasFilter = searchText.length > 0
-                
-                if (applicationWindow.settings.debugLevel >= 2) {
-                    console.log("SEARCH: Field found - text:", searchField.text, "searchText:", searchText, "hasFilter:", hasFilter)
-                }
-            } else {
-                if (applicationWindow.settings.debugLevel >= 2) {
-                    console.log("SEARCH: Field not found or not visible - type:", type, "totalTracks:", root.totalTracks)
-                }
-            }
-            
-            if (applicationWindow.settings.debugLevel >= 1) {
-                console.log("TRACKLIST: Filtering with search:", searchText, "hasFilter:", hasFilter, "playlistSize:", playlistManager.size)
-            }
-            
-            var filteredCount = 0
-            for (var i = 0; i < playlistManager.size; ++i) {
-                var id = playlistManager.requestPlaylistItem(i)
-                var track = cacheManager.getTrackInfo(id)
-                
-                if (track) {
-                    var matchesFilter = !hasFilter || 
-                        track.title.toLowerCase().indexOf(searchText) >= 0 ||
-                        track.artist.toLowerCase().indexOf(searchText) >= 0 ||
-                        track.album.toLowerCase().indexOf(searchText) >= 0
-                    
-                    if (matchesFilter) {
-                        listModel.append({
-                            "title": track.title,
-                            "artist": track.artist,
-                            "album": track.album,
-                            "id": track.id,
-                            "trackid": track.id,
-                            "duration": track.duration,
-                            "image": track.image,
-                            "index": i  // Keep original index for playback
-                        })
-                        filteredCount++
-                    } else if (applicationWindow.settings.debugLevel >= 2) {
-                        console.log("SEARCH: Filtered out:", track.title, "by", track.artist)
-                    }
-                }
-            }
-            
-            root.filteredCount = filteredCount
-            
-            if (applicationWindow.settings.debugLevel >= 1) {
-                console.log("TRACKLIST: Filter result:", filteredCount, "of", playlistManager.size, "tracks shown")
-            }
-        } else {
-            // Original logic for non-current playlists
+        // Perform an in-place update of `listModel` so we don't clear/recreate
+        // delegates. This preserves focus, selection and scroll position.
+        if (type !== "current") {
+            // Keep previous behavior for non-current lists
             updateTimer.start()
+            return
+        }
+
+        var searchText = ""
+        var hasFilter = false
+        if (typeof searchField !== 'undefined' && searchField && searchField.visible) {
+            searchText = searchField.text.toLowerCase()
+            hasFilter = searchText.length > 0
+        }
+
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("TRACKLIST: refreshList (in-place). filter=", hasFilter ? searchText : '<none>', "playlistSize=", playlistManager.size)
+        }
+
+        // Build new items array without touching the model yet
+        var newItems = []
+        for (var i = 0; i < playlistManager.size; ++i) {
+            var id = playlistManager.requestPlaylistItem(i)
+            var track = cacheManager.getTrackInfo(id)
+            if (!track) continue
+
+            var matchesFilter = !hasFilter ||
+                track.title.toLowerCase().indexOf(searchText) >= 0 ||
+                track.artist.toLowerCase().indexOf(searchText) >= 0 ||
+                track.album.toLowerCase().indexOf(searchText) >= 0
+
+            if (matchesFilter) {
+                newItems.push({
+                    "title": track.title,
+                    "artist": track.artist,
+                    "album": track.album,
+                    "id": track.id,
+                    "trackid": track.id,
+                    "duration": track.duration,
+                    "image": track.image,
+                    "index": i
+                })
+            }
+        }
+
+        // Preserve scroll position and current active focus
+        var savedContentY = tracks.contentY
+        var savedAnimate = tracks.animateScrolling
+        var savedHasFocus = (Qt.application.activeFocusItem !== null)
+        var savedFocusItem = Qt.application.activeFocusItem
+
+        // Temporarily disable animated scrolling while we adjust model
+        tracks.animateScrolling = false
+
+        // Update model in-place: set existing entries, remove extras, append new ones
+        var common = Math.min(listModel.count, newItems.length)
+        for (var j = 0; j < common; ++j) {
+            listModel.set(j, newItems[j])
+        }
+        // Remove trailing items if any
+        while (listModel.count > newItems.length) {
+            listModel.remove(listModel.count - 1)
+        }
+        // Append additional items
+        for (var k = common; k < newItems.length; ++k) {
+            listModel.append(newItems[k])
+        }
+
+        // Update filteredCount and keep debug log
+        root.filteredCount = newItems.length
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("TRACKLIST: refreshed in-place, items=", newItems.length)
+        }
+
+        // Restore scroll/focus
+        tracks.contentY = savedContentY
+        tracks.animateScrolling = savedAnimate
+        if (savedHasFocus && savedFocusItem) {
+            savedFocusItem.forceActiveFocus()
         }
     }
 
@@ -168,6 +205,7 @@ Item {
     
     // Create a function to determine if item is selected
     function isItemSelected(index) {
+        if (editMode) return false
         return type === "current" && index === root.currentIndex
     }
 
@@ -198,10 +236,22 @@ Item {
         }
     }
 
+    function enableEditMode(editMode) {
+        if (editMode) {
+            searchButton.visible = false
+            searchVisible = false
+            autoScrollTimer.stop()
+            scrollAnimationTimer.stop()
+            tracks.animateScrolling = false
+            return
+        }
+        // disabled
+        searchButton.visible = true
+    }
+
     SilicaListView {
         id: tracks
         anchors.fill: parent
-        // highlightFollowsCurrentItem: true //introduced by Pawel for removing of tracks
 
         // PERFORMANCE: Virtual scrolling optimizations
         cacheBuffer: Math.max(height * 2, 0)  // Cache 2 screens worth of content, never negative
@@ -223,13 +273,55 @@ Item {
                 easing.type: Easing.OutCubic
             }
         }
-        
-        header: PageHeader {
-            title: root.title
+
+        // Create a drag handler for the SilicaListView.
+        Drag.ViewDragHandler {
+            id: viewDragHandler1
+            listView: parent
+            active: (type==="current" && editMode )? true:false
+            handleMove: false // We handle the move ourselves
+            property int dragStartIndex : -1
+
+            onItemMoved: function(from, to) {
+                console.log("itemMoved - from " + from + " to " + to + ", dragStartIndex= " + dragStartIndex)
+                if (dragStartIndex == -1) {
+                    dragStartIndex = from
+                    dragActive = true
+                }
+            }
+            
+            onItemDropped: function(from, curr, to) {
+                console.log("Drag-drop operation: originalIndex=", from, "currentIndex=", curr, "finalIndex=", to, "stardIndex=",dragStartIndex)
+                if (from !== to && type === "current") {
+                    console.log("Calling moveTrack with from=", from, "to=", to)
+                    // Call the moveTrack function in PlaylistManager
+                    listModel.move(dragStartIndex, to, 1)
+                    playlistManager.moveTrack(dragStartIndex, to, true)
+                    root.refreshList()
+                }
+
+                // Clear drag state immediately
+                dragStartIndex = -1
+                dragActive = false
+            }
         }
+        
+        header: root.title === "" ? null : headerComponent
+
+        Component {
+            id: headerComponent
+            PageHeader {
+                id: pageHeader
+                title: root.title
+            }
+        }
+
+
         height: parent.height
-        contentHeight: height
-        clip: true  // Verhindert Überläufe
+        contentHeight: listModel.count * root.normalItemHeight
+        bottomMargin: Theme.paddingLarge
+
+        clip: true  // prevents visual overruns
 
         PullDownMenu {
             // this works only when parent does not define any other menues
@@ -255,6 +347,11 @@ Item {
             width: parent.width
             contentHeight: isItemSelected(model.index) ? root.selectedItemHeight : root.normalItemHeight
             highlighted: isItemSelected(model.index)
+
+            // Register the drag handler in the delegate.
+            dragHandler: viewDragHandler1
+            // Ensure drag handle is visible and properly configured
+            enableDefaultGrabHandle: type === "current" && editMode
 
             leftItem :
                 Image {
@@ -294,13 +391,15 @@ Item {
             }
 
             onClicked: {
+                // dont play in edit mode
+                if (editMode) return
+
                 // Play track first
                 if (type === "current") {
                     playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
                 } else {
                     playlistManager.playTrack(model.trackid)
-                }
-                
+                }                
                 // Auto-clear search with smooth delay if only one result - Claude Generated
                 if (type === "current" && searchVisible && root.filteredCount === 1) {
                     if (applicationWindow.settings.debugLevel >= 1) {
@@ -309,6 +408,137 @@ Item {
                     // Smooth delay to let track change be visible first
                     autoClearTimer.start()
                 }
+            }
+
+            // Swipe-to-delete handler with remorse (only in editMode)
+            Item {
+                id: swipeDeleteContainer
+                anchors.fill: parent
+                property bool showDeleteButton: false
+                property int timeLeft: 3000  // Countdown in milliseconds
+
+                // Timer for remorse/undo
+                Timer {
+                    id: remorseTimer
+                    interval: 100  // Update countdown every 100ms
+                    repeat: true
+                    onTriggered: {
+                        swipeDeleteContainer.timeLeft -= interval
+                        if (swipeDeleteContainer.timeLeft <= 0) {
+                            // Actually remove the track after timeout
+                            var trackId = playlistManager.requestPlaylistItem(model.index)
+                            console.log("Remorse timeout: removing track", trackId)
+                                // Remove silently (don't emit listChanged) and update view directly
+                                playlistManager.removeTrack(trackId, true)
+                                // Keep playlistManager.currentIndex in sync with view
+                                root.currentIndex = playlistManager.currentIndex
+                                // Remove visual item from ListModel
+                                if (model && typeof model.index !== 'undefined') {
+                                    listModel.remove(model.index)
+                                }
+                                root.filteredCount = Math.max(0, root.filteredCount - 1)
+                                swipeDeleteContainer.showDeleteButton = false
+                                stop()
+                        }
+                    }
+                }
+
+                // Remorse overlay with delete button (anchored to the right of cover image)
+                Rectangle {
+                    id: deleteButtonOverlay
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.leftMargin: listEntry.leftItem.Image.width
+                    anchors.right: parent.right
+                    color: Theme.rgba(Theme.highlightBackgroundColor, 0.9)
+                    visible: swipeDeleteContainer.showDeleteButton
+                    opacity: visible ? 1.0 : 0.0
+                    z: 10
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 200
+                            easing.type: Easing.InOutQuad
+                        }
+                    }
+
+                    Row {
+                        anchors.fill: parent
+                        anchors.margins: Theme.paddingMedium
+                        spacing: Theme.paddingMedium
+                        layoutDirection: Qt.RightToLeft
+
+                        // Cancel button
+                        Button {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Cancel")
+                            preferredWidth: Theme.buttonWidthSmall
+                            onClicked: {
+                                console.log("Delete cancelled")
+                                swipeDeleteContainer.showDeleteButton = false
+                                remorseTimer.stop()
+                                swipeDeleteContainer.timeLeft = 3000  // Reset timer
+                            }
+                        }
+
+                        // Delete button
+                        Button {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Delete")
+                            preferredWidth: Theme.buttonWidthSmall
+                            onClicked: {
+                                var trackId = playlistManager.requestPlaylistItem(model.index)
+                                console.log("Delete confirmed: removing track", trackId)
+                                // Remove silently and update view without triggering full refresh
+                                playlistManager.removeTrack(trackId, true)
+                                root.currentIndex = playlistManager.currentIndex
+                                if (model && typeof model.index !== 'undefined') {
+                                    listModel.remove(model.index)
+                                }
+                                root.filteredCount = Math.max(0, root.filteredCount - 1)
+                                swipeDeleteContainer.showDeleteButton = false
+                                remorseTimer.stop()
+                            }
+                        }
+
+                        Item { width: Theme.paddingMedium; height: 1 }  // Spacer
+
+                        // Countdown timer display
+                        Label {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: Math.max(0, Math.ceil(swipeDeleteContainer.timeLeft / 1000)) + "s"
+                            color: Theme.secondaryHighlightColor
+                            font.pixelSize: Theme.fontSizeLarge
+                            width: Theme.itemSizeExtraSmall
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                    }
+                }
+
+                SilicaFlickable {
+                    id: swipeFlick
+                    anchors.fill: parent
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: editMode && !dragActive
+
+                    contentWidth: width * 2
+                    contentHeight: height
+
+                    onMovementEnded: {
+                        if (contentX > width * 0.25) {
+                            // Swiped to the left
+                            console.log("LEFT SWIPE", model.index)
+                            swipeDeleteContainer.timeLeft = 3000
+                            swipeDeleteContainer.showDeleteButton = true
+                            remorseTimer.restart()
+                        }
+
+                        // Reset position
+                        contentX = 0
+                    }
+                }
+
             }
 
             menu: ContextMenu {
@@ -407,6 +637,7 @@ Item {
                     }
                 }
             }
+
         }
 
         ViewPlaceholder {
@@ -419,6 +650,7 @@ Item {
 
         VerticalScrollDecorator {}
     }
+
     
     // Floating search overlay for current playlist - Claude Generated
     Rectangle {
@@ -498,7 +730,8 @@ Item {
         id: searchButton
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        anchors.margins: Theme.paddingLarge
+        anchors.rightMargin: Theme.paddingLarge
+        anchors.bottomMargin: Theme.paddingLarge * 3
         icon.source: "image://theme/icon-m-search"
         visible: type === "current" && root.totalTracks > 0
         z: 99
@@ -531,6 +764,33 @@ Item {
         }
     }
     
+    IconButton {
+        id: editButton
+        anchors.top: searchButton.bottom
+        anchors.right: parent.right
+        anchors.rightMargin: editMode ? Theme.paddingLarge * 4 : Theme.paddingLarge
+        anchors.bottomMargin: Theme.paddingLarge
+
+        icon.source: editMode
+            ? "image://theme/icon-m-file-audio"      // exit edit mode
+            : "image://theme/icon-m-edit"      // enter edit mode
+
+        visible: type === "current"
+        z: 99
+
+        // Simple fade-in/out, consistent with search button
+        opacity: 1.0
+        Behavior on opacity {
+            NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+        }
+
+        onClicked: {
+            console.log("Toggling edit mode")
+            editMode = !editMode
+            enableEditMode(editMode)
+        }
+    }
+
     // Timer for delayed focus - Claude Generated
     Timer {
         id: focusTimer
@@ -629,7 +889,14 @@ Item {
         }
 
         onCurrentTrack: {
+            // Avoid auto-scrolling while user is actively dragging/reordering
             if (type === "current") {
+                if (dragActive) {
+                    if (applicationWindow.settings.debugLevel >= 2) {
+                        console.log("TRACKLIST: Skipping onCurrentTrack auto-scroll because drag is active")
+                    }
+                    return
+                }
                 tracks.positionViewAtIndex(position, ListView.Contain)
             }
         }

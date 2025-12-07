@@ -9,7 +9,6 @@ Page {
 
     allowedOrientations: Orientation.All  // Optional: Erlaubt alle Orientierungen
 
-
     TrackList {
         id: pLtrackList
         anchors {
