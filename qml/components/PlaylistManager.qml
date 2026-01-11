@@ -164,6 +164,47 @@ Item {
         }
     }
 
+    function moveTrack(fromIndex, toIndex, silent) {
+        console.log('PlaylistManager.moveTrack', 'from:', fromIndex, 'to:', toIndex)
+        
+        // Validate indices
+        if (fromIndex < 0 || fromIndex >= playlist.length || toIndex < 0 || toIndex >= playlist.length) {
+            console.log('PlaylistManager.moveTrack: Invalid indices')
+            return false
+        }
+        
+        // If indices are the same, do nothing
+        if (fromIndex === toIndex) {
+            return true
+        }
+        
+        // Get the track ID being moved
+        var trackId = playlist[fromIndex]
+        
+        // Remove from original position
+        playlist.splice(fromIndex, 1)
+        
+        // Insert at new position
+        playlist.splice(toIndex, 0, trackId)
+        
+        // Adjust currentIndex if the currently playing track was moved
+        if (currentIndex === fromIndex) {
+            currentIndex = toIndex
+        } else if (fromIndex < currentIndex && toIndex >= currentIndex) {
+            // Moving a track before current towards the end
+            currentIndex--
+        } else if (fromIndex > currentIndex && toIndex <= currentIndex) {
+            // Moving a track after current towards the beginning
+            currentIndex++
+        }
+        
+        updatePlaylistStatistics()
+        if (!silent)
+          _notifyPlaylistState()
+        
+        return true
+    }
+
     function playTrack(trackId) {
         console.log('Playlistmanager::playtrack', trackId)
         
