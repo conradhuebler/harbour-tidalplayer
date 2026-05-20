@@ -61,8 +61,8 @@ ratelimit.path  = $$OUT_PWD/python/ratelimit
 dateutil.path = /usr/share/$${TARGET}/python/dateutil
 dateutil.files = external/dateutil/dateutil/*
 
-future.path =/usr/share/$${TARGET}/python/python-future
-future.files = external/python-future/*
+future.path = /usr/share/$${TARGET}/python/python-future
+future.files = external/python-future/src/*
 
 aes.path = /usr/share/$${TARGET}/python/pyaes
 aes.files = $$files(external/pyaes/pyaes/*.py)

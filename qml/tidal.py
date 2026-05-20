@@ -6,6 +6,7 @@ import os
 sys.path.append("/usr/share/harbour-tidalplayer/lib/python" + str(major) + "." + str(minor) + "/site-packages/");
 
 sys.path.append('/usr/share/harbour-tidalplayer/python/')
+sys.path.append('/usr/share/harbour-tidalplayer/python/python-future/')
 import socket
 import requests
 import json
