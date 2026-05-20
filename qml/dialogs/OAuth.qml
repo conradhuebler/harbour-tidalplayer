@@ -16,6 +16,34 @@ Dialog {
         key: "/mail"
     }
 
+    // Error banner for login failures
+    Rectangle {
+        id: errorBanner
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: errorLabel.height + 2 * Theme.paddingLarge
+        color: Theme.rgba(Theme.errorColor, 0.3)
+        z: 100
+        visible: false
+
+        Label {
+            id: errorLabel
+            anchors.centerIn: parent
+            width: parent.width - 2 * Theme.horizontalPageMargin
+            text: qsTr("Login failed. Please try again.")
+            color: Theme.primaryColor
+            font.pixelSize: Theme.fontSizeSmall
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
+        }
+
+        Timer {
+            id: errorTimer
+            interval: 5000
+            onTriggered: errorBanner.visible = false
+        }
+    }
 
     WebView {
         width: parent.width
@@ -44,7 +72,9 @@ Dialog {
         }
 
         onLoginFailed: {
-            //mainLabel.text = "Failed" //<- mainLabel is not defined
+            console.error("OAuth: Login failed")
+            errorBanner.visible = true
+            errorTimer.start()
         }
     }
 
