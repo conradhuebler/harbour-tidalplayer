@@ -6,7 +6,6 @@ id: root
     // PERFORMANCE: LRU Cache Implementation - prevents memory leaks
     property int maxCacheSize: 1000           // Max items per cache type
     property int maxCacheAge: 24 * 3600000    // Max age in milliseconds
-    property int urlCacheAge: 10 * 60 * 1000  // URLs expire after 10 minutes
     
     // Cache objects with LRU tracking
     property var trackCache: ({})
@@ -14,17 +13,13 @@ id: root
     property var artistCache: ({})
     property var playlistCache: ({})
     property var mixCache: ({})
-    
-    // URL cache for fast track loading (without tokens)
-    property var urlCache: ({})
-    
+
     // LRU access order tracking (most recent first)
     property var trackAccessOrder: []
     property var albumAccessOrder: []
     property var artistAccessOrder: []
     property var playlistAccessOrder: []
     property var mixAccessOrder: []
-    property var urlAccessOrder: []
     
     property var db
     
@@ -200,8 +195,7 @@ id: root
             {name: 'albums', cache: albumCache, accessOrder: albumAccessOrder},
             {name: 'artists', cache: artistCache, accessOrder: artistAccessOrder},
             {name: 'playlists', cache: playlistCache, accessOrder: playlistAccessOrder},
-            {name: 'mixes', cache: mixCache, accessOrder: mixAccessOrder},
-            {name: 'urls', cache: urlCache, accessOrder: urlAccessOrder}
+            {name: 'mixes', cache: mixCache, accessOrder: mixAccessOrder}
         ]
         
         for (var i = 0; i < cacheTypes.length; i++) {
@@ -627,11 +621,9 @@ id: root
             // Mixes Tabelle
             tx.executeSql('CREATE TABLE IF NOT EXISTS mixes(id TEXT PRIMARY KEY, data TEXT, timestamp INTEGER)')
             tx.executeSql('CREATE INDEX IF NOT EXISTS mixes_timestamp_idx ON mixes(timestamp)')
-            
-            // URLs Tabelle (for caching clean URLs without tokens)
-            tx.executeSql('CREATE TABLE IF NOT EXISTS urls(id TEXT PRIMARY KEY, data TEXT, timestamp INTEGER)')
-            tx.executeSql('CREATE INDEX IF NOT EXISTS urls_timestamp_idx ON urls(timestamp)')
-            
+
+            // Migration: Drop unused urls table if it exists
+            tx.executeSql('DROP TABLE IF EXISTS urls')
         })
     }
 
@@ -666,16 +658,6 @@ id: root
                     //console.log(artistCache[rs.rows.item(i).id].artistid, artistCache[rs.rows.item(i).id].name)
                 } catch(e) {
                     console.error("Error parsing artist data:", e)
-                }
-            }
-            
-            // URLs laden
-            rs = tx.executeSql('SELECT * FROM urls')
-            for(i = 0; i < rs.rows.length; i++) {
-                try {
-                    urlCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
-                } catch(e) {
-                    console.error("Error parsing URL data:", e)
                 }
             }
         })
@@ -729,14 +711,6 @@ id: root
         if (track) {
             // PERFORMANCE: Update LRU access order
             touchLRU(trackAccessOrder, id)
-            
-            // Debug: Check what URL is stored (without exposing tokens)
-            if (applicationWindow.settings.debugLevel >= 2 && track.url) {
-                var hasToken = track.url.indexOf('token') !== -1
-                var safeUrl = hasToken ? track.url.split('?')[0] + "?token=***" : track.url
-                console.log("TidalCache: getTrack", id, "returning URL:", safeUrl.substring(0, 80) + "...")
-                console.log("TidalCache: getTrack URL has token:", hasToken ? "YES" : "NO")
-            }
         }
         return track
     }
@@ -771,100 +745,6 @@ id: root
             touchLRU(mixAccessOrder, id)
         }
         return mix
-    }
-    
-    // URL parsing and caching functions
-    function stripTokenFromUrl(url) {
-        if (!url) return url
-        
-        // Remove everything after the first '?' (including token parameters)
-        var questionIndex = url.indexOf('?')
-        if (questionIndex !== -1) {
-            return url.substring(0, questionIndex)
-        }
-        
-        return url
-    }
-    
-    function cacheUrl(trackId, fullUrl) {
-        if (!trackId || !fullUrl) return
-        
-        // Cache FULL URL for short-term use (10 minutes)
-        // Don't strip tokens - we need the working URL
-        var urlData = {
-            trackId: trackId,
-            url: fullUrl,  // Full URL with token
-            timestamp: Date.now()
-        }
-        
-        // Use LRU cache for URLs (in-memory only, don't persist tokens to disk)
-        addToLRU(urlCache, urlAccessOrder, trackId, urlData)
-        
-        // DO NOT write to database - URLs with tokens should not be persisted
-        
-        if (applicationWindow.settings.debugLevel >= 2) {
-            console.log("TidalCache: Full URL cached for track", trackId, "(10min TTL)")
-        }
-    }
-    
-    function getCachedUrl(trackId) {
-        var urlData = urlCache[trackId]
-        if (urlData && (Date.now() - urlData.timestamp) < urlCacheAge) {
-            // Touch LRU
-            touchLRU(urlAccessOrder, trackId)
-            if (applicationWindow.settings.debugLevel >= 2) {
-                var ageMinutes = ((Date.now() - urlData.timestamp) / 60000).toFixed(1)
-                console.log("TidalCache: Using cached URL for track", trackId, "age:", ageMinutes + "min")
-            }
-            return urlData.url
-        }
-        
-        if (urlData && applicationWindow.settings.debugLevel >= 1) {
-            var ageMinutes = ((Date.now() - urlData.timestamp) / 60000).toFixed(1)
-            console.log("TidalCache: URL expired for track", trackId, "age:", ageMinutes + "min")
-        }
-        return null
-    }
-    
-    function getCachedUrlWithToken(trackId, token) {
-        // Now we cache full URLs, so token parameter is ignored
-        return getCachedUrl(trackId)
-    }
-    
-    // Public function to be called when a track URL is received
-    function cacheTrackUrl(trackId, fullUrl) {
-        if (trackId && fullUrl) {
-            // Cache full URL for short-term use
-            cacheUrl(trackId, fullUrl)
-            
-            // Update track metadata cache - DON'T strip token from stored URL
-            var trackInfo = getTrack(trackId)
-            if (trackInfo) {
-                // Store the full URL with token for playback
-                trackInfo.url = fullUrl
-                // Store clean URL separately for display if needed
-                trackInfo.displayUrl = stripTokenFromUrl(fullUrl)
-                trackInfo.timestamp = Date.now()
-                saveTrackToCache(trackInfo)
-            }
-            
-            if (applicationWindow.settings.debugLevel >= 2) {
-                console.log("TidalCache: Track URL cached for track", trackId)
-            }
-        }
-    }
-    
-    function clearExpiredUrl(trackId) {
-        if (urlCache[trackId]) {
-            delete urlCache[trackId]
-            var index = urlAccessOrder.indexOf(trackId)
-            if (index > -1) {
-                urlAccessOrder.splice(index, 1)
-            }
-            if (applicationWindow.settings.debugLevel >= 1) {
-                console.log("TidalCache: Cleared expired URL for track", trackId)
-            }
-        }
     }
 
     // PERFORMANCE: Non-blocking cache cleanup - triggers incremental cleanup
@@ -934,13 +814,11 @@ id: root
             tx.executeSql('DELETE FROM artists')
             tx.executeSql('DELETE FROM playlists')
             tx.executeSql('DELETE FROM mixes')
-            tx.executeSql('DELETE FROM urls')
         })
         trackCache = ({})
         albumCache = ({})
         artistCache = ({})
         playlistCache = ({})
         mixCache = ({})
-        urlCache = ({})
     }
 }

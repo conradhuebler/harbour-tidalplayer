@@ -100,23 +100,20 @@ Item {
         onPlayerError: {
             console.error("MediaHandler: Playback error:", error, "timestamp:", Date.now())
             mprisPlayer.playbackStatus = Mpris.Stopped
-            
-            // Handle URL expiry (403 Forbidden) - fallback to API (only if caching enabled)
+
+            // Handle URL expiry (403 Forbidden) - retry with fresh URL from API
             var errorStr = String(error)
-            if ((errorStr.contains("Forbidden") || errorStr.contains("403")) && applicationWindow.settings.enableUrlCaching) {
+            if (errorStr.contains("Forbidden") || errorStr.contains("403")) {
                 if (applicationWindow.settings.debugLevel >= 1) {
-                    console.log("MediaHandler: URL expired (403) - falling back to API for current track")
+                    console.log("MediaHandler: URL expired (403) - retrying with fresh URL from API")
                 }
-                
+
                 // Get current track ID and retry via API
                 var currentTrack = playlistManager.currentTrackIndex()
                 if (currentTrack >= 0) {
                     var trackId = playlistManager.requestPlaylistItem(currentTrack)
                     if (trackId && trackId > 0) {
-                        // Clear expired URL from cache
-                        cacheManager.clearExpiredUrl(trackId.toString())
-                        
-                        // Force API request by calling TidalApi directly (bypasses cache)
+                        // Request fresh URL from API
                         tidalApi.playTrackId(trackId)
                     }
                 }

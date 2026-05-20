@@ -33,12 +33,6 @@ Page {
         defaultValue: 0
     }
 
-    ConfigurationValue {
-        id: enableUrlCachingConfig
-        key: "/enableUrlCaching"
-        defaultValue: false
-    }
-
     // Auto-refresh timer for status display - Claude Generated
     Timer {
         id: statusUpdateTimer
@@ -699,17 +693,6 @@ Page {
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.errorColor
                 wrapMode: Text.WordWrap
-            }
-            
-            TextSwitch {
-                id: enableUrlCaching
-                text: qsTr("Enable URL Caching")
-                description: qsTr("Cache track URLs for faster loading (may cause issues)")
-                checked: applicationWindow.settings.enableUrlCaching || false
-                onCheckedChanged: {
-                    applicationWindow.settings.enableUrlCaching = checked
-                    enableUrlCachingConfig.value = checked
-                }
             }
 
             // ACCOUNT SETTINGS - Only show at the end when authenticated

@@ -636,12 +636,7 @@ Item {
                 // Check if this is a preload request
                 if (root.pendingPreloadId && trackId && trackId.toString() === root.pendingPreloadId.toString()) {
                     console.log("TidalApi: Processing preload response for track", trackId)
-                    
-                    // Cache URL for preload too (only if enabled)
-                    if (applicationWindow.settings.enableUrlCaching && trackId && info.url) {
-                        cacheManager.cacheTrackUrl(trackId.toString(), info.url)
-                    }
-                    
+
                     // Emit preload signal instead of normal playback
                     preloadUrlReady(trackId.toString(), info.url)
                     root.pendingPreloadId = "" // Clear the flag
@@ -651,12 +646,7 @@ Item {
                 // Check if this is a crossfade request
                 if (root.pendingCrossfadeId && trackId && trackId.toString() === root.pendingCrossfadeId.toString()) {
                     console.log("TidalApi: Processing crossfade response for track", trackId)
-                    
-                    // Cache URL for crossfade too (only if enabled)
-                    if (applicationWindow.settings.enableUrlCaching && trackId && info.url) {
-                        cacheManager.cacheTrackUrl(trackId.toString(), info.url)
-                    }
-                    
+
                     // Emit crossfade signal instead of normal playback
                     crossfadeUrlReady(trackId.toString(), info.url)
                     root.pendingCrossfadeId = "" // Clear the flag
@@ -667,12 +657,7 @@ Item {
                 if (applicationWindow.settings.debugLevel >= 1) {
                     console.log("TidalApi: Processing normal playback for track", trackId, "timestamp:", Date.now())
                 }
-                
-                // Cache URL before playing (only if enabled)
-                if (applicationWindow.settings.enableUrlCaching && trackId && info.url) {
-                    cacheManager.cacheTrackUrl(trackId.toString(), info.url)
-                }
-                
+
                 mediaController.playUrl(info.url)
                 currentPlayback(info.track)
                 tidalApi.current_track_title = info.track.title
@@ -1161,36 +1146,10 @@ Item {
             }
             return false
         }
-        
-        // Check for cached URL first - fast path! (only if enabled)
-        if (applicationWindow.settings.enableUrlCaching) {
-            var cachedUrl = cacheManager.getCachedUrlWithToken(id.toString(), applicationWindow.settings.access_token)
-            if (cachedUrl) {
-                if (applicationWindow.settings.debugLevel >= 1) {
-                    console.log("TidalApi: Using cached URL for track", id, "- skipping API call!")
-                }
-                
-                // Get track info from cache
-                var trackInfo = cacheManager.getTrackInfo(id)
-                if (trackInfo) {
-                    // Play directly from cache
-                    mediaController.playUrl(cachedUrl)
-                    currentPlayback(trackInfo)
-                    tidalApi.current_track_title = trackInfo.title || ""
-                    tidalApi.current_track_artist = trackInfo.artist || ""
-                    tidalApi.current_track_album = trackInfo.album || ""
-                    tidalApi.current_track_image = trackInfo.image || ""
-                    
-                    lastPlayedTrackId = id
-                    trackPlayInProgress = false
-                    return
-                }
-            }
-        }
-        
-        // Fallback to API if not cached
+
+        // Request fresh URL from API
         if (applicationWindow.settings.debugLevel >= 1) {
-            console.log("TidalApi: No cached URL found, requesting from API")
+            console.log("TidalApi: Requesting fresh URL from API")
         }
         lastPlayedTrackId = id
         trackPlayInProgress = true
