@@ -92,19 +92,40 @@ Item {
         }
     }
 
+    // Pending writes buffer for debounced disk writes
+    property var pendingCacheWrites: ({})
+
+    // Debounce timer - coalesce many cacheItem() calls into one Settings write
+    Timer {
+        id: cacheFlushTimer
+        interval: 500
+        repeat: false
+        onTriggered: flushCache()
+    }
+
     function cacheItem(listId, type, data) {
-        // Simple caching - just store last N items
-        var cacheKey = listId + "Items"
-        var current = cache[cacheKey] !== "[]" ? JSON.parse(cache[cacheKey]) : []
+        if (!pendingCacheWrites[listId]) pendingCacheWrites[listId] = []
+        pendingCacheWrites[listId].push({type: type, data: data})
+        cacheFlushTimer.restart()
+    }
 
-        // Add new item (limit to 20 items per section)
-        current.push({type: type, data: data})
-        if (current.length > 20) {
-            current.shift()  // Remove oldest
+    function flushCache() {
+        var hasWrites = false
+        for (var listId in pendingCacheWrites) {
+            var key = listId + "Items"
+            var current = cache[key] !== "[]" ? JSON.parse(cache[key]) : []
+            var pending = pendingCacheWrites[listId]
+            for (var i = 0; i < pending.length; i++) {
+                current.push(pending[i])
+            }
+            while (current.length > 20) current.shift()
+            cache[key] = JSON.stringify(current)
+            hasWrites = true
         }
-
-        cache[cacheKey] = JSON.stringify(current)
-        cache.lastCacheTime = new Date().toISOString()
+        if (hasWrites) {
+            cache.lastCacheTime = new Date().toISOString()
+        }
+        pendingCacheWrites = ({})
     }
 
     SilicaFlickable {
@@ -485,6 +506,14 @@ Item {
 
         if (applicationWindow.settings.debugLevel >= 1) {
             console.log("Personal: Cached content displayed, waiting for fresh data")
+        }
+    }
+
+    // Flush any pending cache writes before destruction to avoid losing the last batch
+    Component.onDestruction: {
+        if (cacheFlushTimer.running) {
+            cacheFlushTimer.stop()
+            flushCache()
         }
     }
 }
