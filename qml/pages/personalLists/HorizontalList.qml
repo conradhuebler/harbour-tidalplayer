@@ -53,8 +53,33 @@ SilicaListView {
     }
 
     function addItem(item) {
+        if (containsItem(item)) {
+            return
+        }
         model.append(item)
         _allItems.push(item)
+    }
+
+    function containsItem(item) {
+        var idField, emptyValue
+        switch (item.type) {
+            case typeTrack:    idField = "trackid";    emptyValue = "";  break
+            case typeAlbum:    idField = "albumid";    emptyValue = -1;  break
+            case typeArtist:   idField = "artistid";   emptyValue = "";  break
+            case typePlaylist: idField = "playlistid"; emptyValue = "";  break
+            case typeMix:      idField = "mixid";      emptyValue = "";  break
+            default: return false
+        }
+        var id = item[idField]
+        if (id === emptyValue || id === undefined || id === null) {
+            return false
+        }
+        for (var i = 0; i < _allItems.length; i++) {
+            if (_allItems[i].type === item.type && _allItems[i][idField] === id) {
+                return true
+            }
+        }
+        return false
     }
 
     function addTrack(track_info)
