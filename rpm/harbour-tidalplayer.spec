@@ -29,6 +29,7 @@ Requires:   python-dateutil
 Requires:   python3-six
 Requires:   python3-devel
 Requires:   amber-mpris
+Requires:   nemo-qml-plugin-notifications-qt5
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)

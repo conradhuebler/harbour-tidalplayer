@@ -36,7 +36,7 @@ BuildArch: noarch
 
 # Runtime dependencies which are not automatically detected
 Requires:
-  - sailfishsilica-qt5 >= 0.10.9 
+  - sailfishsilica-qt5 >= 0.10.9
   - pyotherside-qml-plugin-python3-qt5
   - libsailfishapp-launcher
   - python3-requests
@@ -44,6 +44,7 @@ Requires:
   - python3-six
   - python3-devel
   - amber-mpris
+  - nemo-qml-plugin-notifications-qt5
 
 # All installed files
 Files:

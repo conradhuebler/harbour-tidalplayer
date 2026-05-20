@@ -4,6 +4,7 @@ import io.thp.pyotherside 1.5
 import QtMultimedia 5.6
 import Amber.Mpris 1.0
 import Nemo.Configuration 1.0
+import Nemo.Notifications 1.0
 
 import "components"
 import "cover"
@@ -671,42 +672,40 @@ ApplicationWindow
         }
     }
 
-    // Sailfish-native RemorsePopup for notifications
-    RemorsePopup {
-        id: notificationRemorse
+    // Sailfish-native status notification shown as the small black banner
+    // at the top of the screen and queued in the events view.
+    Notification {
+        id: appNotification
+        appName: "Tidal Player"
+        appIcon: "/usr/share/icons/hicolor/86x86/apps/harbour-tidalplayer.png"
     }
 
-    // Global notification functions using RemorsePopup
+    function publishNotification(category, title, message) {
+        appNotification.close()
+        appNotification.category = category
+        appNotification.summary = title
+        appNotification.body = message || ""
+        appNotification.publish()
+    }
+
     function showErrorNotification(title, message) {
         console.log("ERROR:", title, "-", message)
-        var fullMessage = title + (message ? "\n" + message : "")
-        notificationRemorse.execute(fullMessage, function() {
-            // Optional action after timeout - currently empty
-        }, 8000) // 8 seconds timeout
+        publishNotification("x-nemo.general.error", title, message)
     }
 
     function showWarningNotification(title, message) {
         console.log("WARNING:", title, "-", message)
-        var fullMessage = title + (message ? "\n" + message : "")
-        notificationRemorse.execute(fullMessage, function() {
-            // Optional action after timeout - currently empty
-        }, 6000) // 6 seconds timeout
+        publishNotification("x-nemo.general.warning", title, message)
     }
 
     function showSuccessNotification(title, message) {
         console.log("SUCCESS:", title, "-", message)
-        var fullMessage = title + (message ? "\n" + message : "")
-        notificationRemorse.execute(fullMessage, function() {
-            // Optional action after timeout - currently empty
-        }, 4000) // 4 seconds timeout
+        publishNotification("x-nemo.transfer.complete", title, message)
     }
 
     function showInfoNotification(title, message) {
         console.log("INFO:", title, "-", message)
-        var fullMessage = title + (message ? "\n" + message : "")
-        notificationRemorse.execute(fullMessage, function() {
-            // Optional action after timeout - currently empty
-        }, 5000) // 5 seconds timeout
+        publishNotification("x-nemo.general.info", title, message)
     }
 
     // Persistent critical error dialog - Claude Generated
