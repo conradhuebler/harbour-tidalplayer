@@ -103,10 +103,15 @@ Item {
 
             // Handle URL expiry (403 Forbidden) - retry with fresh URL from API
             var errorStr = String(error)
-            if (errorStr.contains("Forbidden") || errorStr.contains("403")) {
+            if (errorStr.indexOf("Forbidden") !== -1 || errorStr.indexOf("403") !== -1) {
                 if (applicationWindow.settings.debugLevel >= 1) {
                     console.log("MediaHandler: URL expired (403) - retrying with fresh URL from API")
                 }
+
+                // Drop the stale URL from the internal playlist so the player
+                // doesn't immediately re-attempt the same expired source via
+                // DualAudioManager's onCurrentIndexChanged handler.
+                dualAudioManager.clearPlaylist()
 
                 // Get current track ID and retry via API
                 var currentTrack = playlistManager.currentTrackIndex()
