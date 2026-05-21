@@ -130,9 +130,6 @@ class Tidal:
         self.track_search = 20
         self.artist_search = 20
 
-        debug_log("Tidal class initialized, sending loadingStarted signal", level=2)
-        pyotherside.send('loadingStarted')
-
     def initialize(self, quality="HIGH"):
         debug_log(f"Initializing TidalAPI with quality: {quality}", level=1)
 
@@ -902,39 +899,42 @@ class Tidal:
         finally:
             pyotherside.send('loadingFinished')
 
-    def getFavorits(self, id):
+    def getFavoriteAlbums(self):
         pyotherside.send('loadingStarted')
-        albums = self.session.user.favorites.albums()
-        for ti in albums:
+        for ti in self.session.user.favorites.albums():
             i = self.handle_album(ti)
             pyotherside.send("cacheAlbum", i)
             pyotherside.send("FavAlbums", i)
+        pyotherside.send('loadingFinished')
 
-        tracks = self.session.user.favorites.tracks()
-        for ti in tracks:
+    def getFavoriteTracks(self):
+        pyotherside.send('loadingStarted')
+        for ti in self.session.user.favorites.tracks():
             i = self.handle_track(ti)
             pyotherside.send("cacheTrack", i)
             pyotherside.send("FavTracks", i)
+        pyotherside.send('loadingFinished')
 
-        artists = self.session.user.favorites.artists()
-        for ti in artists:
+    def getFavoriteArtists(self):
+        pyotherside.send('loadingStarted')
+        for ti in self.session.user.favorites.artists():
             i = self.handle_artist(ti)
             pyotherside.send("cacheArtist", i)
             pyotherside.send("FavArtist", i)
-
         pyotherside.send('loadingFinished')
 
-    def homepage(self):
-        self.home = self.session.home()
-        #self.home.categories.extend(self.session.explore().categories)
-        #self.home.categories.extend(self.session.videos().categories)
-
-        for item in self.home.categories[0].items:
+    def getForYouPage(self):
+        pyotherside.send('loadingStarted')
+        home = self.session.home()
+        for item in home.categories[0].items:
             self.getForYou(item)
+        pyotherside.send('loadingFinished')
 
-        recent_page = self.getPageContinueListen()
-        for item in recent_page:
+    def getRecentPage(self):
+        pyotherside.send('loadingStarted')
+        for item in self.getPageContinueListen():
             self.getRecently(item)
+        pyotherside.send('loadingFinished')
 
     def getRadioMixes(self):
         page = self.getPageSuggestedRadioMixes()

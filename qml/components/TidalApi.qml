@@ -1299,11 +1299,26 @@ Item {
     // Playlist Funktionen
     function getPersonalPlaylists() {
         pythonTidal.call('tidal.Tidaler.getPersonalPlaylists', [])
-        //pythonTidal.call('tidal.Tidaler.homepage', [])
     }
 
-    function getHomepage() {
-        pythonTidal.call('tidal.Tidaler.homepage', [])
+    function getForYouPage() {
+        pythonTidal.call('tidal.Tidaler.getForYouPage', [])
+    }
+
+    function getRecentPage() {
+        pythonTidal.call('tidal.Tidaler.getRecentPage', [])
+    }
+
+    function getFavoriteAlbums() {
+        pythonTidal.call('tidal.Tidaler.getFavoriteAlbums', [])
+    }
+
+    function getFavoriteTracks() {
+        pythonTidal.call('tidal.Tidaler.getFavoriteTracks', [])
+    }
+
+    function getFavoriteArtists() {
+        pythonTidal.call('tidal.Tidaler.getFavoriteArtists', [])
     }
 
     function getDailyMixes() {
@@ -1356,11 +1371,6 @@ Item {
     function getSimiliarArtist(artistid) {
         pythonTidal.call('tidal.Tidaler.getSimiliarArtist', [artistid])
     }
-
-    function getFavorits(artistid) {
-        pythonTidal.call('tidal.Tidaler.getFavorits', [artistid])
-    }
-
 
     // ROOT CAUSE FIX: Complete search requests when Python results arrive
     function completeSearchRequest(resultType, resultData) {

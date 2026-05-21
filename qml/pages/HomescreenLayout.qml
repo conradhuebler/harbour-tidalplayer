@@ -119,6 +119,9 @@ Page {
                     var newValue = !model.sectionVisible
                     sectionsModel.setProperty(row._modelIndex, "sectionVisible", newValue)
                     applicationWindow.settings[visibilityKeys[model.sectionId]] = newValue
+                    if (newValue && tidalApi.loginTrue && applicationWindow.personalPage) {
+                        applicationWindow.personalPage.loadSectionData(model.sectionId)
+                    }
                 }
             }
         }

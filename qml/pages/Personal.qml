@@ -60,6 +60,23 @@ Item {
         }
     }
 
+    // Trigger the Tidal API call that backs a given section. Called by the
+    // HomescreenLayout switch on activation, so a newly enabled section is
+    // populated live instead of waiting for the next app restart. - Claude Generated
+    function loadSectionData(sectionId) {
+        switch (sectionId) {
+            case "recent":           tidalApi.getRecentPage();      break
+            case "foryou":           tidalApi.getForYouPage();      break
+            case "topartist":        tidalApi.getFavoriteArtists(); break
+            case "topalbum":         tidalApi.getFavoriteAlbums();  break
+            case "toptrack":         tidalApi.getFavoriteTracks();  break
+            case "personalPlaylist": tidalApi.getPersonalPlaylists(); break
+            case "dailyMixes":       tidalApi.getDailyMixes();      break
+            case "radioMixes":       tidalApi.getRadioMixes();      break
+            case "favArtists":       tidalApi.getTopArtists();      break
+        }
+    }
+
     function applyCachedItem(list, type, data) {
         if (type === "album") list.addAlbum(data)
         else if (type === "mix") list.addMix(data)
@@ -173,17 +190,14 @@ Item {
 
         onLoginSuccess: {
             if (applicationWindow.settings.debugLevel >= 1) {
-                console.log("Personal: Login successful - Priority loading enabled")
+                console.log("Personal: Login successful - selective phase loading")
             }
 
-            // PERFORMANCE: Priority-based loading for faster startup
-            // Phase 1: IMMEDIATE (0ms) - Critical content only
-            tidalApi.getHomepage() // Loads recent + popular (most important)
+            // Phase 1: immediate, only the sections the user actually wants
+            if (applicationWindow.settings.recentList) tidalApi.getRecentPage()
+            if (applicationWindow.settings.yourList)   tidalApi.getForYouPage()
 
-            // Phase 2: 1 second delay - Favorites
             phaseTwoTimer.start()
-
-            // Phase 3: 2 second delay - Secondary content (only if enabled)
             phaseThreeTimer.start()
         }
     }
@@ -197,7 +211,9 @@ Item {
             if (applicationWindow.settings.debugLevel >= 1) {
                 console.log("Personal: Loading favorites (Phase 2)")
             }
-            tidalApi.getFavorits() // Fav artists, albums, tracks
+            if (applicationWindow.settings.topalbumsList) tidalApi.getFavoriteAlbums()
+            if (applicationWindow.settings.toptrackList)  tidalApi.getFavoriteTracks()
+            if (applicationWindow.settings.topartistList) tidalApi.getFavoriteArtists()
         }
     }
 
