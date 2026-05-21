@@ -112,7 +112,7 @@ Page {
             enableDefaultGrabHandle: true
             interactive: false
 
-            rightItem: Switch {
+            leftItem: Switch {
                 checked: model.sectionVisible
                 automaticCheck: false
                 onClicked: {

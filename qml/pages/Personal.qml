@@ -137,12 +137,30 @@ Item {
             }
 
             // Configurable section order driven by homescreenSectionOrder - Claude Generated
+            // active is a reactive property binding so that toggling a section's
+            // visibility in HomescreenLayout instantiates / destroys the loader
+            // without a page reload. Disabled sections are never built, skipping
+            // their cache read, Connections and HorizontalList render at startup.
             Repeater {
                 model: applicationWindow.settings.homescreenSectionOrder
                 delegate: Loader {
                     width: mainColumn.width
                     asynchronous: true
-                    source: personalPage.sectionSourceFor(modelData)
+                    active: {
+                        switch (modelData) {
+                            case "recent":           return applicationWindow.settings.recentList
+                            case "foryou":           return applicationWindow.settings.yourList
+                            case "topartist":        return applicationWindow.settings.topartistList
+                            case "topalbum":         return applicationWindow.settings.topalbumsList
+                            case "toptrack":         return applicationWindow.settings.toptrackList
+                            case "personalPlaylist": return applicationWindow.settings.personalPlaylistList
+                            case "dailyMixes":       return applicationWindow.settings.dailyMixesList
+                            case "radioMixes":       return applicationWindow.settings.radioMixesList
+                            case "favArtists":       return applicationWindow.settings.topArtistsList
+                            default: return false
+                        }
+                    }
+                    source: active ? personalPage.sectionSourceFor(modelData) : ""
                 }
             }
         }
