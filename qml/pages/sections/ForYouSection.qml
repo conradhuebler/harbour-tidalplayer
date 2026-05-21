@@ -5,7 +5,7 @@ import "../personalLists"
 
 Column {
     id: section
-    width: parent.width
+    width: parent ? parent.width : 0
     spacing: Theme.paddingMedium
     visible: applicationWindow.settings.yourList
 
