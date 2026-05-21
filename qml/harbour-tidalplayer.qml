@@ -17,6 +17,7 @@ ApplicationWindow
     id: applicationWindow
     
     property var mainPage
+    property var personalPage
     property alias mediaController: mediaController
 
     property bool loginTrue : false
@@ -40,6 +41,9 @@ ApplicationWindow
         property bool stay_logged_in: false
         property bool useNewHomescreen: false
         property string defaultPlayAction: "replace"
+        property var homescreenSectionOrder: ["recent", "foryou", "topartist", "topalbum",
+                                              "toptrack", "personalPlaylist", "dailyMixes",
+                                              "radioMixes", "favArtists"]
 
         property bool recentList: true
         property bool yourList: true //shows currently popular playlists
@@ -397,6 +401,12 @@ ApplicationWindow
         id: useNewHomescreen
         key : "/useNewHomescreen"
         defaultValue: false
+    }
+
+    ConfigurationValue {
+        id: homescreenSectionOrderConfig
+        key : "/homescreenSectionOrder"
+        defaultValue: "[\"recent\",\"foryou\",\"topartist\",\"topalbum\",\"toptrack\",\"personalPlaylist\",\"dailyMixes\",\"radioMixes\",\"favArtists\"]"
     }
 
     ConfigurationValue {
@@ -1061,6 +1071,11 @@ ApplicationWindow
             stayLoggedInConfig.value = applicationWindow.settings.stay_logged_in
             useNewHomescreen.value = applicationWindow.settings.useNewHomescreen
             defaultPlayAction.value = applicationWindow.settings.defaultPlayAction
+            try {
+                homescreenSectionOrderConfig.value = JSON.stringify(applicationWindow.settings.homescreenSectionOrder || [])
+            } catch (e) {
+                console.log("Personal: failed to persist homescreenSectionOrder:", e)
+            }
 
             recentListConfig.value = applicationWindow.settings.recentList
             yourListConfig.value = applicationWindow.settings.yourList
@@ -1127,6 +1142,15 @@ ApplicationWindow
         applicationWindow.settings.stay_logged_in = stayLoggedInConfig.value
         applicationWindow.settings.useNewHomescreen = useNewHomescreen.value
         applicationWindow.settings.defaultPlayAction = defaultPlayAction.value
+
+        try {
+            var order = JSON.parse(homescreenSectionOrderConfig.value)
+            if (Array.isArray(order) && order.length > 0) {
+                applicationWindow.settings.homescreenSectionOrder = order
+            }
+        } catch (e) {
+            console.log("Personal: invalid homescreenSectionOrder, using default:", e)
+        }
         applicationWindow.settings.enableTrackPreloading = enableTrackPreloadingConfig.value
         applicationWindow.settings.crossfadeMode = crossfadeModeConfig.value
         applicationWindow.settings.crossfadeTimeMs = crossfadeTimeMsConfig.value
