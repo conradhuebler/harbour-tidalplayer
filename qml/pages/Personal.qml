@@ -193,12 +193,30 @@ Item {
                 console.log("Personal: Login successful - selective phase loading")
             }
 
-            // Phase 1: immediate, only the sections the user actually wants
-            if (applicationWindow.settings.recentList) tidalApi.getRecentPage()
-            if (applicationWindow.settings.yourList)   tidalApi.getForYouPage()
-
+            // If we auto-resume a track, hold homescreen API calls back so the
+            // single Python worker can finish MediaHandler's stream-URL lookup
+            // first. Otherwise Phase 1's session.home() blocks the queue and
+            // audio starts late / stutters. - Claude Generated
+            var resuming = applicationWindow.settings.resume_playback
+                        && applicationWindow.settings.last_track_id !== ""
+            var base = resuming ? 2500 : 0
+            phaseOneTimer.interval   = base
+            phaseTwoTimer.interval   = base + 1000
+            phaseThreeTimer.interval = base + 2000
+            phaseOneTimer.start()
             phaseTwoTimer.start()
             phaseThreeTimer.start()
+        }
+    }
+
+    // PERFORMANCE: Phase 1 - recent + foryou
+    Timer {
+        id: phaseOneTimer
+        interval: 0
+        repeat: false
+        onTriggered: {
+            if (applicationWindow.settings.recentList) tidalApi.getRecentPage()
+            if (applicationWindow.settings.yourList)   tidalApi.getForYouPage()
         }
     }
 
