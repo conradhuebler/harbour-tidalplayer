@@ -143,15 +143,7 @@ Page {
                     margins: Theme.horizontalPageMargin
                 }
                 text: qsTr("Homescreen Layout")
-                //visible: applicationWindow.settings.useNewHomescreen || false
-                //enabled: tidalApi.loginTrue
-                onClicked: {
-                    if (tidalApi.loginTrue) {
-                        pageStack.push(Qt.resolvedUrl("HomescreenSettings.qml"), {
-                            homescreenManager: applicationWindow.homescreenManager
-                        })
-                    }
-                }
+                onClicked: pageStack.push(Qt.resolvedUrl("HomescreenLayout.qml"))
             }
 
             ComboBox {
