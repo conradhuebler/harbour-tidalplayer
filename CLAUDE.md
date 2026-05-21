@@ -35,8 +35,9 @@ Submodules: `git submodule update --init --recursive` (only `mpegdash`, `ratelim
 - `qml/components/MediaHandler.qml` + `DualAudioManager.qml` — playback, MPRIS, optional crossfade/preload
 - `qml/components/PlaylistManager.qml` + `PlaylistStorage.qml` — queue and persistence
 - `qml/components/TidalCache.qml` — track/album/artist metadata cache (LocalStorage)
-- `qml/pages/Personal.qml` — default home page; section cache via LocalStorage
-- `qml/components/homescreen/` — alternative configurable home page (`useNewHomescreen` setting)
+- `qml/pages/Personal.qml` — home page shell; central LocalStorage cache, exposes `cacheItem` / `loadSectionItems`
+- `qml/pages/sections/` — one Column component per homescreen section; order driven by `homescreenSectionOrder` setting
+- `qml/pages/HomescreenLayout.qml` — drag-to-reorder layout config (uses `Opal.DragDrop`, same pattern as `TrackList.qml`)
 - `qml/harbour-tidalplayer.qml` — application window, global state, Nemo.Notifications, settings glue
 
 Communication: Python emits PyOtherSide signals → QML handlers re-emit Qt signals.

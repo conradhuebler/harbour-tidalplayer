@@ -132,8 +132,8 @@ Page {
                   anchors.bottom: parent.bottom
                   anchors.bottomMargin: getBottomOffset()
                   property var carouselPages: [
-                      applicationWindow.settings.useNewHomescreen ? "PersonalConfigurable.qml" : "Personal.qml", 
-                      "Search.qml", 
+                      "Personal.qml",
+                      "Search.qml",
                       "TrackList.qml"
                   ]
                   property int initialPage: 0

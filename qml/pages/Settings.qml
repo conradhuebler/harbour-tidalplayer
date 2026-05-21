@@ -10,12 +10,6 @@ Page {
 
     // Configuration values - Claude Generated
     ConfigurationValue {
-        id: useNewHomescreen
-        key: "/useNewHomescreen"
-        defaultValue: false
-    }
-
-    ConfigurationValue {
         id: mail
         key: "/mail"
         defaultValue: ""
@@ -124,16 +118,6 @@ Page {
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.secondaryColor
                 wrapMode: Text.WordWrap
-            }
-
-            TextSwitch {
-                text: qsTr("New Homescreen")
-                description: qsTr("Use configurable homescreen with drag & drop sections")
-                checked: applicationWindow.settings.useNewHomescreen || false
-                onCheckedChanged: {
-                    applicationWindow.settings.useNewHomescreen = checked
-                    useNewHomescreen.value = checked
-                }
             }
 
             Button {

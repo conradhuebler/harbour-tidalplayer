@@ -39,7 +39,6 @@ ApplicationWindow
         property bool hide_player: false
         property bool auto_load_playlist: true
         property bool stay_logged_in: false
-        property bool useNewHomescreen: false
         property string defaultPlayAction: "replace"
         property var homescreenSectionOrder: ["recent", "foryou", "topartist", "topalbum",
                                               "toptrack", "personalPlaylist", "dailyMixes",
@@ -394,12 +393,6 @@ ApplicationWindow
     ConfigurationValue {
         id: stayLoggedInConfig
         key : "/stayLoggedIn"
-        defaultValue: false
-    }
-
-    ConfigurationValue {
-        id: useNewHomescreen
-        key : "/useNewHomescreen"
         defaultValue: false
     }
 
@@ -1069,7 +1062,6 @@ ApplicationWindow
             hidePlayerOnFinished.value = applicationWindow.settings.hide_player
             autoLoadPlaylist.value = applicationWindow.settings.auto_load_playlist
             stayLoggedInConfig.value = applicationWindow.settings.stay_logged_in
-            useNewHomescreen.value = applicationWindow.settings.useNewHomescreen
             defaultPlayAction.value = applicationWindow.settings.defaultPlayAction
             try {
                 homescreenSectionOrderConfig.value = JSON.stringify(applicationWindow.settings.homescreenSectionOrder || [])
@@ -1140,7 +1132,6 @@ ApplicationWindow
         applicationWindow.settings.hide_player = hidePlayerOnFinished.value
         applicationWindow.settings.auto_load_playlist = autoLoadPlaylist.value
         applicationWindow.settings.stay_logged_in = stayLoggedInConfig.value
-        applicationWindow.settings.useNewHomescreen = useNewHomescreen.value
         applicationWindow.settings.defaultPlayAction = defaultPlayAction.value
 
         try {
@@ -1180,7 +1171,6 @@ ApplicationWindow
         if (debugLevel >= 1) {
             console.log("STARTUP: Track preloading:", applicationWindow.settings.enableTrackPreloading ? "enabled" : "disabled")
             console.log("STARTUP: Crossfade mode:", applicationWindow.settings.crossfadeMode, "time:", applicationWindow.settings.crossfadeTimeMs + "ms")
-            console.log("STARTUP: New homescreen:", applicationWindow.settings.useNewHomescreen ? "enabled" : "disabled")
         }
 
         // PERFORMANCE: Critical initialization first
