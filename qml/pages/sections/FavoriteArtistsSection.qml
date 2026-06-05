@@ -4,7 +4,8 @@ import Sailfish.Silica 1.0
 
 HomeSection {
     id: section
-    title: qsTr("Favorite Artists")
+    // SectionID "favArtists" → onTopArtist (the user's most-played).
+    title: qsTr("Top Artists")
     cacheKey: "favArtists"
     filterPlaceholder: qsTr("Filter artists")
 

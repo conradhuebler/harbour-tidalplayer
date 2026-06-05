@@ -14,13 +14,16 @@ Page {
     readonly property var titles: ({
         "recent":           qsTr("Recently played"),
         "foryou":           qsTr("Popular playlists"),
-        "topartist":        qsTr("Top Artists"),
+        // SectionID "topartist" backs onFavArtists, SectionID "favArtists"
+        // backs onTopArtist — the historical names are inverted from the
+        // data they carry, so the user-facing labels are swapped here.
+        "topartist":        qsTr("Favorite Artists"),
         "topalbum":         qsTr("Top Albums"),
         "toptrack":         qsTr("Top Tracks"),
         "personalPlaylist": qsTr("Personal Playlists"),
         "dailyMixes":       qsTr("Custom Mixes"),
         "radioMixes":       qsTr("Personal Radio Stations"),
-        "favArtists":       qsTr("Favorite Artists")
+        "favArtists":       qsTr("Top Artists")
     })
 
     readonly property var visibilityKeys: ({
