@@ -1,31 +1,15 @@
 // Claude Generated
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import "../personalLists"
 
-Column {
+HomeSection {
     id: section
-    width: parent ? parent.width : 0
-    spacing: Theme.paddingMedium
-
-    SectionHeader {
-        text: qsTr("Personal Radio Stations")
-    }
-
-    HorizontalList {
-        id: radioMixesList
-        width: parent.width
-    }
+    title: qsTr("Personal Radio Stations")
+    cacheKey: "radioMixes"
+    filterPlaceholder: qsTr("Filter stations")
 
     Connections {
         target: tidalApi
-        onCustomMix: {
-            if (mixType === "radioMix") {
-                radioMixesList.addMix(mix_info)
-                applicationWindow.personalPage.cacheItem("radioMixes", "mix", mix_info)
-            }
-        }
+        onCustomMix: if (mixType === "radioMix") section.addItem("mix", mix_info)
     }
-
-    Component.onCompleted: applicationWindow.personalPage.loadSectionItems("radioMixes", radioMixesList)
 }
