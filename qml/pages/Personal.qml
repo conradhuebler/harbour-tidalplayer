@@ -150,7 +150,7 @@ Item {
             spacing: Theme.paddingMedium
 
             PageHeader {
-                title: "Personal Collection"
+                title: qsTr("Personal Collection")
             }
 
             // Configurable section order driven by homescreenSectionOrder - Claude Generated

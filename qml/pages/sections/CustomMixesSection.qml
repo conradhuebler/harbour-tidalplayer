@@ -7,7 +7,6 @@ Column {
     id: section
     width: parent ? parent.width : 0
     spacing: Theme.paddingMedium
-    visible: applicationWindow.settings.dailyMixesList
 
     SectionHeader {
         text: qsTr("Custom Mixes")
@@ -21,7 +20,12 @@ Column {
     Connections {
         target: tidalApi
         onCustomMix: {
-            if (mixType === "dailyMix") dailyMixesList.addMix(mix_info)
+            if (mixType === "dailyMix") {
+                dailyMixesList.addMix(mix_info)
+                applicationWindow.personalPage.cacheItem("dailyMixes", "mix", mix_info)
+            }
         }
     }
+
+    Component.onCompleted: applicationWindow.personalPage.loadSectionItems("dailyMixes", dailyMixesList)
 }

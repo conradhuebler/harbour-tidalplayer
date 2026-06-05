@@ -7,7 +7,6 @@ Column {
     id: section
     width: parent ? parent.width : 0
     spacing: Theme.paddingMedium
-    visible: applicationWindow.settings.toptrackList
 
     SectionHeader {
         text: qsTr("Top Tracks")

@@ -7,7 +7,6 @@ Column {
     id: section
     width: parent ? parent.width : 0
     spacing: Theme.paddingMedium
-    visible: applicationWindow.settings.topArtistsList
 
     SectionHeader {
         text: qsTr("Favorite Artists")
@@ -20,6 +19,11 @@ Column {
 
     Connections {
         target: tidalApi
-        onTopArtist: topArtistList.addArtist(artist_info)
+        onTopArtist: {
+            topArtistList.addArtist(artist_info)
+            applicationWindow.personalPage.cacheItem("favArtists", "artist", artist_info)
+        }
     }
+
+    Component.onCompleted: applicationWindow.personalPage.loadSectionItems("favArtists", topArtistList)
 }

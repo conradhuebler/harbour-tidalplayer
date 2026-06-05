@@ -7,7 +7,6 @@ Column {
     id: section
     width: parent ? parent.width : 0
     spacing: Theme.paddingMedium
-    visible: applicationWindow.settings.radioMixesList
 
     SectionHeader {
         text: qsTr("Personal Radio Stations")
@@ -21,7 +20,12 @@ Column {
     Connections {
         target: tidalApi
         onCustomMix: {
-            if (mixType === "radioMix") radioMixesList.addMix(mix_info)
+            if (mixType === "radioMix") {
+                radioMixesList.addMix(mix_info)
+                applicationWindow.personalPage.cacheItem("radioMixes", "mix", mix_info)
+            }
         }
     }
+
+    Component.onCompleted: applicationWindow.personalPage.loadSectionItems("radioMixes", radioMixesList)
 }

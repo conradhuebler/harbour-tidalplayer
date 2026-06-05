@@ -7,7 +7,6 @@ Column {
     id: section
     width: parent ? parent.width : 0
     spacing: Theme.paddingMedium
-    visible: applicationWindow.settings.topartistList
 
     SectionHeader {
         text: qsTr("Top Artists")
