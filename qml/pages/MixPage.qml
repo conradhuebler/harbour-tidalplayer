@@ -30,8 +30,7 @@ Page {
             MenuItem {
                 text: qsTr("Play All")
                 onClicked: {
-                    playlistManager.clearPlayList()
-                    tidalApi.playMix(playlistId)                       
+                    playlistManager.replaceWithMix(playlistId)
                 }
             }
             MenuItem {

@@ -40,6 +40,10 @@ ApplicationWindow
         property bool auto_load_playlist: true
         property bool stay_logged_in: false
         property string defaultPlayAction: "replace"
+        // When a track is appended/queued while nothing is playing, should
+        // playback start automatically on the first appended item?
+        // Default off: "Add to Playlist" is a pure queueing action.
+        property bool autoPlayOnAppendWhenIdle: false
         property var homescreenSectionOrder: ["recent", "foryou", "topartist", "topalbum",
                                               "toptrack", "personalPlaylist", "dailyMixes",
                                               "radioMixes", "favArtists"]
@@ -406,6 +410,12 @@ ApplicationWindow
         id: defaultPlayAction
         key : "/defaultPlayAction"
         defaultValue: "replace"
+    }
+
+    ConfigurationValue {
+        id: autoPlayOnAppendWhenIdleConfig
+        key : "/autoPlayOnAppendWhenIdle"
+        defaultValue: false
     }
 
     ConfigurationValue {
@@ -1063,6 +1073,7 @@ ApplicationWindow
             autoLoadPlaylist.value = applicationWindow.settings.auto_load_playlist
             stayLoggedInConfig.value = applicationWindow.settings.stay_logged_in
             defaultPlayAction.value = applicationWindow.settings.defaultPlayAction
+            autoPlayOnAppendWhenIdleConfig.value = applicationWindow.settings.autoPlayOnAppendWhenIdle
             try {
                 homescreenSectionOrderConfig.value = JSON.stringify(applicationWindow.settings.homescreenSectionOrder || [])
             } catch (e) {
@@ -1133,6 +1144,7 @@ ApplicationWindow
         applicationWindow.settings.auto_load_playlist = autoLoadPlaylist.value
         applicationWindow.settings.stay_logged_in = stayLoggedInConfig.value
         applicationWindow.settings.defaultPlayAction = defaultPlayAction.value
+        applicationWindow.settings.autoPlayOnAppendWhenIdle = autoPlayOnAppendWhenIdleConfig.value
 
         try {
             var order = JSON.parse(homescreenSectionOrderConfig.value)

@@ -238,8 +238,7 @@ Page {
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
                     if (albumData) {
-                        playlistManager.clearPlayList()
-                        playlistManager.playAlbum(albumId, true) // start playing immediately
+                        playlistManager.replaceWithAlbum(albumId)
                     }
                 }
             }
@@ -251,7 +250,7 @@ Page {
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
                     if (albumData) {
-                        playlistManager.playAlbum(albumId,false)
+                        playlistManager.appendAlbum(albumId)
                     }
                 }
             }

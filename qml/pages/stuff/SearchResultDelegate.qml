@@ -6,6 +6,10 @@ ListItem {
     id: delegate
     property var itemData
 
+    // type 1=track, 2=album, 3=artist, 4=playlist - all support the four
+    // play actions. Type 5 (video) and unknowns do not.
+    readonly property bool isPlayableType: itemData.type >= 1 && itemData.type <= 4
+
     contentHeight: contentRow.height + 2 * Theme.paddingMedium
 
     visible: {
@@ -88,42 +92,44 @@ ListItem {
 
     menu: ContextMenu {
         MenuItem {
-            text: qsTr("Play")
-            onClicked: handlePlay(itemData)
+            text: qsTr("Replace Playlist & Play")
+            visible: isPlayableType
+            onClicked: dispatchAction("replace", itemData)
+        }
+        MenuItem {
+            text: qsTr("Play Now")
+            visible: isPlayableType
+            onClicked: dispatchAction("playnow", itemData)
+        }
+        MenuItem {
+            text: qsTr("Play Next")
+            visible: isPlayableType
+            onClicked: dispatchAction("playnext", itemData)
+        }
+        MenuItem {
+            text: qsTr("Add to Playlist")
+            visible: isPlayableType
+            onClicked: dispatchAction("append", itemData)
         }
 
         MenuItem {
             text: qsTr("Play Album")
             visible: itemData.type === 1 // typeTrack
-            onClicked: playlistManager.playAlbumFromTrack(itemData.trackid)
-        }
-
-        MenuItem {
-            text: qsTr("Queue")
-            onClicked: playlistManager.appendTrack(itemData.trackid)
+            onClicked: playlistManager.replaceWithAlbumFromTrack(itemData.trackid)
         }
 
         MenuItem {
             text: qsTr("Album Info")
-            onClicked:
-            {
-                pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"),
-                {
-                    "albumId" :itemData.albumid
-                })
-            }
+            visible: itemData.type === 1 || itemData.type === 2
+            onClicked: pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"),
+                                      { "albumId": itemData.albumid })
         }
 
         MenuItem {
             text: qsTr("Artist Info")
-            onClicked:
-            {
-                console.log(itemData.trackid)
-                pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"),
-                {
-                    "artistId" :itemData.artistid
-                })
-            }
+            visible: itemData.type === 1 || itemData.type === 3
+            onClicked: pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"),
+                                      { "artistId": itemData.artistid })
         }
 
         MenuItem {
@@ -131,7 +137,7 @@ ListItem {
             onClicked: delegate.remorseAction(qsTr("Deleting"), function() {
                 listModel.remove(model.index)
             })
-        }   
+        }
     }
 
     onClicked: handleItemClick(itemData)
@@ -168,21 +174,18 @@ ListItem {
             : Format.formatDuration(duration, Formatter.DurationShort)
     }
 
-    function handlePlay(item) {
-        switch(item.type) {
-            case 1: // Track
-                playlistManager.playTrack(item.trackid)
-                break
-            case 2: // Album
-                playlistManager.playAlbum(item.albumid)
-                break
-            case 4: // Playlist
-                // why tidalApi and not playlist-manager ?
-                //tidalApi.playPlaylist(item.playlistid)
-                console.log(item.playlistid, item.name)
-                playlistManager.playPlaylist(item.playlistid)
-                break
+    // Map a search-result item to the (contentType, contentInfo) shape that
+    // advancedPlayManager.executeAction expects.
+    function dispatchAction(action, item) {
+        var contentType, contentInfo
+        switch (item.type) {
+        case 1: contentType = "track";    contentInfo = {id: item.trackid}; break
+        case 2: contentType = "album";    contentInfo = {id: item.albumid}; break
+        case 3: contentType = "artist";   contentInfo = {id: item.artistid}; break
+        case 4: contentType = "playlist"; contentInfo = {id: item.playlistid}; break
+        default: return
         }
+        advancedPlayManager.executeAction(contentType, contentInfo, action)
     }
 
     function handleItemClick(item) {

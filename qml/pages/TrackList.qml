@@ -329,8 +329,7 @@ Item {
                 text: qsTr("Play All")
                 onClicked: {
                     if (type === "playlist" ) {
-                        playlistManager.clearPlayList()
-                        tidalApi.playPlaylist(playlistId)
+                        playlistManager.replaceWithPlaylist(playlistId)
                     }
                 }
                 visible: type === "playlist"
@@ -356,7 +355,11 @@ Item {
             leftItem :
                 Image {
                 id: coverImage
-                width: listEntry.highlighted ? Theme.itemSizeExtraLarge : Theme.itemSizeMedium
+                // Cover grows for the currently *selected* (i.e. playing) track,
+                // not for the press-highlight that ListItem applies during a
+                // long-press / context menu open. Binding to `listEntry.highlighted`
+                // caused a visible pump every time the user opened the menu.
+                width: isItemSelected(model.index) ? Theme.itemSizeExtraLarge : Theme.itemSizeMedium
                 height: width
                 fillMode: Image.PreserveAspectCrop
                 source: model.image || ""
@@ -365,9 +368,12 @@ Item {
                 Behavior on width { NumberAnimation { duration: 150 } }
                 }
 
-            rightItem: 
+            rightItem:
                    Label {
-                    visible: listEntry.highlighted
+                    // Same fix as the cover image: only the selected (playing)
+                    // track shows the ▶ marker - long-press must not flash it
+                    // on every other delegate.
+                    visible: isItemSelected(model.index)
                     text: "▶"
                     color: selectedTextColor
                     font.pixelSize: root.selectedFontSize
@@ -542,22 +548,35 @@ Item {
             }
 
             menu: ContextMenu {
+                // For tracks already in the active queue ("current"), the
+                // only meaningful play-actions are "jump to" and "remove".
+                // For tracks coming from an album/playlist/mix list we offer
+                // the full four-verb set so the queue UX matches the rest of
+                // the app.
+                MenuItem {
+                    text: qsTr("Replace Playlist & Play")
+                    visible: type !== "current"
+                    onClicked: playlistManager.replaceWithTrack(model.trackid)
+                }
                 MenuItem {
                     text: qsTr("Play Now")
                     onClicked: {
                         if (type === "current") {
-                            playlistManager.playPosition(Math.floor(model.index))  // Stelle sicher, dass es ein Integer ist
+                            playlistManager.playPosition(Math.floor(model.index))
                         } else {
-                            playlistManager.playTrack(model.trackid)
+                            playlistManager.playNowTrack(model.trackid)
                         }
                     }
                 }
                 MenuItem {
-                    text: qsTr("Add to Queue")
-                    onClicked: {
-                        playlistManager.appendTrack(model.trackid)
-                    }
+                    text: qsTr("Play Next")
                     visible: type !== "current"
+                    onClicked: playlistManager.playNextTrack(model.trackid)
+                }
+                MenuItem {
+                    text: qsTr("Add to Playlist")
+                    visible: type !== "current"
+                    onClicked: playlistManager.appendTrack(model.trackid)
                 }
                 MenuItem {
                     text: qsTr("Remove from Queue")

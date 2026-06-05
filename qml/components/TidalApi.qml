@@ -534,20 +534,8 @@ Item {
                 tidalApi.albumSearchFinished()
             })
 
-            setHandler('fillStarted', function()
-            {
-                playlistManager.nextTrack();
-            });
-
-            // adding tracks to playlist / album finished
-            setHandler('fillFinished', function(autoPlay)
-            {
-                var auto=false
-                if (autoPlay !== undefined) auto = autoPlay
-                playlistManager.generateList()
-                if(auto)
-                    playlistManager.nextTrack();
-            });
+            // Legacy fillStarted/fillFinished/addTracktoPL handlers removed -
+            // collection loaders now use the unified 'playlist_load' batch signal.
 
             // Info Handler
             setHandler('trackInfo', function(id, title, album, artist, image, duration) {
@@ -576,11 +564,6 @@ Item {
                 tidalApi.currentTrackInfo(title, track_num, album, artist, duration, album_image, artist_image)
             })
 
-            setHandler('addTracktoPL', function(id)
-            {
-                console.log("appended to PL", id)
-                playlistManager.appendTrack(id)
-            });
              // URL Handler
             setHandler('playUrl', function(url) {
                 mediaPlayer.source = url
@@ -670,22 +653,11 @@ Item {
                 trackPlayTimeoutTimer.stop()
             })
 
-            setHandler('playlist_replace', function(playlist) {
-                playlistManager.clearPlayList()
-                searchResults(playlist)
-            })
-            
-            setHandler('mix_replace', function(mix_data) {
-                console.log("Mix replace received, clearing playlist and adding", mix_data.tracks.length, "tracks")
-                playlistManager.clearPlayList()
-                // Add all tracks to playlist
-                var trackIds = []
-                for (var i = 0; i < mix_data.tracks.length; i++) {
-                    trackIds.push(mix_data.tracks[i].trackid)
-                }
-                playlistManager.appendTracksBatch(trackIds)
-                
-                // Auto-start if needed - handled by play_track signal separately
+            // Unified batch loader - sent atomically by Python after all
+            // cacheTrack calls. The mode-to-operation dispatch lives in
+            // PlaylistManager so this layer only carries the wire format.
+            setHandler('playlist_load', function(payload) {
+                playlistManager.applyLoad(payload)
             })
 
             // Response Loading started
@@ -1272,23 +1244,25 @@ Item {
         pythonTidal.call("tidal.Tidaler.getAlbumInfo", [id])
     }
 
-    function playAlbumTracks(id, startPlay) {
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        pythonTidal.call("tidal.Tidaler.playAlbumTracks", [id,shouldPlay])
-    }
+    // Unified collection loaders - mode ∈ {"replace","append","play_now","play_next","queue"}.
+    // Map each logical source to its Python loader; the loader emits a
+    // single playlist_load batch which PlaylistManager.applyLoad() consumes.
+    readonly property var _collectionLoaders: ({
+        "album":            "tidal.Tidaler.playAlbumTracks",
+        "album_from_track": "tidal.Tidaler.playAlbumfromTrack",
+        "playlist":         "tidal.Tidaler.playPlaylist",
+        "mix":              "tidal.Tidaler.playMix",
+        "artist_top":       "tidal.Tidaler.playArtistTracks",
+        "artist_radio":     "tidal.Tidaler.playArtistRadio",
+    })
 
-    function playAlbumFromTrack(id) {
-        pythonTidal.call("tidal.Tidaler.playAlbumfromTrack", [id])
-    }
-
-    function playArtistTracks(id, startPlay) {
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        pythonTidal.call("tidal.Tidaler.playArtistTracks", [id, startPlay])
-    }
-
-    function playArtistRadio(id, startPlay) {
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        pythonTidal.call("tidal.Tidaler.playArtistRadio", [id, startPlay])
+    function loadCollection(source, id, mode) {
+        var pyMethod = _collectionLoaders[source]
+        if (!pyMethod) {
+            console.log("TidalApi.loadCollection: unknown source", source)
+            return
+        }
+        pythonTidal.call(pyMethod, [id, mode || "replace"])
     }
 
     // Artist Funktionen
@@ -1337,19 +1311,8 @@ Item {
         pythonTidal.call('tidal.Tidaler.getPlaylistTracks', [id])
     }
 
-    function playPlaylist(id, startPlay) {
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        console.log("playPlaylist", id, shouldPlay)
-        pythonTidal.call("tidal.Tidaler.playPlaylist", [id, shouldPlay])
-    }
-
     function getMixTracks(id) {
         pythonTidal.call('tidal.Tidaler.getMixTracks', [id])
-    }
-    function playMix(id, startPlay) {
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        console.log("playMix", id, shouldPlay)
-        pythonTidal.call("tidal.Tidaler.playMix", [id, shouldPlay])
     }
 
     function getFavorites() {

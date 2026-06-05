@@ -268,27 +268,27 @@ SilicaListView {
                         opacity: 1
                         backgroundColor: Theme.rgba(Theme.secondaryHighlightColor, 1.0)
                         
-                        // Advanced Play Menu Items
+                        // Advanced Play Menu Items - four-verb UX
                         MenuItem {
                             text: qsTr("Replace Playlist & Play")
                             onClicked: executeAdvancedPlay("replace")
                         }
-                        
+
                         MenuItem {
-                            text: qsTr("Add to Playlist & Play") 
-                            onClicked: executeAdvancedPlay("append")
-                        }
-                        
-                        MenuItem {
-                            text: qsTr("Play Now (Keep Playlist)")
+                            text: qsTr("Play Now")
                             onClicked: executeAdvancedPlay("playnow")
                         }
-                        
+
                         MenuItem {
-                            text: qsTr("Add to Queue")
-                            onClicked: executeAdvancedPlay("queue")
+                            text: qsTr("Play Next")
+                            onClicked: executeAdvancedPlay("playnext")
                         }
-                        
+
+                        MenuItem {
+                            text: qsTr("Add to Playlist")
+                            onClicked: executeAdvancedPlay("append")
+                        }
+
                         MenuItem {
                             text: "─────────────"
                             enabled: false
@@ -312,35 +312,14 @@ SilicaListView {
                         function executeAdvancedPlay(action) {
                             var contentInfo = getContentInfo()
                             var contentType = getContentType()
-                            
-                            if (!contentInfo) {
-                                console.error("Cannot execute play action - contentInfo is null")
+
+                            if (!contentInfo || !contentInfo.id) {
+                                console.error("Cannot execute play action - contentInfo missing or has no id")
                                 return
                             }
-                            
-                            if (!contentInfo.id || contentInfo.id === '') {
-                                console.error("Cannot execute play action - contentInfo.id is empty")
-                                return
-                            }
-                            
+
                             if (advancedPlayManager) {
-                                switch(contentType) {
-                                    case "track":
-                                        advancedPlayManager.executeTrackAction(contentInfo.id, action)
-                                        break
-                                    case "album":
-                                        advancedPlayManager.executeAlbumAction(contentInfo, action)
-                                        break
-                                    case "artist":
-                                        advancedPlayManager.executeArtistAction(contentInfo, action)
-                                        break
-                                    case "playlist":
-                                        advancedPlayManager.executePlaylistAction(contentInfo, action)
-                                        break
-                                    case "mix":
-                                        advancedPlayManager.executeMixAction(contentInfo, action)
-                                        break
-                                }
+                                advancedPlayManager.executeAction(contentType, contentInfo, action)
                             }
                         }
                         

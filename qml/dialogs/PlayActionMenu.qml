@@ -13,30 +13,22 @@ ContextMenu {
     // Menu items for different play actions
     MenuItem {
         text: advancedPlayManager.playActions["replace"].name
-        onClicked: {
-            executeAction("replace")
-        }
+        onClicked: executeAction("replace")
     }
-    
-    MenuItem {
-        text: advancedPlayManager.playActions["append"].name
-        onClicked: {
-            executeAction("append")
-        }
-    }
-    
+
     MenuItem {
         text: advancedPlayManager.playActions["playnow"].name
-        onClicked: {
-            executeAction("playnow")
-        }
+        onClicked: executeAction("playnow")
     }
-    
+
     MenuItem {
-        text: advancedPlayManager.playActions["queue"].name
-        onClicked: {
-            executeAction("queue")
-        }
+        text: advancedPlayManager.playActions["playnext"].name
+        onClicked: executeAction("playnext")
+    }
+
+    MenuItem {
+        text: advancedPlayManager.playActions["append"].name
+        onClicked: executeAction("append")
     }
     
     // Separator

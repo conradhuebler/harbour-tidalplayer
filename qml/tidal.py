@@ -454,6 +454,28 @@ class Tidal:
             return False
         return True
 
+    def _send_playlist_load(self, source, source_id, tracks, mode, start_track_id=None):
+        """Unified batch-signal for all collection loaders.
+
+        mode ∈ {"replace", "append", "play_now", "queue"}
+        Sends one cacheTrack per track first, then a single playlist_load
+        with the full track-id list. QML decides how to apply the mode.
+        """
+        track_ids = []
+        for track_info in tracks:
+            if not track_info:
+                continue
+            self.send_object("cacheTrack", track_info)
+            track_ids.append(track_info['trackid'])
+
+        self.send_object("playlist_load", {
+            "source": source,
+            "source_id": str(source_id) if source_id is not None else "",
+            "mode": mode,
+            "track_ids": track_ids,
+            "start_track_id": str(start_track_id) if start_track_id is not None else "",
+        })
+
     def handle_playlist(self, playlist):
         """Handler für Playlist-Informationen"""
         try:
@@ -687,59 +709,26 @@ class Tidal:
         finally:
             pyotherside.send('loadingFinished')
 
-    def playMix(self, id, autoPlay=False):
+    def _load_collection(self, source, source_id, fetcher, mode, start_track_id=None):
+        """Generic collection loader.
+
+        fetcher() returns an iterable of tidalapi Track objects. We wrap the
+        common loadingStarted/loadingFinished + error reporting around it and
+        emit a single playlist_load batch with the resolved track infos.
+        """
+        pyotherside.send('loadingStarted')
         try:
-            pyotherside.send('loadingStarted')
-            mix = self.session.mix(id)
-            mix_info = self.handle_mix(mix)
-            
-            if mix_info:
-                tracks = []
-                for track in mix.items():
-                    if track_info := self.handle_track(track):
-                        pyotherside.send("cacheTrack", track_info)
-                        tracks.append(track_info)
-                
-                # Send mix replacement signal (like playlist)
-                self.send_object("mix_replace", {
-                    "mix": mix_info,
-                    "tracks": tracks
-                })
-                
-                # Start playback if requested
-                if autoPlay and tracks:
-                    self.send_object("play_track", tracks[0])
-                    
-            pyotherside.send('loadingFinished')
+            tracks = [self.handle_track(t) for t in fetcher()]
+            self._send_playlist_load(source, source_id, tracks, mode,
+                                     start_track_id=start_track_id)
         except Exception as e:
             self.send_object("error", {"message": str(e)})
+        finally:
             pyotherside.send('loadingFinished')
 
-#  not sure if this method is used at all
-    def playPlaylist(self, id):
-        try:
-            playlist = self.session.playlist(id)
-            playlist_info = self.handle_playlist(playlist)
-
-            if playlist_info:
-                tracks = []
-                for track in playlist.tracks():
-                    if track_info := self.handle_track(track):
-                        tracks.append(track_info)
-
-                self.send_object("playlist_replace", {
-                    "playlist": playlist_info,
-                    "tracks": tracks
-                })
-
-                # Ersten Track zur Wiedergabe markieren
-                if tracks:
-                    self.send_object("play_track", tracks[0])
-
-                return playlist_info
-        except Exception as e:
-            self.send_object("error", {"message": str(e)})
-            return None
+    def playMix(self, id, mode="replace"):
+        self._load_collection("mix", id,
+                              lambda: self.session.mix(id).items(), mode)
 
     def getAlbumTracks(self, id):
         album = self.session.album(int(id))
@@ -749,40 +738,28 @@ class Tidal:
                 pyotherside.send("cacheTrack", track_info)
                 pyotherside.send("albumTrackAdded",track_info)
 
-    def playAlbumTracks(self, id, autoPlay=False):
-        album = self.session.album(int(id))
-        for track in album.tracks():
-            track_info = self.handle_track(track)
-            if track_info:
-                pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTracktoPL", track_info['trackid'])
-        pyotherside.send("fillFinished", autoPlay)
+    def playAlbumTracks(self, id, mode="replace"):
+        self._load_collection("album", id,
+                              lambda: self.session.album(int(id)).tracks(), mode)
 
-    def playAlbumfromTrack(self, id):
-        for track in self.session.track(int(id)).album.tracks():
-            track_info = self.handle_track(track)
-            if track_info:
-                pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTracktoPL", track_info['trackid'])
-        pyotherside.send("fillFinished", False)
+    def playAlbumfromTrack(self, track_id, mode="replace"):
+        """Load the album that contains track_id and start playback from that track."""
+        track = self.session.track(int(track_id))
+        album_id = track.album.id if track.album else None
+        self._load_collection("album_from_track", album_id,
+                              lambda: track.album.tracks(), mode,
+                              start_track_id=track_id)
 
-    def playArtistTracks(self, id, autoPlay=False):
-        artist = self.session.artist(int(id))
-        for track in artist.get_top_tracks(self.top_tracks):
-            track_info = self.handle_track(track)
-            if track_info:
-                pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTracktoPL", track_info['trackid'])
-        pyotherside.send("fillFinished", autoPlay)
+    def playArtistTracks(self, id, mode="replace"):
+        self._load_collection(
+            "artist_top", id,
+            lambda: self.session.artist(int(id)).get_top_tracks(self.top_tracks),
+            mode)
 
-    def playArtistRadio(self, id, autoPlay=False):
-        artist = self.session.artist(int(id))
-        for track in artist.get_radio():
-            track_info = self.handle_track(track)
-            if track_info:
-                pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTracktoPL", track_info['trackid'])
-        pyotherside.send("fillFinished", autoPlay)
+    def playArtistRadio(self, id, mode="replace"):
+        self._load_collection(
+            "artist_radio", id,
+            lambda: self.session.artist(int(id)).get_radio(), mode)
 
     # this is kinda duplicate of getTopTracksofArtist
     #def getTopTracks(self, id, max):
@@ -818,28 +795,9 @@ class Tidal:
             self.send_object("addPersonalPlaylist", playlist_info)
         pyotherside.send('loadingFinished')
 
-    def playPlaylist(self, id, autoPlay=False):
-        pyotherside.send('loadingStarted')
-        playlist = self.session.playlist(id)
-        first_track = playlist.tracks()[0]
-        #pyotherside.send("insertTrack", first_track.id)
-        pyotherside.send("printConsole", f" insert Track: {first_track.id}")
-
-        for i, track in enumerate(playlist.tracks()):
-            track_info = self.handle_track(track)
-            if track_info:
-                pyotherside.send("cacheTrack", track_info)
-                pyotherside.send("addTracktoPL", track_info['trackid']) #maybe silent ?
-
-            #if i == 0:
-
-        # playlist = self.session.playlist(id)
-        #playlist_info = self.handle_playlist(playlist)
-        # #    pyotherside.send("fillStarted")
-
-        pyotherside.send("fillFinished", autoPlay)
-        pyotherside.send('loadingFinished')
-        #return playlist_info
+    def playPlaylist(self, id, mode="replace"):
+        self._load_collection("playlist", id,
+                              lambda: self.session.playlist(id).tracks(), mode)
 
     def getPlaylistTracks(self, playlist_id):
         pyotherside.send('loadingStarted')

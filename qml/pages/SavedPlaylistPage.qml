@@ -25,8 +25,7 @@ Page {
             MenuItem {
                 text: qsTr("Play All")
                 onClicked: {
-                     playlistManager.clearPlayList()
-                     tidalApi.playPlaylist(playlistId)
+                    playlistManager.replaceWithPlaylist(playlistId)
                 }
             }
             MenuItem {

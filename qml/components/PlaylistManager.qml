@@ -12,6 +12,12 @@ Item {
     property int current_track: -1
     property int tidalId: 0
     property bool skipTrack: false
+
+    // True while a collection (album/playlist/mix/...) is being fetched
+    // from the backend. MediaHandler uses this to avoid prematurely
+    // declaring the playlist finished when a track ends before the
+    // remaining items have been appended.
+    property bool isLoadingCollection: false
     
     // Playlist statistics - Claude Generated
     property int totalTracks: playlist.length
@@ -131,6 +137,20 @@ Item {
             _notifyPlaylistState()
             canNext = playlist.length > 0 && currentIndex < playlist.length - 1
         }
+    }
+
+    // Insert a list of tracks immediately after currentIndex (used by play_now).
+    // Existing tail tracks are preserved after the inserted block.
+    function insertTracksBatch(trackIds) {
+        console.log('PlaylistManager.insertTracksBatch', trackIds ? trackIds.length : 0, 'tracks')
+        if (!trackIds || trackIds.length === 0) return
+        var insertPos = Math.max(0, currentIndex + 1)
+        var head = playlist.slice(0, insertPos)
+        var tail = playlist.slice(insertPos)
+        playlist = head.concat(trackIds).concat(tail)
+        updatePlaylistStatistics()
+        _notifyPlaylistState()
+        canNext = playlist.length > 0 && currentIndex < playlist.length - 1
     }
 
     function insertTrack(trackId) {
@@ -363,47 +383,152 @@ Item {
         selectedTrackChanged(track)
     }
 
-    // High-level Playlist Operations (integration with TidalApi)
-    function playPlaylist(id, startPlay) {
+    // ----- Unified collection API ------------------------------------------
+    // Four verbs per item type:
+    //   replaceWith<X>(id)  - clear queue, load X, play from start
+    //   append<X>(id)       - load X to end of queue, no playback change
+    //   playNow<X>(id)      - insert X after current, play first inserted
+    //   queue<X>(id)        - alias of append<X>
+    //
+    // Internally all of them go through _loadCollection(), which sets
+    // isLoadingCollection and dispatches to the matching tidalApi loader.
+    // The TidalApi 'playlist_load' handler applies the mode atomically once
+    // all tracks have arrived, so nextTrack() can never race against an
+    // incomplete queue.
+
+    function _loadCollection(kind, id, mode) {
+        if (!isAuthenticated()) {
+            applicationWindow.showWarningNotification(
+                qsTr("Login Required"),
+                qsTr("Please log in to play music"))
+            return
+        }
         doFeedback()
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        console.log('playPlaylist', id, shouldPlay)
-        tidalApi.playPlaylist(id, shouldPlay)
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("PlaylistManager._loadCollection", kind, id, "mode=" + mode)
+        }
+        isLoadingCollection = true
+        tidalApi.loadCollection(kind, id, mode)
     }
 
-    function playMix(id, startPlay) {
-        doFeedback()
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        console.log('playMix', id, shouldPlay)
-        tidalApi.playMix(id, shouldPlay)
+    // Apply a batch payload received from the backend (via TidalApi's
+    // playlist_load handler). Owns the mode->operation dispatch so that the
+    // wire-format layer doesn't need to know about playlist internals.
+    // payload: { source, source_id, mode, track_ids, start_track_id }
+    function applyLoad(payload) {
+        var trackIds = payload.track_ids || []
+        if (applicationWindow.settings.debugLevel >= 1) {
+            console.log("PlaylistManager.applyLoad:", payload.source,
+                        "mode=" + payload.mode,
+                        "count=" + trackIds.length,
+                        "start=" + payload.start_track_id)
+        }
+        if (trackIds.length === 0) {
+            isLoadingCollection = false
+            return
+        }
+        var mode = payload.mode || "replace"
+        var startTrackId = payload.start_track_id || ""
+
+        if (mode === "replace") {
+            var startIdx = 0
+            if (startTrackId) {
+                for (var i = 0; i < trackIds.length; i++) {
+                    if (trackIds[i].toString() === startTrackId.toString()) {
+                        startIdx = i
+                        break
+                    }
+                }
+            }
+            _replaceWithTracks(trackIds, startIdx)
+        } else if (mode === "append" || mode === "queue") {
+            var firstAppendedIdx = playlist.length
+            var queueWasIdle = currentIndex < 0
+            appendTracksBatch(trackIds)
+            if (queueWasIdle && applicationWindow.settings.autoPlayOnAppendWhenIdle) {
+                playPosition(firstAppendedIdx)
+            }
+        } else if (mode === "play_now") {
+            var pnInsertIdx = currentIndex + 1
+            insertTracksBatch(trackIds)
+            playPosition(pnInsertIdx)
+        } else if (mode === "play_next") {
+            insertTracksBatch(trackIds)
+        }
+
+        isLoadingCollection = false
     }
 
-    function playAlbum(id, startPlay) {
-        doFeedback()
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        console.log('playalbum', id, startPlay)
-        tidalApi.playAlbumTracks(id, shouldPlay)
+    // Atomic replace: clear queue, swap in tracks, jump to startIdx. The
+    // storage-side clearList() listeners still fire so the auto-saved
+    // playlist is reset, but we emit only a single listChanged() for the
+    // final state instead of three (clear + append + jump) like a naive
+    // sequence of forceClearPlayList + appendTracksBatch + playPosition.
+    function _replaceWithTracks(trackIds, startIdx) {
+        currentIndex = -1
+        playlist = trackIds.slice()
+        clearList()
+        updatePlaylistStatistics()
+        _notifyPlaylistState()
+        playPosition(startIdx)
     }
 
-    function playAlbumFromTrack(id) {
+    // --- single track ---
+    function replaceWithTrack(trackId) {
+        if (!isAuthenticated() || !trackId) return
         doFeedback()
-        clearPlayList()
-        tidalApi.playAlbumFromTrack(id)
+        forceClearPlayList()
+        appendTrack(trackId)
+        playPosition(0)
+    }
+    // appendTrack() and playTrack() already exist above and stay.
+    function queueTrack(trackId) { appendTrack(trackId) }
+    function playNowTrack(trackId) { playTrack(trackId) }
+    // Play-next single track: insert after current without interrupting it.
+    function playNextTrack(trackId) {
+        if (!isAuthenticated() || !trackId) return
+        insertTracksBatch([trackId])
     }
 
-    function playArtistTracks(id, startPlay) {
-        doFeedback()
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        console.log('Playlistmanager::playartist', id, startPlay)
-        tidalApi.playArtistTracks(id, shouldPlay)
+    // --- album ---
+    function replaceWithAlbum(id)  { _loadCollection("album", id, "replace") }
+    function appendAlbum(id)       { _loadCollection("album", id, "append") }
+    function playNowAlbum(id)      { _loadCollection("album", id, "play_now") }
+    function playNextAlbum(id)     { _loadCollection("album", id, "play_next") }
+    function queueAlbum(id)        { _loadCollection("album", id, "queue") }
+
+    // --- album from track (play the album that contains trackId, starting at it) ---
+    function replaceWithAlbumFromTrack(trackId) {
+        _loadCollection("album_from_track", trackId, "replace")
     }
 
-    function playArtistRadio(id, startPlay) {
-        doFeedback()
-        var shouldPlay = startPlay === undefined ? true : startPlay
-        console.log('Playlistmanager::playartist radio', id, startPlay)
-        tidalApi.playArtistRadio(id, shouldPlay)
-    }
+    // --- playlist ---
+    function replaceWithPlaylist(id) { _loadCollection("playlist", id, "replace") }
+    function appendPlaylist(id)      { _loadCollection("playlist", id, "append") }
+    function playNowPlaylist(id)     { _loadCollection("playlist", id, "play_now") }
+    function playNextPlaylist(id)    { _loadCollection("playlist", id, "play_next") }
+    function queuePlaylist(id)       { _loadCollection("playlist", id, "queue") }
+
+    // --- mix ---
+    function replaceWithMix(id) { _loadCollection("mix", id, "replace") }
+    function appendMix(id)      { _loadCollection("mix", id, "append") }
+    function playNowMix(id)     { _loadCollection("mix", id, "play_now") }
+    function playNextMix(id)    { _loadCollection("mix", id, "play_next") }
+    function queueMix(id)       { _loadCollection("mix", id, "queue") }
+
+    // --- artist top tracks ---
+    function replaceWithArtistTopTracks(id) { _loadCollection("artist_top", id, "replace") }
+    function appendArtistTopTracks(id)      { _loadCollection("artist_top", id, "append") }
+    function playNowArtistTopTracks(id)     { _loadCollection("artist_top", id, "play_now") }
+    function playNextArtistTopTracks(id)    { _loadCollection("artist_top", id, "play_next") }
+    function queueArtistTopTracks(id)       { _loadCollection("artist_top", id, "queue") }
+
+    // --- artist radio ---
+    function replaceWithArtistRadio(id) { _loadCollection("artist_radio", id, "replace") }
+    function appendArtistRadio(id)      { _loadCollection("artist_radio", id, "append") }
+    function playNowArtistRadio(id)     { _loadCollection("artist_radio", id, "play_now") }
+    function playNextArtistRadio(id)    { _loadCollection("artist_radio", id, "play_next") }
+    function queueArtistRadio(id)       { _loadCollection("artist_radio", id, "queue") }
 
     // Playlist Storage Integration
     function saveCurrentPlaylist(name) {

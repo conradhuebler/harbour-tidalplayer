@@ -133,42 +133,54 @@ Page {
             ComboBox {
                 label: qsTr("Default Play Action")
                 description: qsTr("What happens when you tap on a track/album")
-                
+
                 menu: ContextMenu {
-                    MenuItem { 
+                    MenuItem {
                         text: qsTr("Replace Playlist & Play")
                         property string value: "replace"
                     }
-                    MenuItem { 
-                        text: qsTr("Add to Playlist & Play") 
-                        property string value: "append"
-                    }
-                    MenuItem { 
-                        text: qsTr("Play Now (Keep Playlist)")
+                    MenuItem {
+                        text: qsTr("Play Now (interrupt current)")
                         property string value: "playnow"
                     }
-                    MenuItem { 
-                        text: qsTr("Add to Queue")
-                        property string value: "queue"
+                    MenuItem {
+                        text: qsTr("Play Next (after current track)")
+                        property string value: "playnext"
+                    }
+                    MenuItem {
+                        text: qsTr("Add to Playlist")
+                        property string value: "append"
                     }
                 }
-                
+
                 currentIndex: {
                     var action = applicationWindow.settings.defaultPlayAction || "replace"
                     switch (action) {
-                        case "replace": return 0
-                        case "append": return 1
-                        case "playnow": return 2
-                        case "queue": return 3
+                        case "replace":  return 0
+                        case "playnow":  return 1
+                        case "playnext": return 2
+                        case "append":   return 3
+                        case "queue":    return 3
                         default: return 0
                     }
                 }
-                
+
                 onCurrentItemChanged: {
                     if (currentItem) {
                         applicationWindow.settings.defaultPlayAction = currentItem.value
                         defaultPlayAction.value = currentItem.value
                     }
+                }
+            }
+
+            TextSwitch {
+                id: autoPlayOnAppendWhenIdle
+                text: qsTr("Start playback when adding to an empty playlist")
+                description: qsTr("If nothing is playing, 'Add to Playlist' starts the first added track automatically")
+                checked: applicationWindow.settings.autoPlayOnAppendWhenIdle || false
+                onClicked: {
+                    applicationWindow.settings.autoPlayOnAppendWhenIdle = autoPlayOnAppendWhenIdle.checked
+                    autoPlayOnAppendWhenIdleConfig.value = autoPlayOnAppendWhenIdle.checked
                 }
             }
 

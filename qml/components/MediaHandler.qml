@@ -81,8 +81,11 @@ Item {
         }
         
         onTrackFinished: {
+            if (blockAutoNext) {
+                return
+            }
             // Try seamless transition first
-            if (!blockAutoNext && playlistManager.canNext) {
+            if (playlistManager.canNext) {
                 if (dualAudioManager.switchToPreloadedTrack()) {
                     console.log("MediaHandler: Seamless transition successful")
                     playlistManager.nextTrack()
@@ -91,10 +94,19 @@ Item {
                     console.log("MediaHandler: Auto-advancing to next track (normal)")
                     playlistManager.nextTrack()
                 }
-            } else if (!blockAutoNext) {
-                console.log("MediaHandler: Playlist finished")
-                playlistManager.playlistFinished()
+                return
             }
+            // No next track available right now. If a collection is still
+            // being loaded from the backend, defer the decision until the
+            // batch arrives - otherwise we would prematurely declare the
+            // playlist finished while more tracks are on the wire.
+            if (playlistManager.isLoadingCollection) {
+                console.log("MediaHandler: Track ended while collection still loading - deferring next-track decision")
+                deferredNextConnections.target = playlistManager
+                return
+            }
+            console.log("MediaHandler: Playlist finished")
+            playlistManager.playlistFinished()
         }
         
         onPlayerError: {
@@ -142,6 +154,48 @@ Item {
     property double player_volume: 1.0
     property double track_volume: 1.0
     property bool blockAutoNext: false
+
+    // Self-healing reset for blockAutoNext: several legacy code paths set
+    // the flag without a guaranteed reset (e.g. PlaylistManager.playTrack,
+    // playPosition, manual MPRIS next). If the flag ever stays stuck the
+    // user sees "auto-advance silently broken" until app restart. The timer
+    // below clears it after 200ms - long enough for the intended single
+    // operation to consume the guard, short enough that no track-end
+    // arrives while the flag is still live.
+    onBlockAutoNextChanged: {
+        if (blockAutoNext) blockAutoNextResetTimer.restart()
+        else blockAutoNextResetTimer.stop()
+    }
+    Timer {
+        id: blockAutoNextResetTimer
+        interval: 200
+        repeat: false
+        onTriggered: {
+            if (settings.debugLevel >= 2) {
+                console.log("MediaHandler: blockAutoNext auto-reset")
+            }
+            blockAutoNext = false
+        }
+    }
+
+    // When a track ends while a collection is still being fetched we
+    // attach to playlistManager.listChanged via this Connections object
+    // and retry the advance once new tracks arrive.
+    Connections {
+        id: deferredNextConnections
+        target: null
+        onListChanged: {
+            if (playlistManager.canNext) {
+                console.log("MediaHandler: Deferred advance - tracks arrived, advancing")
+                deferredNextConnections.target = null
+                playlistManager.nextTrack()
+            } else if (!playlistManager.isLoadingCollection) {
+                console.log("MediaHandler: Deferred advance - load done, no next track")
+                deferredNextConnections.target = null
+                playlistManager.playlistFinished()
+            }
+        }
+    }
     
     // Compatibility properties for existing code
     readonly property real position: dualAudioManager.activePlayer ? dualAudioManager.activePlayer.position : 0

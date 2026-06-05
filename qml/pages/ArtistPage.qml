@@ -271,8 +271,7 @@ Page {
                     icon.source: "image://theme/icon-m-play"
                     icon.sourceSize: Qt.size(Theme.iconSizeMedium, Theme.iconSizeMedium)
                     onClicked: {
-                        playlistManager.clearPlayList()
-                        playlistManager.playArtistTracks(artistId, true)  // true for autoPlay
+                        playlistManager.replaceWithArtistTopTracks(artistId)
                     }
                 }
 
@@ -302,8 +301,7 @@ Page {
                     icon.source: "image://theme/icon-m-play"
                     icon.sourceSize: Qt.size(Theme.iconSizeMedium, Theme.iconSizeMedium)
                     onClicked: {
-                        playlistManager.clearPlayList()
-                        playlistManager.playArtistRadio(artistId, true)  // true for autoPlay
+                        playlistManager.replaceWithArtistRadio(artistId)
                     }
                 }
 
