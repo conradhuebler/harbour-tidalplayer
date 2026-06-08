@@ -54,7 +54,8 @@ Item {
 
     // --- track ---
     function executeTrackAction(trackId, action) {
-        console.log("AdvancedPlayManager: track action", action, trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AdvancedPlayManager: track action", action, trackId)
         switch (action) {
         case "replace":  playlistManager.replaceWithTrack(trackId); break
         case "playnow":  playlistManager.playNowTrack(trackId); break
@@ -67,7 +68,8 @@ Item {
 
     // --- album ---
     function executeAlbumAction(albumInfo, action) {
-        console.log("AdvancedPlayManager: album action", action, albumInfo.id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AdvancedPlayManager: album action", action, albumInfo.id)
         switch (action) {
         case "replace":  playlistManager.replaceWithAlbum(albumInfo.id); break
         case "playnow":  playlistManager.playNowAlbum(albumInfo.id); break
@@ -80,7 +82,8 @@ Item {
 
     // --- playlist ---
     function executePlaylistAction(playlistInfo, action) {
-        console.log("AdvancedPlayManager: playlist action", action, playlistInfo.id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AdvancedPlayManager: playlist action", action, playlistInfo.id)
         switch (action) {
         case "replace":  playlistManager.replaceWithPlaylist(playlistInfo.id); break
         case "playnow":  playlistManager.playNowPlaylist(playlistInfo.id); break
@@ -93,7 +96,8 @@ Item {
 
     // --- artist top tracks ---
     function executeArtistAction(artistInfo, action) {
-        console.log("AdvancedPlayManager: artist action", action, artistInfo.id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AdvancedPlayManager: artist action", action, artistInfo.id)
         switch (action) {
         case "replace":  playlistManager.replaceWithArtistTopTracks(artistInfo.id); break
         case "playnow":  playlistManager.playNowArtistTopTracks(artistInfo.id); break
@@ -106,7 +110,8 @@ Item {
 
     // --- mix ---
     function executeMixAction(mixInfo, action) {
-        console.log("AdvancedPlayManager: mix action", action, mixInfo.id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AdvancedPlayManager: mix action", action, mixInfo.id)
         switch (action) {
         case "replace":  playlistManager.replaceWithMix(mixInfo.id); break
         case "playnow":  playlistManager.playNowMix(mixInfo.id); break
@@ -148,14 +153,16 @@ Item {
         case "artist":   executeArtistAction(contentInfo, action); break
         case "mix":      executeMixAction(contentInfo, action); break
         default:
-            console.log("AdvancedPlayManager.executeAction: unknown type", contentType)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("AdvancedPlayManager.executeAction: unknown type", contentType)
         }
     }
 
     // Quick action - uses default setting
     function quickPlay(contentInfo, contentType) {
         var defaultAction = applicationWindow.settings.defaultPlayAction || "replace"
-        console.log("AdvancedPlayManager: Quick play with default action", defaultAction)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AdvancedPlayManager: Quick play with default action", defaultAction)
         executeAction(contentType, contentInfo, defaultAction)
     }
 
@@ -164,6 +171,7 @@ Item {
     }
 
     Component.onCompleted: {
-        console.log("AdvancedPlayManager: Initialized with default action:", applicationWindow.settings.defaultPlayAction)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AdvancedPlayManager: Initialized with default action:", applicationWindow.settings.defaultPlayAction)
     }
 }

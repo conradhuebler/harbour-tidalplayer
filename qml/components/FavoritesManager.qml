@@ -40,7 +40,8 @@ Item {
         // Python-Funktionen
  
         function setArtistFavoriteInfo(id, status) {
-            console.log("setArtistFavoriteInfo", id, status)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("setArtistFavoriteInfo", id, status)
             if(initialised)  call('tidal.Tidaler.setArtistFavInfo', [id, status], {})
         }
 
@@ -61,9 +62,11 @@ Item {
 
     // public function to check if item is favorite
     function isFavorite(id) {
-        console.log("isFavorite check for:", id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("isFavorite check for:", id)
         if (id in favoritesCache) {
-            console.log("Cache hit for:", id, "Status:", favoritesCache[id])
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Cache hit for:", id, "Status:", favoritesCache[id])
             return favoritesCache[id]
         }
         // Not in cache, need to load from Tidal
@@ -74,22 +77,26 @@ Item {
     }
 
     function setArtistFavoriteInfo(id, status) {
-        console.log("setArtistFavoriteInfo", id, status)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("setArtistFavoriteInfo", id, status)
         favoritesPython.setArtistFavoriteInfo(id, status)
     }
 
     function setAlbumFavoriteInfo(id, status) {
-        console.log("setAlbumFavoriteInfo", id, status)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("setAlbumFavoriteInfo", id, status)
         favoritesPython.setAlbumFavoriteInfo(id, status)
     }
 
     function setTrackFavoriteInfo(id, status) {
-        console.log("setTrackFavoriteInfo", id, status)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("setTrackFavoriteInfo", id, status)
         favoritesPython.setTrackFavoriteInfo(id, status)
     }
 
     function setPlaylistFavoriteInfo(id, status) {
-        console.log("setPlaylistFavoriteInfo", id, status)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("setPlaylistFavoriteInfo", id, status)
         // this should happen only on success !!
         // favoritesCache[id] = status
         favoritesPython.setPlaylistFavoriteInfo(id, status)

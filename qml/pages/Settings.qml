@@ -237,8 +237,10 @@ Page {
                 checked: applicationWindow.settings.enableTrackPreloading || false
                 onClicked: {
                     applicationWindow.settings.enableTrackPreloading = enableTrackPreloading.checked
-                    console.log("Settings: Track preloading toggle clicked:", enableTrackPreloading.checked ? "enabled" : "disabled")
-                    console.log("Settings: applicationWindow.settings.enableTrackPreloading =", applicationWindow.settings.enableTrackPreloading)
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("Settings: Track preloading toggle clicked:", enableTrackPreloading.checked ? "enabled" : "disabled")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("Settings: applicationWindow.settings.enableTrackPreloading =", applicationWindow.settings.enableTrackPreloading)
                 }
             }
 
@@ -281,7 +283,8 @@ Page {
                 onCurrentItemChanged: {
                     if (currentItem) {
                         applicationWindow.settings.crossfadeMode = currentItem.value
-                        console.log("Settings: Crossfade mode changed to:", currentItem.value)
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("Settings: Crossfade mode changed to:", currentItem.value)
                     }
                 }
             }
@@ -299,7 +302,8 @@ Page {
                 
                 onValueChanged: {
                     applicationWindow.settings.crossfadeTimeMs = value
-                    console.log("Settings: Crossfade time changed to:", value + "ms")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("Settings: Crossfade time changed to:", value + "ms")
                 }
             }
 
@@ -541,7 +545,8 @@ Page {
                                     return qsTr("Player 1: ") + statusText + isActive + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
                                 }
                             } catch (e) {
-                                console.log("Settings: Error accessing Player1 status:", e)
+                                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                    console.log("Settings: Error accessing Player1 status:", e)
                             }
                             return qsTr("Player 1: Not Available")
                         }
@@ -567,7 +572,8 @@ Page {
                                     return qsTr("Player 2: ") + statusText + isActive + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
                                 }
                             } catch (e) {
-                                console.log("Settings: Error accessing Player2 status:", e)
+                                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                    console.log("Settings: Error accessing Player2 status:", e)
                             }
                             return qsTr("Player 2: Not Available")
                         }
@@ -593,7 +599,8 @@ Page {
                                     return qsTr("Active: Player ") + playerNum + " - " + statusText + (duration > 0 ? " (" + position + "s/" + duration + "s)" : "")
                                 }
                             } catch (e) {
-                                console.log("Settings: Error accessing Active Player status:", e)
+                                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                    console.log("Settings: Error accessing Active Player status:", e)
                             }
                             return qsTr("Active Player: Not Available")
                         }
@@ -647,7 +654,8 @@ Page {
                     if (currentItem) {
                         var newLevel = currentItem.value
                         var levelNames = ["None", "Normal", "Informative", "Verbose/Spawn"]
-                        console.log("SETTINGS: Debug level changed to", newLevel, "(" + levelNames[newLevel] + ")")
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("SETTINGS: Debug level changed to", newLevel, "(" + levelNames[newLevel] + ")")
                         applicationWindow.settings.debugLevel = newLevel
                         debugLevelConfig.value = newLevel
                     }
@@ -720,7 +728,8 @@ Page {
                 checked: applicationWindow.settings.stay_logged_in
                 onClicked: {
                     applicationWindow.settings.stay_logged_in = stayLoggedInEnd.checked
-                    console.log("Stay logged in setting:", stayLoggedInEnd.checked)
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("Stay logged in setting:", stayLoggedInEnd.checked)
                 }
             }
 
@@ -851,7 +860,8 @@ Page {
                             authManager.forceLogout()
                         })
                     } else {
-                        console.log("Warning: ConfirmationDialog or accepted signal not available")
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("Warning: ConfirmationDialog or accepted signal not available")
                         // Fallback - logout directly if dialog fails
                         if (applicationWindow.settings.debugLevel >= 1) {
                             console.log("SETTINGS: Dialog failed, performing direct logout")

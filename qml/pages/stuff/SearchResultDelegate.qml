@@ -213,7 +213,8 @@ ListItem {
                 break
             case 4: // Playlist
                 // all but name is undefined
-                console.log("Playlist", item.playlistid, item.mixid, item.albumid, item.name)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Playlist", item.playlistid, item.mixid, item.albumid, item.name)
                 pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"),
                 {
                     "playlistId" :item.playlistid,

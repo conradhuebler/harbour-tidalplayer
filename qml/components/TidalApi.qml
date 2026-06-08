@@ -113,7 +113,8 @@ Item {
     
     // Critical Error Dialog - persistent and blocks other popups
     function showCriticalError(title, message) {
-        console.log("CRITICAL ERROR:", title, "-", message)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("CRITICAL ERROR:", title, "-", message)
         
         // Use the new persistent dialog function
         applicationWindow.showCriticalErrorDialog(title, message)
@@ -146,7 +147,8 @@ Item {
         onTriggered: {
             if (requestQueue.length > 0) {
                 var request = requestQueue.shift()
-                console.log("Processing async request:", request.method)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Processing async request:", request.method)
                 pythonTidal.call(request.method, request.params)
 
                 // Continue processing if more requests
@@ -185,7 +187,8 @@ Item {
 
         onError: {
             // Handle PyOtherSide errors and show them in UI
-            console.log("PyOtherSide Error:", traceback)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("PyOtherSide Error:", traceback)
             
             // Convert traceback to string for parsing
             var errorStr = String(traceback || "")
@@ -455,7 +458,8 @@ Item {
 
             // PERFORMANCE: Batch signal handlers - emit batch signals directly
             setHandler('foundTracksBatch', function(tracks_array) {
-                console.log("Received tracks batch:", tracks_array.length, "tracks")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Received tracks batch:", tracks_array.length, "tracks")
                 tidalApi.foundTracksBatch(tracks_array)
 
                 // ROOT CAUSE FIX: Complete the search request when first results arrive
@@ -463,29 +467,34 @@ Item {
             })
 
             setHandler('foundArtistsBatch', function(artists_array) {
-                console.log("Received artists batch:", artists_array.length, "artists")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Received artists batch:", artists_array.length, "artists")
                 tidalApi.foundArtistsBatch(artists_array)
             })
 
             setHandler('foundAlbumsBatch', function(albums_array) {
-                console.log("Received albums batch:", albums_array.length, "albums")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Received albums batch:", albums_array.length, "albums")
                 tidalApi.foundAlbumsBatch(albums_array)
             })
 
             setHandler('foundPlaylistsBatch', function(playlists_array) {
-                console.log("Received playlists batch:", playlists_array.length, "playlists")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Received playlists batch:", playlists_array.length, "playlists")
                 tidalApi.foundPlaylistsBatch(playlists_array)
             })
 
             setHandler('foundVideosBatch', function(videos_array) {
-                console.log("Received videos batch:", videos_array.length, "videos")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Received videos batch:", videos_array.length, "videos")
                 for (var i = 0; i < videos_array.length; i++) {
                     tidalApi.foundVideo(videos_array[i])
                 }
             })
 
             setHandler('foundMixesBatch', function(mixes_array) {
-                console.log("Received mixes batch:", mixes_array.length, "mixes")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Received mixes batch:", mixes_array.length, "mixes")
                 for (var i = 0; i < mixes_array.length; i++) {
                     tidalApi.foundMix(mixes_array[i])
                 }
@@ -573,12 +582,14 @@ Item {
             /* new handler will be placed here */
 
             setHandler('search_results', function(search_result) {
-                console.log(search_result)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log(search_result)
                 searchResults(search_result)
             })
 
             setHandler('playback_info', function(info) {
-                console.log("TidalApi: playback_info received - preload:", root.pendingPreloadId, "crossfade:", root.pendingCrossfadeId)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("TidalApi: playback_info received - preload:", root.pendingPreloadId, "crossfade:", root.pendingCrossfadeId)
                 if (applicationWindow.settings.debugLevel >= 1) {
                         if (info.url) {
                         var urlStr = String(info.url)
@@ -618,7 +629,8 @@ Item {
                 
                 // Check if this is a preload request
                 if (root.pendingPreloadId && trackId && trackId.toString() === root.pendingPreloadId.toString()) {
-                    console.log("TidalApi: Processing preload response for track", trackId)
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("TidalApi: Processing preload response for track", trackId)
 
                     // Emit preload signal instead of normal playback
                     preloadUrlReady(trackId.toString(), info.url)
@@ -628,7 +640,8 @@ Item {
                 
                 // Check if this is a crossfade request
                 if (root.pendingCrossfadeId && trackId && trackId.toString() === root.pendingCrossfadeId.toString()) {
-                    console.log("TidalApi: Processing crossfade response for track", trackId)
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("TidalApi: Processing crossfade response for track", trackId)
 
                     // Emit crossfade signal instead of normal playback
                     crossfadeUrlReady(trackId.toString(), info.url)
@@ -671,7 +684,8 @@ Item {
             })
 
             setHandler('apiError', function(error) {
-                console.log("api-error: " + error)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("api-error: " + error)
             })
 
             setHandler('playlistTrackAdded', function(track_info) {
@@ -774,11 +788,14 @@ Item {
 
         function getTrackInfo(id)
         {
-            console.log("getTrackInfo ", id)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("getTrackInfo ", id)
             var track = (call_sync("tidal.Tidaler.getTrackInfo", [id], function(track) {
-                console.log(track)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log(track)
             }));
-            console.log(track)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log(track)
             return track
         }
 
@@ -827,7 +844,8 @@ Item {
 
     // Login Funktionen
     function getOAuth() {
-        console.log("Request new login")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Request new login")
         pythonTidal.call('tidal.Tidaler.initialize', [quality])
         pythonTidal.call('tidal.Tidaler.request_oauth', [])
     }
@@ -886,7 +904,8 @@ Item {
         // PERFORMANCE: Check if result is cached
         var cachedResult = isRequestCached(signature)
         if (cachedResult) {
-            console.log("DEDUP: Using cached result for:", signature)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DEDUP: Using cached result for:", signature)
             if (callback) {
                 // Use timer to call callback asynchronously (Qt.callLater not available in older Qt versions)
                 var callbackTimer = Qt.createQmlObject(
@@ -904,7 +923,8 @@ Item {
         
         // PERFORMANCE: Check if request is already active
         if (activeRequests[signature]) {
-            console.log("DEDUP: Request already active, attaching callback:", signature)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DEDUP: Request already active, attaching callback:", signature)
             if (callback) {
                 activeRequests[signature].callbacks.push(callback)
             }
@@ -993,18 +1013,21 @@ Item {
 
     // Search Funktionen - Now Async-First
     function genericSearch(text) {
-        console.log("ASYNC: generic search", text)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("ASYNC: generic search", text)
 
         // Clear previous results immediately for instant feedback
         searchResults({tracks: [], albums: [], artists: [], playlists: []})
 
         return queueRequest("tidal.Tidaler.genericSearch", [text], function(result) {
-            console.log("Search completed for:", text)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Search completed for:", text)
         })
     }
 
     function reInit() {
-        console.log("Re-initializing Tidal session")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Re-initializing Tidal session")
         // re-init Tiadal Api.qml
         // Clear queued/pending/active requests and caches to avoid stale search state
         try {
@@ -1098,7 +1121,8 @@ Item {
         interval: 5000  // 5 seconds
         repeat: false
         onTriggered: {
-            console.log("TidalApi: Resetting trackPlayInProgress flag (timeout)")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("TidalApi: Resetting trackPlayInProgress flag (timeout)")
             trackPlayInProgress = false
         }
     }
@@ -1182,27 +1206,33 @@ Item {
 
     // Claude Generated: Track URL fetching for preloading
     function getTrackUrlForPreload(id) {
-        console.log("TidalApi.getTrackUrlForPreload called with:", id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("TidalApi.getTrackUrlForPreload called with:", id)
         
         // Set a flag to indicate this is a preload request
         root.pendingPreloadId = id.toString()
-        console.log("TidalApi: Set pendingPreloadId to:", root.pendingPreloadId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("TidalApi: Set pendingPreloadId to:", root.pendingPreloadId)
         
         pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(result) {
-            console.log("TidalApi: Preload URL received for track", id)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("TidalApi: Preload URL received for track", id)
         })
     }
     
     // Claude Generated: Track URL fetching for crossfade
     function getTrackUrlForCrossfade(id) {
-        console.log("TidalApi.getTrackUrlForCrossfade called with:", id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("TidalApi.getTrackUrlForCrossfade called with:", id)
         
         // Set a flag to indicate this is a crossfade request
         root.pendingCrossfadeId = id.toString()
-        console.log("TidalApi: Set pendingCrossfadeId to:", root.pendingCrossfadeId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("TidalApi: Set pendingCrossfadeId to:", root.pendingCrossfadeId)
         
         pythonTidal.call("tidal.Tidaler.getTrackUrl", [id], function(result) {
-            console.log("TidalApi: Crossfade URL received for track", id)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("TidalApi: Crossfade URL received for track", id)
         })
     }
     
@@ -1215,7 +1245,8 @@ Item {
             id = id.split('/').pop()
             id = id.replace(/[^0-9]/g, '')
         }
-        console.log("JavaScript id after:", id, typeof id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("JavaScript id after:", id, typeof id)
 
         var returnValue = null
 
@@ -1230,13 +1261,15 @@ Item {
                 returnValue = result
             }
         })
-        console.log(returnValue)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log(returnValue)
         return returnValue
     }
 
     // Album Funktionen - Back to simple approach
     function getAlbumTracks(id) {
-        console.log("Get album tracks", id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Get album tracks", id)
         pythonTidal.call("tidal.Tidaler.getAlbumTracks", [id])
     }
 
@@ -1259,7 +1292,8 @@ Item {
     function loadCollection(source, id, mode) {
         var pyMethod = _collectionLoaders[source]
         if (!pyMethod) {
-            console.log("TidalApi.loadCollection: unknown source", source)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("TidalApi.loadCollection: unknown source", source)
             return
         }
         pythonTidal.call(pyMethod, [id, mode || "replace"])

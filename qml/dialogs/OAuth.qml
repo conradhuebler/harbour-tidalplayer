@@ -60,7 +60,8 @@ Dialog {
     Connections {
         target: tidalApi
         onAuthUrl: {
-            console.log(url)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log(url)
             Clipboard.text = mail.value
             webView.url = "https://" + url
         }

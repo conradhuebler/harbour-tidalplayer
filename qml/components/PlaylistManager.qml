@@ -100,7 +100,8 @@ Item {
 
     // Core Playlist Methods (ersetzt Python-Logik)
     function appendTrack(trackId) {
-        console.log('PlaylistManager.appendTrack', trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('PlaylistManager.appendTrack', trackId)
         
         // Check authentication before allowing playlist modifications
         if (!isAuthenticated()) {
@@ -121,7 +122,8 @@ Item {
     }
 
     function appendTrackSilent(trackId) {
-        console.log('PlaylistManager.appendTrackSilent', trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('PlaylistManager.appendTrackSilent', trackId)
         if (trackId) {
             playlist.push(trackId)
             canNext = true
@@ -129,7 +131,8 @@ Item {
     }
 
     function appendTracksBatch(trackIds) {
-        console.log('PlaylistManager.appendTracksBatch', trackIds.length, 'tracks')
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('PlaylistManager.appendTracksBatch', trackIds.length, 'tracks')
         if (trackIds && trackIds.length > 0) {
             // Optimized: Add all tracks at once instead of one by one
             playlist = playlist.concat(trackIds)
@@ -142,7 +145,8 @@ Item {
     // Insert a list of tracks immediately after currentIndex (used by play_now).
     // Existing tail tracks are preserved after the inserted block.
     function insertTracksBatch(trackIds) {
-        console.log('PlaylistManager.insertTracksBatch', trackIds ? trackIds.length : 0, 'tracks')
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('PlaylistManager.insertTracksBatch', trackIds ? trackIds.length : 0, 'tracks')
         if (!trackIds || trackIds.length === 0) return
         var insertPos = Math.max(0, currentIndex + 1)
         var head = playlist.slice(0, insertPos)
@@ -154,7 +158,8 @@ Item {
     }
 
     function insertTrack(trackId) {
-        console.log('PlaylistManager.insertTrack', trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('PlaylistManager.insertTrack', trackId)
         if (trackId) {
             var insertPos = Math.max(0, currentIndex + 1)
             playlist.splice(insertPos, 0, trackId)
@@ -165,7 +170,8 @@ Item {
     }
 
     function removeTrack(trackId) {
-        console.log('PlaylistManager.removeTrack', trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('PlaylistManager.removeTrack', trackId)
         if (trackId) {
             var index = playlist.indexOf(trackId)
             if (index >= 0) {
@@ -185,11 +191,13 @@ Item {
     }
 
     function moveTrack(fromIndex, toIndex, silent) {
-        console.log('PlaylistManager.moveTrack', 'from:', fromIndex, 'to:', toIndex)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('PlaylistManager.moveTrack', 'from:', fromIndex, 'to:', toIndex)
         
         // Validate indices
         if (fromIndex < 0 || fromIndex >= playlist.length || toIndex < 0 || toIndex >= playlist.length) {
-            console.log('PlaylistManager.moveTrack: Invalid indices')
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log('PlaylistManager.moveTrack: Invalid indices')
             return false
         }
         
@@ -226,7 +234,8 @@ Item {
     }
 
     function playTrack(trackId) {
-        console.log('Playlistmanager::playtrack', trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('Playlistmanager::playtrack', trackId)
         
         // Check authentication before allowing track playback
         if (!isAuthenticated()) {
@@ -250,7 +259,8 @@ Item {
     }
 
     function nextTrack() {
-        console.log('Next track called', mediaController.playbackState)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('Next track called', mediaController.playbackState)
         if (currentIndex < playlist.length - 1) {
             currentIndex++
             _notifyCurrentTrack()
@@ -288,7 +298,8 @@ Item {
                 }
             }
         } catch (e) {
-            console.log('Invalid position value:', position)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log('Invalid position value:', position)
         }
     }
 
@@ -298,7 +309,8 @@ Item {
     }
 
     function clearPlayList() {
-        console.log('Clear list invoked')
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('Clear list invoked')
         currentIndex = -1
         playlist = []
         clearList()
@@ -310,7 +322,8 @@ Item {
     }
 
     function forceClearPlayList() {
-        console.log('Force Clear list invoked')
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('Force Clear list invoked')
         currentIndex = -1
         playlist = []
         clearList()
@@ -330,7 +343,8 @@ Item {
                 return playlist[index]
             }
         } catch (e) {
-            console.log('Invalid index:', index)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log('Invalid index:', index)
         }
         return 0
     }
@@ -340,7 +354,8 @@ Item {
     }
 
     function generateList() {
-        console.log('Generate current playlist view, size:', playlist.length)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('Generate current playlist view, size:', playlist.length)
         // Just trigger list changed - TrackList will populate itself via updateTimer
         listChanged()
     }
@@ -351,7 +366,8 @@ Item {
     }
 
     function nextTrackClicked() {
-        console.log('Next track clicked')
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('Next track clicked')
         mediaController.blockAutoNext = true
         nextTrack()
         mediaController.blockAutoNext = false
@@ -372,10 +388,12 @@ Item {
     }
 
     function setTrack(index) {
-        console.log('Playlistmanager::settrack', index)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('Playlistmanager::settrack', index)
         var trackId = requestPlaylistItem(index)
         currentIndex = index
-        console.log('trackId:', trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('trackId:', trackId)
         
         playlistStorage.updatePosition(playlistStorage.playlistTitle, index)
         var track = cacheManager.getTrackInfo(trackId)
@@ -538,7 +556,8 @@ Item {
     }
 
     function loadSavedPlaylist(name) {
-        console.log('Load playlist', name)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('Load playlist', name)
         playlistStorage.loadPlaylist(name)
     }
 
@@ -624,7 +643,8 @@ Item {
     Connections {
         target: tidalApi
         onLoginSuccess: {
-            console.log('Login successful, attempting auto-load playlist')
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log('Login successful, attempting auto-load playlist')
             // Small delay to ensure all settings are loaded
             autoLoadTimer.start()
         }
@@ -641,7 +661,8 @@ Item {
 
     // Component lifecycle
     Component.onCompleted: {
-        console.log('Pure QML PlaylistManager loaded')
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log('Pure QML PlaylistManager loaded')
         // Don't auto-load immediately - wait for login success instead
         // updateTimer.start()
     }

@@ -43,18 +43,22 @@ Item {
         
         onPositionChanged: {
             mediaHandler.mediaPositionChanged()
-            
-            // Debug every 30 seconds to avoid spam
-            if (Math.floor(position) % 30 === 0 && Math.floor(position) > 0) {
-                var timeLeft = (duration - position) / 1000
-                console.log("MediaHandler: Position debug - timeLeft:", timeLeft + "s", "preloadInProgress:", preloadInProgress)
+
+            // Debug every 30 seconds to avoid spam (position is in ms)
+            if (settings.debugLevel >= 2) {
+                var posSec = Math.floor(position / 1000)
+                if (posSec > 0 && posSec % 30 === 0) {
+                    var timeLeft = (duration - position) / 1000
+                    console.log("MediaHandler: Position debug - timeLeft:", timeLeft + "s", "preloadInProgress:", preloadInProgress)
+                }
             }
-            
+
             // Trigger preload when 10 seconds left
             if (preloadingEnabled && !preloadInProgress && duration > 0) {
-                var timeLeft = (duration - position) / 1000
-                if (timeLeft <= 10 && timeLeft > 0) {
-                    console.log("MediaHandler: 10 seconds left, attempting preload")
+                var timeLeftPreload = (duration - position) / 1000
+                if (timeLeftPreload <= 10 && timeLeftPreload > 0) {
+                    if (settings.debugLevel >= 1)
+                        console.log("MediaHandler: 10 seconds left, attempting preload")
                     tryPreloadNextTrack()
                 }
             }
@@ -75,6 +79,10 @@ Item {
                 mprisPlayer.playbackStatus = Mpris.Playing
             } else if (state === Audio.PausedState) {
                 mprisPlayer.playbackStatus = Mpris.Paused
+                // Persist position immediately on pause so resume stays accurate
+                // despite the longer autosave interval - Claude Generated
+                if (applicationWindow.settings)
+                    applicationWindow.settings.saveCurrentState()
             } else if (state === Audio.StoppedState) {
                 mprisPlayer.playbackStatus = Mpris.Stopped
             }
@@ -87,11 +95,13 @@ Item {
             // Try seamless transition first
             if (playlistManager.canNext) {
                 if (dualAudioManager.switchToPreloadedTrack()) {
-                    console.log("MediaHandler: Seamless transition successful")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("MediaHandler: Seamless transition successful")
                     playlistManager.nextTrack()
                     updateTrackInfoFromPlaylist()
                 } else {
-                    console.log("MediaHandler: Auto-advancing to next track (normal)")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("MediaHandler: Auto-advancing to next track (normal)")
                     playlistManager.nextTrack()
                 }
                 return
@@ -101,11 +111,13 @@ Item {
             // batch arrives - otherwise we would prematurely declare the
             // playlist finished while more tracks are on the wire.
             if (playlistManager.isLoadingCollection) {
-                console.log("MediaHandler: Track ended while collection still loading - deferring next-track decision")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("MediaHandler: Track ended while collection still loading - deferring next-track decision")
                 deferredNextConnections.target = playlistManager
                 return
             }
-            console.log("MediaHandler: Playlist finished")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Playlist finished")
             playlistManager.playlistFinished()
         }
         
@@ -186,11 +198,13 @@ Item {
         target: null
         onListChanged: {
             if (playlistManager.canNext) {
-                console.log("MediaHandler: Deferred advance - tracks arrived, advancing")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("MediaHandler: Deferred advance - tracks arrived, advancing")
                 deferredNextConnections.target = null
                 playlistManager.nextTrack()
             } else if (!playlistManager.isLoadingCollection) {
-                console.log("MediaHandler: Deferred advance - load done, no next track")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("MediaHandler: Deferred advance - load done, no next track")
                 deferredNextConnections.target = null
                 playlistManager.playlistFinished()
             }
@@ -264,7 +278,8 @@ Item {
         }
 
         onNextRequested: {
-            console.log('MPRIS: Next requested')
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log('MPRIS: Next requested')
             blockAutoNext = true
             
             // Enhanced: Try immediate switch if preloading enabled
@@ -276,10 +291,12 @@ Item {
                         var nextTrackInfo = cacheManager.getTrackInfo(nextTrackId)
                         if (nextTrackInfo && nextTrackInfo.url) {
                             var bufferProgress = getInactivePlayerBufferProgress()
-                            console.log('MPRIS: Next - buffer progress:', bufferProgress)
+                            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                console.log('MPRIS: Next - buffer progress:', bufferProgress)
                             
                             if (switchToTrackImmediately(nextTrackInfo.url, nextTrackId)) {
-                                console.log('MPRIS: Next - seamless switch successful')
+                                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                    console.log('MPRIS: Next - seamless switch successful')
                                 playlistManager.nextTrack()
                                 blockAutoNext = false
                                 return
@@ -294,7 +311,8 @@ Item {
         }
 
         onPreviousRequested: {
-            console.log('MPRIS: Previous requested')
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log('MPRIS: Previous requested')
             
             // Enhanced: Try immediate switch if preloading enabled
             if (preloadingEnabled && playlistManager.canPrev) {
@@ -305,10 +323,12 @@ Item {
                         var prevTrackInfo = cacheManager.getTrackInfo(prevTrackId)
                         if (prevTrackInfo && prevTrackInfo.url) {
                             var bufferProgress = getInactivePlayerBufferProgress()
-                            console.log('MPRIS: Previous - buffer progress:', bufferProgress)
+                            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                console.log('MPRIS: Previous - buffer progress:', bufferProgress)
                             
                             if (switchToTrackImmediately(prevTrackInfo.url, prevTrackId)) {
-                                console.log('MPRIS: Previous - seamless switch successful')
+                                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                    console.log('MPRIS: Previous - seamless switch successful')
                                 playlistManager.previousTrack()
                                 return
                             }
@@ -422,15 +442,18 @@ Item {
     
     // Enhanced: Play track with immediate switching capability
     function playTrackWithImmediateSwitch(trackId, url) {
-        console.log("MediaHandler: Playing track with immediate switch:", trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("MediaHandler: Playing track with immediate switch:", trackId)
         
         // Try immediate switch first if preloading enabled
         if (preloadingEnabled && switchToTrackImmediately(url, trackId)) {
-            console.log("MediaHandler: Track played via immediate switch")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Track played via immediate switch")
             return true
         } else {
             // Fallback to normal URL playing
-            console.log("MediaHandler: Using normal playback for track")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Using normal playback for track")
             playUrl(url)
             return false
         }
@@ -454,31 +477,38 @@ Item {
      * Attempts to preload the next track in background
      */
     function tryPreloadNextTrack() {
-        console.log("MediaHandler: tryPreloadNextTrack called - enabled:", preloadingEnabled, "inProgress:", preloadInProgress)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("MediaHandler: tryPreloadNextTrack called - enabled:", preloadingEnabled, "inProgress:", preloadInProgress)
         
         if (!preloadingEnabled || preloadInProgress) {
-            console.log("MediaHandler: Preload skipped - not enabled or already in progress")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Preload skipped - not enabled or already in progress")
             return
         }
         
         // Get next track ID from playlist manager
         var nextIndex = playlistManager.currentIndex + 1
-        console.log("MediaHandler: Current index:", playlistManager.currentIndex, "Next index:", nextIndex, "Playlist size:", playlistManager.size)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("MediaHandler: Current index:", playlistManager.currentIndex, "Next index:", nextIndex, "Playlist size:", playlistManager.size)
         
         if (nextIndex >= playlistManager.size) {
-            console.log("MediaHandler: No next track to preload")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: No next track to preload")
             return
         }
         
         var nextTrackId = playlistManager.requestPlaylistItem(nextIndex)
-        console.log("MediaHandler: Next track ID:", nextTrackId, "Current track ID:", track_id)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("MediaHandler: Next track ID:", nextTrackId, "Current track ID:", track_id)
         
         if (!nextTrackId || nextTrackId === track_id) {
-            console.log("MediaHandler: Invalid or same track ID, skipping preload")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Invalid or same track ID, skipping preload")
             return
         }
         
-        console.log("MediaHandler: Starting preload for track", nextTrackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("MediaHandler: Starting preload for track", nextTrackId)
         preloadInProgress = true
         expectingPreloadResponse = true
         mediaHandler.nextTrackId = nextTrackId
@@ -495,14 +525,17 @@ Item {
             return
         }
         
-        console.log("MediaHandler: Starting preload in DualAudioManager:", url)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("MediaHandler: Starting preload in DualAudioManager:", url)
         nextTrackUrl = url
         
         // Use DualAudioManager's preload functionality
         if (dualAudioManager.startPreload(nextTrackId, url)) {
-            console.log("MediaHandler: Preload started successfully")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Preload started successfully")
         } else {
-            console.log("MediaHandler: Failed to start preload")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Failed to start preload")
             resetPreloadState()
         }
     }
@@ -534,11 +567,13 @@ Item {
         
         // Use DualAudioManager's crossfade functionality
         if (dualAudioManager.crossfadeToTrack(url, trackId)) {
-            console.log("MediaHandler: Crossfade started successfully")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Crossfade started successfully")
             // Update track info immediately
             updateTrackInfoFromPlaylist()
         } else {
-            console.log("MediaHandler: Failed to start crossfade, using normal playback")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Failed to start crossfade, using normal playback")
             playUrl(url)
         }
     }
@@ -569,7 +604,8 @@ Item {
             var playlistTrackId = playlistManager.requestPlaylistItem(playlistManager.currentIndex)
             if (playlistTrackId) {
                 trackId = playlistTrackId
-                console.log("MediaHandler: Using playlist track ID:", trackId)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("MediaHandler: Using playlist track ID:", trackId)
                 // Update DualAudioManager to stay in sync
                 if (dualAudioManager.currentTrackId !== trackId) {
                     dualAudioManager.currentTrackId = trackId
@@ -577,7 +613,8 @@ Item {
             }
         } else if (dualAudioManager.currentTrackId) {
             trackId = dualAudioManager.currentTrackId
-            console.log("MediaHandler: Using crossfade track ID:", trackId)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Using crossfade track ID:", trackId)
         }
         
         if (trackId) {
@@ -626,13 +663,16 @@ Item {
     Connections {
         target: tidalApi
         onPreloadUrlReady: {
-            console.log("MediaHandler: Preload URL ready - expecting:", expectingPreloadResponse, "trackId:", trackId, "nextTrackId:", nextTrackId)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Preload URL ready - expecting:", expectingPreloadResponse, "trackId:", trackId, "nextTrackId:", nextTrackId)
             if (expectingPreloadResponse && trackId.toString() === nextTrackId.toString()) {
-                console.log("MediaHandler: Received preload URL for track", trackId, "URL:", url)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("MediaHandler: Received preload URL for track", trackId, "URL:", url)
                 setPreloadUrl(url)
                 expectingPreloadResponse = false
             } else {
-                console.log("MediaHandler: Unexpected preload response for track", trackId, "(expected:", nextTrackId, ")")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("MediaHandler: Unexpected preload response for track", trackId, "(expected:", nextTrackId, ")")
             }
         }
         
@@ -661,16 +701,19 @@ Item {
 
     // Enhanced: Immediate track switching for Next/Previous/Selection - Claude Generated
     function switchToTrackImmediately(url, trackId) {
-        console.log("MediaHandler: Attempting immediate track switch to", trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("MediaHandler: Attempting immediate track switch to", trackId)
         
         // Use DualAudioManager's crossfade switching for seamless transitions
         if (dualAudioManager.crossfadeToTrack(url, trackId)) {
-            console.log("MediaHandler: Crossfade switch initiated")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Crossfade switch initiated")
             // Update track info after successful switch
             updateTrackInfoFromPlaylist()
             return true
         } else {
-            console.log("MediaHandler: Crossfade switch not possible, falling back to normal loading")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("MediaHandler: Crossfade switch not possible, falling back to normal loading")
             return false
         }
     }
@@ -681,7 +724,8 @@ Item {
     
     // Enhanced: Request track for crossfade - load URL in background while current plays
     function requestTrackForCrossfade(trackId) {
-        console.log("MediaHandler: Requesting track for crossfade:", trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("MediaHandler: Requesting track for crossfade:", trackId)
         
         // Set up crossfade request - track will switch when URL is ready
         crossfadeTrackId = trackId

@@ -44,7 +44,8 @@ Item {
 
     // Speichere Playlist mit Position
     function savePlaylist(name, trackIds, position) {
-    console.log("Save database", name, trackIds, position)
+    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+        console.log("Save database", name, trackIds, position)
         var db = getDatabase();
         var tracksJson = JSON.stringify(trackIds);
 
@@ -145,9 +146,11 @@ Item {
     // Beim Laden
     function loadCurrentPlaylistState() {
         // Check if auto-load is enabled
-        console.log("loadCurrentPlaylistState called, auto_load_playlist:", applicationWindow.settings.auto_load_playlist, "resume_playback:", applicationWindow.settings.resume_playback)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("loadCurrentPlaylistState called, auto_load_playlist:", applicationWindow.settings.auto_load_playlist, "resume_playback:", applicationWindow.settings.resume_playback)
         if (!applicationWindow.settings.auto_load_playlist) {
-            console.log("Auto-load playlist disabled, skipping")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Auto-load playlist disabled, skipping")
             return
         }
 
@@ -167,7 +170,8 @@ Item {
             }
         });
 
-        console.log("Loading current playlist, tracks:", trackIds ? trackIds.length : 0, "position:", position)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Loading current playlist, tracks:", trackIds ? trackIds.length : 0, "position:", position)
 
         if (trackIds === undefined || trackIds.length === 0) return;
 
@@ -177,9 +181,11 @@ Item {
         
         // Position wiederherstellen
         playlistManager.currentIndex = position
-        console.log("Setting currentIndex to:", position, "resume_playback:", applicationWindow.settings.resume_playback)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Setting currentIndex to:", position, "resume_playback:", applicationWindow.settings.resume_playback)
         if(applicationWindow.settings.resume_playback) {
-            console.log("Resuming playback at position:", position)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Resuming playback at position:", position)
             //playlistManager.playPosition(position);
         }
     }
@@ -188,7 +194,8 @@ Item {
     }
     // Bei App-Beendigung
     Component.onDestruction: {
-        console.log("Save current playlist")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Save current playlist")
         saveCurrentPlaylistState()
     }
 

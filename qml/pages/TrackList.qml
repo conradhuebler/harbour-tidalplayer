@@ -214,7 +214,8 @@ Item {
         interval: 100  // 100ms Verzögerung
         repeat: false
         onTriggered: {
-            console.log(playlistManager.size)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log(playlistManager.size)
             for(var i = 0; i < playlistManager.size; ++i) {
                 var id = playlistManager.requestPlaylistItem(i)
                 var track = cacheManager.getTrackInfo(id)
@@ -230,7 +231,8 @@ Item {
                         "index": i
                     })
                 } else {
-                    console.log("No track data for index:", i)
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("No track data for index:", i)
                 }
             }
         }
@@ -283,7 +285,8 @@ Item {
             property int dragStartIndex : -1
 
             onItemMoved: function(from, to) {
-                console.log("itemMoved - from " + from + " to " + to + ", dragStartIndex= " + dragStartIndex)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("itemMoved - from " + from + " to " + to + ", dragStartIndex= " + dragStartIndex)
                 if (dragStartIndex == -1) {
                     dragStartIndex = from
                     dragActive = true
@@ -291,9 +294,11 @@ Item {
             }
             
             onItemDropped: function(from, curr, to) {
-                console.log("Drag-drop operation: originalIndex=", from, "currentIndex=", curr, "finalIndex=", to, "stardIndex=",dragStartIndex)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Drag-drop operation: originalIndex=", from, "currentIndex=", curr, "finalIndex=", to, "stardIndex=",dragStartIndex)
                 if (from !== to && type === "current") {
-                    console.log("Calling moveTrack with from=", from, "to=", to)
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("Calling moveTrack with from=", from, "to=", to)
                     // Call the moveTrack function in PlaylistManager
                     listModel.move(dragStartIndex, to, 1)
                     playlistManager.moveTrack(dragStartIndex, to, true)
@@ -433,7 +438,8 @@ Item {
                         if (swipeDeleteContainer.timeLeft <= 0) {
                             // Actually remove the track after timeout
                             var trackId = playlistManager.requestPlaylistItem(model.index)
-                            console.log("Remorse timeout: removing track", trackId)
+                            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                console.log("Remorse timeout: removing track", trackId)
                                 // Remove silently (don't emit listChanged) and update view directly
                                 playlistManager.removeTrack(trackId, true)
                                 // Keep playlistManager.currentIndex in sync with view
@@ -481,7 +487,8 @@ Item {
                             text: qsTr("Cancel")
                             preferredWidth: Theme.buttonWidthSmall
                             onClicked: {
-                                console.log("Delete cancelled")
+                                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                    console.log("Delete cancelled")
                                 swipeDeleteContainer.showDeleteButton = false
                                 remorseTimer.stop()
                                 swipeDeleteContainer.timeLeft = 3000  // Reset timer
@@ -495,7 +502,8 @@ Item {
                             preferredWidth: Theme.buttonWidthSmall
                             onClicked: {
                                 var trackId = playlistManager.requestPlaylistItem(model.index)
-                                console.log("Delete confirmed: removing track", trackId)
+                                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                    console.log("Delete confirmed: removing track", trackId)
                                 // Remove silently and update view without triggering full refresh
                                 playlistManager.removeTrack(trackId, true)
                                 root.currentIndex = playlistManager.currentIndex
@@ -534,7 +542,8 @@ Item {
                     onMovementEnded: {
                         if (contentX > width * 0.25) {
                             // Swiped to the left
-                            console.log("LEFT SWIPE", model.index)
+                            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                console.log("LEFT SWIPE", model.index)
                             swipeDeleteContainer.timeLeft = 3000
                             swipeDeleteContainer.showDeleteButton = true
                             remorseTimer.restart()
@@ -586,7 +595,8 @@ Item {
                         var playingState = mediaController.isPlaying
                         var removingPrevTrack = orgIndex < currentIndex
                         var removingSelected = currentIndex === model.index
-                        console.log("removingPrevTrack:",orgIndex)
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("removingPrevTrack:",orgIndex)
                         playlistManager.removeTrack(orgTrackId)
                         if (type === "current") {
                             if (playlistManager.size === 0) {
@@ -604,7 +614,8 @@ Item {
                             }
                             if (removingPrevTrack ) {
                                 // remove a track before selected
-                                console.log("removePrevTrack:", orgIndex, currentIndex)
+                                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                                    console.log("removePrevTrack:", orgIndex, currentIndex)
                                 var newIndex = Math.max(0, currentIndex - 1)
                                 if (playingState) {
                                     playlistManager.playPosition(newIndex)
@@ -804,7 +815,8 @@ Item {
         }
 
         onClicked: {
-            console.log("Toggling edit mode")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Toggling edit mode")
             editMode = !editMode
             enableEditMode(editMode)
         }
@@ -821,12 +833,14 @@ Item {
 
     Component.onCompleted: {
         if (type === "playlist") {
-            console.log("getPlaylistTracks")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("getPlaylistTracks")
             tidalApi.getPlaylistTracks(playlistId)
         } else if (type == "album") {
             tidalApi.getAlbumTracks(albumId)
         } else if (type == "mix") {
-            console.log("getMixTracks")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("getMixTracks")
             tidalApi.getMixTracks(playlistId)
         } else {
             playlistManager.generateList()
@@ -921,16 +935,19 @@ Item {
         }
 
         onClearList: {
-            console.log("Playlist must be cleared")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Playlist must be cleared")
             if (type === "current") {
                 listModel.clear()
             }
         }
 
         onListChanged: {
-            console.log("update playlist")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("update playlist")
             if (type === "current") {
-                console.log("update current playlist")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("update current playlist")
                 // Use refreshList() to maintain search/filter functionality
                 refreshList()
             }

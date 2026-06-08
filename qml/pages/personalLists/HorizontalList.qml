@@ -47,7 +47,8 @@ SilicaListView {
 
     // --- React to filterText changes ---
     onFilterTextChanged: { 
-        console.log("Filter text changed to: " + filterText)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Filter text changed to: " + filterText)
         applyFilter()
         //positionViewAtBeginning()
     }

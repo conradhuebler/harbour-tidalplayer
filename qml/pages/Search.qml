@@ -246,7 +246,8 @@ Item {
     }
 
     function createPlaylistItem(playlist) {
-        console.log("Found playlist", playlist.title, playlist.playlistid)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Found playlist", playlist.title, playlist.playlistid)
         return {
             name: playlist.title,
             playlistid: playlist.playlistid,
@@ -269,7 +270,8 @@ Item {
     */
 
     function createVideoItem(video) {
-        console.log("Found video", video.title)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Found video", video.title)
         return {
             name: video.title,
             videoid:video.videoid,

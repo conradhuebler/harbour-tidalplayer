@@ -34,7 +34,8 @@ Page {
                     if (tidalApi.loginTrue) {
                         pageStack.push(Qt.resolvedUrl("SavedPlaylistsPage.qml"))
                     } else {
-                        console.log("Login required for playlists")
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("Login required for playlists")
                         // Redirect to settings instead  
                         pageStack.push(Qt.resolvedUrl("Settings.qml"))
                     }
@@ -55,7 +56,8 @@ Page {
                     if (tidalApi.loginTrue) {
                         playlistManager.clearPlayList()
                     } else {
-                        console.log("Login required for playlist management")
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("Login required for playlist management")
                         // Redirect to settings instead
                         pageStack.push(Qt.resolvedUrl("Settings.qml"))
                     }
@@ -83,7 +85,8 @@ Page {
                     if (tidalApi.loginTrue) {
                         miniPlayerPanel.open = !miniPlayerPanel.open
                     } else {
-                        console.log("Login required for media player")
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("Login required for media player")
                         // Redirect to settings instead
                         pageStack.push(Qt.resolvedUrl("Settings.qml"))
                     }
@@ -163,9 +166,11 @@ Page {
                 // Debug: Log when pages are loaded/unloaded
                 onActiveChanged: {
                     if (active) {
-                        console.log("Lazy loading page index:", index, swipeView.carouselPages[index])
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("Lazy loading page index:", index, swipeView.carouselPages[index])
                     } else {
-                        console.log("Lazy unloading page index:", index)
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("Lazy unloading page index:", index)
                     }
                 }
             }

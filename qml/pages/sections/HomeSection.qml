@@ -81,7 +81,8 @@ Column {
         else if (type === "playlist") theList.addPlaylist(data)
         else if (type === "track")    theList.addTrack(data)
         else {
-            console.log("HomeSection: unknown item type", type)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("HomeSection: unknown item type", type)
             return
         }
         if (cacheKey !== "" && applicationWindow.personalPage) {

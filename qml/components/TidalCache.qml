@@ -50,7 +50,8 @@ id: root
         while (accessOrder.length > maxCacheSize) {
             var oldestKey = accessOrder.pop()
             delete cache[oldestKey]
-            console.log("LRU: Evicted cache entry:", oldestKey)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 2)
+                console.log("LRU: Evicted cache entry:", oldestKey)
         }
     }
     
@@ -65,17 +66,22 @@ id: root
     
 
     // PERFORMANCE: Cache stats logging timer
+    // Only runs when debugging - LRU eviction in addToLRU already bounds size,
+    // so this is purely a diagnostic; keeping it off avoids a periodic idle
+    // CPU wakeup every 5 minutes. - Claude Generated
     Timer {
         interval: 300000  // 5 minutes
-        running: true
+        running: applicationWindow.settings && applicationWindow.settings.debugLevel >= 1
         repeat: true
         onTriggered: {
             var stats = getCacheStats()
-            console.log("Cache stats:", JSON.stringify(stats))
-            
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Cache stats:", JSON.stringify(stats))
+
             // PERFORMANCE: Trigger incremental cleanup if cache gets large
             if (stats.total > maxCacheSize * 3) {
-                console.log("Cache getting large, starting incremental cleanup...")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Cache getting large, starting incremental cleanup...")
                 startIncrementalCleanup()
             }
         }
@@ -104,7 +110,8 @@ id: root
             if (cleanupQueue.length === 0) {
                 running = false
                 cleanupInProgress = false
-                console.log("PERFORMANCE: Incremental cleanup completed")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("PERFORMANCE: Incremental cleanup completed")
                 return
             }
             
@@ -179,7 +186,8 @@ id: root
     // PERFORMANCE: Incremental cleanup functions
     function startIncrementalCleanup() {
         if (cleanupInProgress) {
-            console.log("PERFORMANCE: Cleanup already in progress, skipping")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("PERFORMANCE: Cleanup already in progress, skipping")
             return
         }
         
@@ -269,7 +277,8 @@ id: root
         loadCache()
         
         // Log initial cache stats
-        console.log("TidalCache initialized with LRU + DB batching, max size per type:", maxCacheSize)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("TidalCache initialized with LRU + DB batching, max size per type:", maxCacheSize)
     }
 
     // Verbindungen zu den Python-Signalen
@@ -442,7 +451,8 @@ id: root
             if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
                 return cachedTrack
             } else {
-                console.log("Cache entry too old, refreshing...")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Cache entry too old, refreshing...")
             }
         }
 
@@ -475,7 +485,8 @@ id: root
             if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
                 return cachedTrack
             } else {
-                console.log("Cache entry too old, refreshing...")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Cache entry too old, refreshing...")
             }
         }
 
@@ -494,7 +505,8 @@ id: root
                 year : result.year,
                 timestamp: Date.now()
             }
-            console.log("album not in cache, adding to cache ... (i think this causes the nulls, as it should be synchr.) ", result)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("album not in cache, adding to cache ... (i think this causes the nulls, as it should be synchr.) ", result)
             saveAlbumToCache(albumData)
             return albumData
         }
@@ -509,7 +521,8 @@ id: root
             if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
                 return cachedTrack
             } else {
-                console.log("Cache entry too old, refreshing...")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Cache entry too old, refreshing...")
             }
         }
 
@@ -524,7 +537,8 @@ id: root
                 bio: result.bio,
                 timestamp: Date.now(),
             }
-            console.log("Adding to cache ...")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Adding to cache ...")
 
             saveArtistToCache(artistData)
             return artistData
@@ -540,7 +554,8 @@ id: root
             if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
                 return cachedTrack
             } else {
-                console.log("Cache entry too old, refreshing...")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Cache entry too old, refreshing...")
             }
         }
 
@@ -555,7 +570,8 @@ id: root
                 duration: result.duration,
                 timestamp: Date.now()
             }
-            console.log("Adding to cache ...")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Adding to cache ...")
 
             savePlaylistToCache(playlistData)
             return playlistData
@@ -571,7 +587,8 @@ id: root
             if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
                 return cachedTrack
             } else {
-                console.log("Cache entry too old, refreshing...")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Cache entry too old, refreshing...")
             }
         }
 
@@ -589,7 +606,8 @@ id: root
                 duration: result.duration,
                 timestamp: Date.now()
             }
-            console.log("Adding to cache ...")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Adding to cache ...")
 
             saveMixToCache(mixData)
             return mixData
@@ -807,7 +825,8 @@ id: root
 
     // Cache leeren
     function clearCache() {
-        console.log("clearing cache.")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("clearing cache.")
         db.transaction(function(tx) {
             tx.executeSql('DELETE FROM tracks')
             tx.executeSql('DELETE FROM albums')

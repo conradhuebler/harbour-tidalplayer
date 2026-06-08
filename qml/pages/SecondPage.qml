@@ -23,7 +23,10 @@ Page {
                 anchors.verticalCenter: parent.verticalCenter
                 color: delegate.highlighted ? Theme.highlightColor : Theme.primaryColor
             }
-            onClicked: console.log("Clicked " + index)
+            onClicked: {
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Clicked " + index)
+            }
         }
         VerticalScrollDecorator {}
     }

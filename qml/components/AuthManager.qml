@@ -11,7 +11,8 @@ Item {
 
     // Funktionen zum Token-Management
     function updateTokens(type, token, rtoken, expiry) {
-        console.log("Update tokens", "expiry from server:", expiry)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Update tokens", "expiry from server:", expiry)
         
         applicationWindow.settings.token_type = type
         applicationWindow.settings.access_token = token
@@ -22,7 +23,8 @@ Item {
         if (typeof expiry === "string") {
             var expiryDate = new Date(expiry)
             expiryTime = Math.floor(expiryDate.getTime() / 1000)
-            console.log("Converted expiry date to timestamp:", expiry, "->", expiryTime)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Converted expiry date to timestamp:", expiry, "->", expiryTime)
         } else if (typeof expiry === "number") {
             expiryTime = expiry
         }
@@ -50,7 +52,8 @@ Item {
             if (typeof expiry === "string") {
                 var expiryDate = new Date(expiry)
                 expiryTime = Math.floor(expiryDate.getTime() / 1000)
-                console.log("Converted refresh expiry date to timestamp:", expiry, "->", expiryTime)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Converted refresh expiry date to timestamp:", expiry, "->", expiryTime)
             }
             applicationWindow.settings.expiry_time = expiryTime
         }
@@ -91,15 +94,18 @@ Item {
     }
 
     function isTokenValid() {
-        console.log("Token check - expiry:", applicationWindow.settings.expiry_time, "current:", Math.floor(new Date().getTime() / 1000))
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Token check - expiry:", applicationWindow.settings.expiry_time, "current:", Math.floor(new Date().getTime() / 1000))
         var currentUnixTime = Math.floor(new Date().getTime() / 1000)
         // Check if expiry_time is set and valid (not -1 or 0)
         if (!applicationWindow.settings.expiry_time || applicationWindow.settings.expiry_time <= 0) {
-            console.log("Token invalid - no expiry time set")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Token invalid - no expiry time set")
             return false
         }
         var isValid = applicationWindow.settings.expiry_time > currentUnixTime
-        console.log("Token valid:", isValid, "expires in:", (applicationWindow.settings.expiry_time - currentUnixTime), "seconds")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("Token valid:", isValid, "expires in:", (applicationWindow.settings.expiry_time - currentUnixTime), "seconds")
         return isValid
     }
 

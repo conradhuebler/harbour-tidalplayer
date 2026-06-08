@@ -104,12 +104,14 @@ Item {
 
             // WICHTIG: Automatischer Titelwechsel über Playlist
             onItemInserted: function(start_index, end_index) {
-                console.log('DualAudioManager: Items inserted:', start_index, '-', end_index)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log('DualAudioManager: Items inserted:', start_index, '-', end_index)
             }
 
             // Playlist automatic next track
             onCurrentIndexChanged: {
-                console.log('DualAudioManager: Playlist index changed to:', currentIndex)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log('DualAudioManager: Playlist index changed to:', currentIndex)
                 if (audioPlayer1.isActive && currentItemSource) {
                     // Only update URL and track info - don't auto-advance (handled by EndOfMedia)
                     currentTrackUrl = currentItemSource
@@ -120,7 +122,8 @@ Item {
 
         onPlayerPlaying: {
             if (isActive) {
-                console.log("DualAudioManager: Player1 started playing")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player1 started playing")
                 trackFinishedSignaled = false  // Reset flag when new track starts
                 dualManager.playbackStateChanged(Audio.PlayingState)
             }
@@ -128,18 +131,21 @@ Item {
 
         onPlayerPaused: {
             if (isActive) {
-                console.log("DualAudioManager: Player1 paused")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player1 paused")
                 dualManager.playbackStateChanged(Audio.PausedState)
             }
         }
 
         onPlayerStopped: {
             if (isActive) {
-                console.log("DualAudioManager: Player1 stopped")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player1 stopped")
                 dualManager.playbackStateChanged(Audio.StoppedState)
                 // Nur trackFinished wenn nicht durch Crossfade gestoppt und nicht bereits signalisiert
                 if (!crossfadeInProgress && !trackFinishedSignaled) {
-                    console.log("DualAudioManager: Player1 stopped - signaling trackFinished")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("DualAudioManager: Player1 stopped - signaling trackFinished")
                     trackFinished()
                 }
             }
@@ -158,7 +164,8 @@ Item {
                 if (preloadingEnabled && !preloadInProgress && duration > 0) {
                     var timeLeft = (duration - position) / 1000
                     if (timeLeft <= 10 && timeLeft > 0) {
-                        console.log("DualAudioManager: Player1 - triggering preload")
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("DualAudioManager: Player1 - triggering preload")
                         triggerPreload()
                     }
                 }
@@ -180,18 +187,21 @@ Item {
         onPlayerStatusChanged: {
             // KORRIGIERT: EndOfMedia für automatischen Titelwechsel
             if (isActive && status === Audio.EndOfMedia) {
-                console.log("DualAudioManager: Player1 reached end of media")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player1 reached end of media")
 
                 // Only block auto-advance if there's an ongoing crossfade to a different track
                 // Allow auto-advance if it's part of the normal playlist flow
                 if (playerSwitchLocked && crossfadeInProgress) {
-                    console.log("DualAudioManager: Auto-advance blocked - crossfade in progress")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("DualAudioManager: Auto-advance blocked - crossfade in progress")
                     return
                 }
 
                 // Check if next track is preloaded and ready for seamless switch
                 if (preloadingEnabled && nextTrackId && inactivePlayer.isReady()) {
-                    console.log("DualAudioManager: Auto-advance using preloaded track - seamless switch!")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("DualAudioManager: Auto-advance using preloaded track - seamless switch!")
                     
                     // Use preloaded track for seamless transition
                     player1Active = !player1Active
@@ -210,14 +220,16 @@ Item {
                     
                 } else {
                     // Let MediaHandler handle playlist advancement via trackFinished signal
-                    console.log("DualAudioManager: Signaling track finished for MediaHandler to handle")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("DualAudioManager: Signaling track finished for MediaHandler to handle")
                     trackFinishedSignaled = true
                     trackFinished()
                 }
             }
 
             if (!isActive && status === Audio.Loaded && source.toString() === nextTrackUrl.toString()) {
-                console.log("DualAudioManager: Player1 preload ready")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player1 preload ready")
                 preloadReady()
             }
 
@@ -227,7 +239,8 @@ Item {
             }
 
             if (isActive && !crossfadeInProgress && pendingImmediateSwitch && source.toString() === pendingSwitchUrl.toString()) {
-                console.log("DualAudioManager: Player1 ready for immediate switch (no crossfade)")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player1 ready for immediate switch (no crossfade)")
                 startPlayback()
                 pendingImmediateSwitch = false
                 pendingSwitchUrl = ""
@@ -236,7 +249,8 @@ Item {
             }
 
             if (isActive && status === Audio.Loaded && !crossfadeInProgress && source.toString() === currentTrackUrl.toString()) {
-                console.log("DualAudioManager: Player1 loaded and ready to start")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player1 loaded and ready to start")
                 startPlayback()
             }
         }
@@ -253,7 +267,8 @@ Item {
 
         onPlayerPlaying: {
             if (isActive) {
-                console.log("DualAudioManager: Player2 started playing")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player2 started playing")
                 trackFinishedSignaled = false  // Reset flag when new track starts
                 dualManager.playbackStateChanged(Audio.PlayingState)
             }
@@ -261,18 +276,21 @@ Item {
 
         onPlayerPaused: {
             if (isActive) {
-                console.log("DualAudioManager: Player2 paused")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player2 paused")
                 dualManager.playbackStateChanged(Audio.PausedState)
             }
         }
 
         onPlayerStopped: {
             if (isActive) {
-                console.log("DualAudioManager: Player2 stopped")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player2 stopped")
                 dualManager.playbackStateChanged(Audio.StoppedState)
                 // Nur trackFinished wenn nicht durch Crossfade gestoppt und nicht bereits signalisiert
                 if (!crossfadeInProgress && !trackFinishedSignaled) {
-                    console.log("DualAudioManager: Player2 stopped - signaling trackFinished")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("DualAudioManager: Player2 stopped - signaling trackFinished")
                     trackFinished()
                 }
             }
@@ -291,7 +309,8 @@ Item {
                 if (preloadingEnabled && !preloadInProgress && duration > 0) {
                     var timeLeft = (duration - position) / 1000
                     if (timeLeft <= 10 && timeLeft > 0) {
-                        console.log("DualAudioManager: Player2 - triggering preload")
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("DualAudioManager: Player2 - triggering preload")
                         triggerPreload()
                     }
                 }
@@ -313,19 +332,22 @@ Item {
         onPlayerStatusChanged: {
             // Player2 hat keine Playlist, also direkt trackFinished bei EndOfMedia
             if (isActive && status === Audio.EndOfMedia) {
-                console.log("DualAudioManager: Player2 reached end of media - track finished")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player2 reached end of media - track finished")
                 
                 // Only block trackFinished if there's an ongoing crossfade
                 if (!crossfadeInProgress) {
                     trackFinishedSignaled = true
                     trackFinished()
                 } else {
-                    console.log("DualAudioManager: TrackFinished blocked - crossfade in progress")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("DualAudioManager: TrackFinished blocked - crossfade in progress")
                 }
             }
 
             if (!isActive && status === Audio.Loaded && source.toString() === nextTrackUrl.toString()) {
-                console.log("DualAudioManager: Player2 preload ready")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player2 preload ready")
                 preloadReady()
             }
 
@@ -335,7 +357,8 @@ Item {
             }
 
             if (isActive && !crossfadeInProgress && pendingImmediateSwitch && source.toString() === pendingSwitchUrl.toString()) {
-                console.log("DualAudioManager: Player2 ready for immediate switch (no crossfade)")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player2 ready for immediate switch (no crossfade)")
                 startPlayback()
                 pendingImmediateSwitch = false
                 pendingSwitchUrl = ""
@@ -344,7 +367,8 @@ Item {
             }
 
             if (isActive && status === Audio.Loaded && !crossfadeInProgress && source.toString() === currentTrackUrl.toString()) {
-                console.log("DualAudioManager: Player2 loaded and ready to start")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Player2 loaded and ready to start")
                 startPlayback()
             }
         }
@@ -396,21 +420,25 @@ Item {
 
     // Crossfade version: Load in inactive player without stopping current
     function crossfadeToTrack(url, trackId) {
-        console.log("DualAudioManager: Starting crossfade to:", trackId, "mode:", crossfadeMode)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Starting crossfade to:", trackId, "mode:", crossfadeMode)
 
         // Prevent concurrent switches during crossfade or playlist operations
         if (playerSwitchLocked) {
-            console.log("DualAudioManager: Player switch locked, ignoring crossfade request for", trackId)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DualAudioManager: Player switch locked, ignoring crossfade request for", trackId)
             return false
         }
 
         if (crossfadeInProgress && currentTrackId === trackId) {
-            console.log("DualAudioManager: Crossfade already in progress for same track, ignoring")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DualAudioManager: Crossfade already in progress for same track, ignoring")
             return false
         }
 
         if (crossfadeInProgress) {
-            console.log("DualAudioManager: Resetting previous crossfade for new track")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DualAudioManager: Resetting previous crossfade for new track")
             completeCrossfade()
         }
 
@@ -418,14 +446,16 @@ Item {
         playerSwitchLocked = true
 
         var hasActiveTrack = activePlayer.playbackState === Audio.PlayingState || activePlayer.playbackState === Audio.PausedState
-        console.log("DualAudioManager: Has active track playing:", hasActiveTrack)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Has active track playing:", hasActiveTrack)
 
         currentTrackUrl = url
         currentTrackId = trackId
 
         // Mode 0: Sofortiger Wechsel ohne Crossfade
         if (crossfadeMode === 0) {
-            console.log("DualAudioManager: Mode 0 - immediate switch")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DualAudioManager: Mode 0 - immediate switch")
             // Player 1 stoppt, Player 2 bekommt URL und startet
             activePlayer.stopPlayback()
             player1Active = !player1Active
@@ -441,7 +471,8 @@ Item {
 
         // Für Modi 1-3: Crossfade starten
         if (!hasActiveTrack) {
-            console.log("DualAudioManager: No active track - loading and playing immediately")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DualAudioManager: No active track - loading and playing immediately")
             inactivePlayer.loadTrack(url)
             player1Active = !player1Active
             pendingSwitchUrl = url
@@ -455,7 +486,8 @@ Item {
             return true
         }
 
-        console.log("DualAudioManager: Starting crossfade mode", crossfadeMode)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Starting crossfade mode", crossfadeMode)
 
         // Crossfade initialisieren
         crossfadeInProgress = true
@@ -498,7 +530,8 @@ Item {
 
             // Neuer Player startet wenn ready
             if (newPlayerReady && newPlayer.playbackState !== Audio.PlayingState) {
-                console.log("DualAudioManager: Starting new player")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Starting new player")
                 newPlayer.startPlayback()
                 setCrossfadeVolume(newPlayer, normalVolume)
             }
@@ -518,7 +551,8 @@ Item {
 
             // Neuer Player startet wenn ready
             if (newPlayerReady && newPlayer.playbackState !== Audio.PlayingState) {
-                console.log("DualAudioManager: Starting new player")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Starting new player")
                 newPlayer.startPlayback()
             }
 
@@ -538,7 +572,8 @@ Item {
 
             // Neuer Player startet wenn ready (volle Lautstärke)
             if (newPlayerReady && newPlayer.playbackState !== Audio.PlayingState) {
-                console.log("DualAudioManager: Starting new player")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("DualAudioManager: Starting new player")
                 newPlayer.startPlayback()
                 setCrossfadeVolume(newPlayer, normalVolume)
             }
@@ -551,7 +586,8 @@ Item {
     }
 
     function completeCrossfade() {
-        console.log("DualAudioManager: Crossfade complete - restoring volumes")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Crossfade complete - restoring volumes")
 
         crossfadeInProgress = false
         crossfadeUpdateTimer.stop()
@@ -565,7 +601,8 @@ Item {
         // Unlock player switches
         playerSwitchLocked = false
 
-        console.log("DualAudioManager: Crossfade finished - ready for next")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Crossfade finished - ready for next")
     }
 
     function clearPlaylist() {
@@ -588,7 +625,8 @@ Item {
             return false
         }
 
-        console.log("DualAudioManager: Starting preload for track", trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Starting preload for track", trackId)
         nextTrackId = trackId
         nextTrackUrl = url
         preloadInProgress = true
@@ -598,16 +636,19 @@ Item {
     }
 
     function switchToTrackImmediately(url, trackId) {
-        console.log("DualAudioManager: Immediate switch to track", trackId)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Immediate switch to track", trackId)
 
         // Check if player switching is locked
         if (playerSwitchLocked) {
-            console.log("DualAudioManager: Cannot switch - player switching locked")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DualAudioManager: Cannot switch - player switching locked")
             return false
         }
 
         if (inactivePlayer.source.toString() === url.toString() && inactivePlayer.isReady()) {
-            console.log("DualAudioManager: Track already preloaded - seamless switch!")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DualAudioManager: Track already preloaded - seamless switch!")
 
             // Lock during switch
             playerSwitchLocked = true
@@ -625,7 +666,8 @@ Item {
             return true
         }
 
-        console.log("DualAudioManager: Starting crossfade load")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Starting crossfade load")
         inactivePlayer.loadTrack(url)
 
         return waitForLoadAndSwitch(url, trackId)
@@ -648,16 +690,19 @@ Item {
 
     function switchToPreloadedTrack() {
         if (!preloadingEnabled || !nextTrackUrl) {
-            console.log("DualAudioManager: No preloaded track available")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DualAudioManager: No preloaded track available")
             return false
         }
 
         if (!inactivePlayer.isReady() || inactivePlayer.source.toString() !== nextTrackUrl.toString()) {
-            console.log("DualAudioManager: Preload not ready")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("DualAudioManager: Preload not ready")
             return false
         }
 
-        console.log("DualAudioManager: Switching to preloaded track")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Switching to preloaded track")
 
         player1Active = !player1Active
         activePlayer.startPlayback()
@@ -676,13 +721,15 @@ Item {
     }
 
     function triggerPreload() {
-        console.log("DualAudioManager: Preload trigger (handled by MediaHandler)")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Preload trigger (handled by MediaHandler)")
     }
 
     property alias playlist: playlistItem
 
     function resetPlayers() {
-        console.log("DualAudioManager: Resetting audio players")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Resetting audio players")
 
         audioPlayer1.stop()
         audioPlayer2.stop()
@@ -702,7 +749,8 @@ Item {
         player1Active = true
         playlistItem.clear()
 
-        console.log("DualAudioManager: Players reset complete")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("DualAudioManager: Players reset complete")
     }
 
     function setCrossfadeVolume(player, volume) {

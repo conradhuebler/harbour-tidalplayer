@@ -53,7 +53,8 @@ DockedPanel {
             repeat: false
             running: false
             onTriggered: {
-                console.log("LONG PRESS detected - show playlist")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("LONG PRESS detected - show playlist")
                 applicationWindow.mainPage.showPlaylist()
                 // stop further gesture processing for this press
                 longPressTimer.stop()
@@ -104,7 +105,8 @@ DockedPanel {
             // Tap gesture: Toggle between Mini and Normal mode
             else if (Math.abs(delta) < Theme.paddingMedium) {
                 if (shortClick) {
-                    console.log("TAP detected - toggle Mini/Normal mode")                
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("TAP detected - toggle Mini/Normal mode")                
                     if (playerState === 1) {
                         playerState = 2  // Mini -> Normal
                     } else if (playerState === 2) {
@@ -155,7 +157,8 @@ DockedPanel {
                     icon.source: "image://theme/icon-m-previous"
                     enabled: playlistManager.canPrev
                     onClicked: {
-                        console.log("prev button pressed")
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("prev button pressed")
                         playlistManager.previousTrackClicked()
                     }
                 }
@@ -199,7 +202,8 @@ DockedPanel {
                     icon.source: "image://theme/icon-m-next"
                     enabled: playlistManager.canNext
                     onClicked: {
-                        console.log("next button pressed")
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("next button pressed")
                         mediaController.blockAutoNext = true
                         playlistManager.nextTrackClicked()
                     }
@@ -234,7 +238,9 @@ DockedPanel {
 
                     SequentialAnimation {
                         id: scrollAnim
-                        running: mediaTitle.needsScrolling
+                        // Pause the endless scroll when the app/display is not
+                        // active to avoid continuous repaints. - Claude Generated
+                        running: mediaTitle.needsScrolling && Qt.application.active
                         loops: Animation.Infinite
 
                         PauseAnimation { duration: mediaTitle.scrollPause }
@@ -465,7 +471,8 @@ DockedPanel {
     Connections {
         target: playlistManager
         onPlaylistFinished: {
-            console.log("Playlist finished, hide player: " + applicationWindow.settings.hide_player)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Playlist finished, hide player: " + applicationWindow.settings.hide_player)
             if (applicationWindow.settings.hide_player) {
                 mediaTitle.text = ""
                 bgImage.source = ""    

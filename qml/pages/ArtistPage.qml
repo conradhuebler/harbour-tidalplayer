@@ -37,7 +37,8 @@ Page {
                     result += "[wimpLink" + part
                 }
             } catch (e) {
-                console.log("Fehler beim Verarbeiten eines Links:", e)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Fehler beim Verarbeiten eines Links:", e)
                 result += "[wimpLink" + part
             }
         }
@@ -410,14 +411,16 @@ Page {
                 artistName.text = artistData.name
                 coverImage.source = artistData.image
                 if (artistData.bio) {
-                    console.log("Verarbeite Bio...")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("Verarbeite Bio...")
                     var processedBio = processWimpLinks(artistData.bio)
                     bioText.text = processedBio
                 }
                 initialized = true
                 return
             }
-            console.log("Artist nicht im Cache gefunden:", artistId)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Artist nicht im Cache gefunden:", artistId)
         }
     }
 
@@ -445,7 +448,8 @@ Page {
                 artistName.text = artist_info.name
                 coverImage.source = artist_info.image
                 if (artist_info.bio) {
-                    console.log("Verarbeite Bio...")
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("Verarbeite Bio...")
                     var processedBio = processWimpLinks(artist_info.bio)
                     bioText.text = processedBio
                 }
@@ -468,7 +472,8 @@ Page {
 
         onSimilarArtist: {
             if (artist_info === undefined) {
-                console.log("artist_info is undefined. skip append to model")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("artist_info is undefined. skip append to model")
                 return
             }
             simartistView.model.append({

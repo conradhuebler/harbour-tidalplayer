@@ -224,7 +224,10 @@ ApplicationWindow
     // Resume system timers
     Timer {
         id: autoSaveTimer
-        interval: 10000  // Save every 10 seconds
+        // Save periodically as a safety net; pause/stop also persists state
+        // immediately (see MediaHandler), so a longer interval cuts idle
+        // CPU/flash wakeups without hurting resume accuracy. - Claude Generated
+        interval: 30000  // Save every 30 seconds
         repeat: true
         running: mediaController && mediaController.isPlaying
         onTriggered: {
@@ -671,7 +674,8 @@ ApplicationWindow
 
     // Show system message/notification
     function showSystemMessage(title, message) {
-        console.log("System message:", title, "-", message)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("System message:", title, "-", message)
         // Create a simple notification banner
         var component = Qt.createComponent("components/NotificationBanner.qml")
         if (component.status === Component.Ready) {
@@ -702,28 +706,33 @@ ApplicationWindow
     }
 
     function showErrorNotification(title, message) {
-        console.log("ERROR:", title, "-", message)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("ERROR:", title, "-", message)
         publishNotification("x-nemo.general.error", title, message)
     }
 
     function showWarningNotification(title, message) {
-        console.log("WARNING:", title, "-", message)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("WARNING:", title, "-", message)
         publishNotification("x-nemo.general.warning", title, message)
     }
 
     function showSuccessNotification(title, message) {
-        console.log("SUCCESS:", title, "-", message)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("SUCCESS:", title, "-", message)
         publishNotification("x-nemo.transfer.complete", title, message)
     }
 
     function showInfoNotification(title, message) {
-        console.log("INFO:", title, "-", message)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("INFO:", title, "-", message)
         publishNotification("x-nemo.general.info", title, message)
     }
 
     // Persistent critical error dialog - Claude Generated
     function showCriticalErrorDialog(title, message) {
-        console.log("CRITICAL DIALOG:", title, "-", message)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("CRITICAL DIALOG:", title, "-", message)
         
         if (criticalErrorDialog) {
             criticalErrorDialog.destroy()
@@ -802,7 +811,8 @@ ApplicationWindow
             criticalErrorDialog = dialogComponent
             pageStack.push(dialogComponent)
         } else {
-            console.log("ERROR: Could not create inline dialog")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("ERROR: Could not create inline dialog")
             // Fallback to very long notification
             notificationRemorse.execute(title + "\n" + message, function() {}, 30000)
         }
@@ -873,7 +883,8 @@ ApplicationWindow
         // its twice defined here in this file, the second time in connections
         /*onLoginFailed: {
             authManager.clearTokens()
-            console.log("Login failed")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Login failed")
             pageStack.push(Qt.resolvedUrl("pages/Settings.qml"))
         }*/
     }
@@ -1023,7 +1034,8 @@ ApplicationWindow
         
         onLoginFailed: {
             authManager.clearTokens()
-            console.log("Login failed")
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Login failed")
             
             // Don't show login failure popup if backend has critical errors
             if (!tidalApi.criticalError) {
@@ -1044,11 +1056,13 @@ ApplicationWindow
         target: playlistManager
         onCurrentId:
         {
-            console.log("PlaylistManager: CurrentId signal for", id, "- preloading enabled:", mediaController.preloadingEnabled)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("PlaylistManager: CurrentId signal for", id, "- preloading enabled:", mediaController.preloadingEnabled)
             
             // Skip if preloading enabled - handled by onCurrentTrackChanged to avoid duplicates
             if (mediaController.preloadingEnabled) {
-                console.log("PlaylistManager: Skipping currentId processing - handled by onCurrentTrackChanged")
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("PlaylistManager: Skipping currentId processing - handled by onCurrentTrackChanged")
                 return
             } else {
                 // Preloading disabled, use normal API
@@ -1077,7 +1091,8 @@ ApplicationWindow
             try {
                 homescreenSectionOrderConfig.value = JSON.stringify(applicationWindow.settings.homescreenSectionOrder || [])
             } catch (e) {
-                console.log("Personal: failed to persist homescreenSectionOrder:", e)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("Personal: failed to persist homescreenSectionOrder:", e)
             }
 
             recentListConfig.value = applicationWindow.settings.recentList
@@ -1101,7 +1116,8 @@ ApplicationWindow
             try {
                 emailHistoryConfig.value = JSON.stringify(applicationWindow.settings.emailHistory || [])
             } catch (e) {
-                console.log("EMAIL: Error saving history:", e)
+                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                    console.log("EMAIL: Error saving history:", e)
             }
         }
     }
@@ -1152,7 +1168,8 @@ ApplicationWindow
                 applicationWindow.settings.homescreenSectionOrder = order
             }
         } catch (e) {
-            console.log("Personal: invalid homescreenSectionOrder, using default:", e)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Personal: invalid homescreenSectionOrder, using default:", e)
         }
         applicationWindow.settings.enableTrackPreloading = enableTrackPreloadingConfig.value
         applicationWindow.settings.crossfadeMode = crossfadeModeConfig.value
@@ -1170,7 +1187,8 @@ ApplicationWindow
                 console.log("EMAIL: Loaded history with", applicationWindow.settings.emailHistory.length, "entries")
             }
         } catch (e) {
-            console.log("EMAIL: Error loading history, resetting:", e)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("EMAIL: Error loading history, resetting:", e)
             applicationWindow.settings.emailHistory = []
         }
         tidalApi.quality = audioQuality.value

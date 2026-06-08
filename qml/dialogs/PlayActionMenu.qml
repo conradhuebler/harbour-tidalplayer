@@ -64,7 +64,8 @@ ContextMenu {
             return
         }
         
-        console.log("PlayActionMenu: Executing", action, "for", contentType)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("PlayActionMenu: Executing", action, "for", contentType)
         
         switch (contentType) {
             case "track":
@@ -91,7 +92,8 @@ ContextMenu {
     function openDetailPage() {
         if (!contentInfo) return
         
-        console.log("PlayActionMenu: Opening detail page for", contentType)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("PlayActionMenu: Opening detail page for", contentType)
         
         switch (contentType) {
             case "album":
@@ -139,7 +141,8 @@ ContextMenu {
     function addToFavorites() {
         if (!contentInfo) return
         
-        console.log("PlayActionMenu: Adding to favorites:", contentType, contentInfo.title || contentInfo.name)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("PlayActionMenu: Adding to favorites:", contentType, contentInfo.title || contentInfo.name)
         
         switch (contentType) {
             case "album":

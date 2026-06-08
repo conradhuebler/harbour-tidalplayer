@@ -35,17 +35,20 @@ Audio {
 
     // Event handlers
     onPlaying: {
-        console.log("AudioPlayerComponent:", playerId, "started playing")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AudioPlayerComponent:", playerId, "started playing")
         playerPlaying()
     }
 
     onPaused: {
-        console.log("AudioPlayerComponent:", playerId, "paused")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AudioPlayerComponent:", playerId, "paused")
         playerPaused()
     }
 
     onStopped: {
-        console.log("AudioPlayerComponent:", playerId, "stopped")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AudioPlayerComponent:", playerId, "stopped")
         playerStopped()
     }
 
@@ -55,7 +58,8 @@ Audio {
     }
 
     onStatusChanged: {
-        console.log("AudioPlayerComponent:", playerId, "status changed to:", status)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AudioPlayerComponent:", playerId, "status changed to:", status)
         playerStatusChanged(status)
     }
 
@@ -86,23 +90,27 @@ Audio {
     }
 
     function startPlayback() {
-        console.log("AudioPlayerComponent:", playerId, "starting playback")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AudioPlayerComponent:", playerId, "starting playback")
         play()
     }
 
     function pausePlayback() {
-        console.log("AudioPlayerComponent:", playerId, "pausing playback")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AudioPlayerComponent:", playerId, "pausing playback")
         pause()
     }
 
     function stopPlayback() {
-        console.log("AudioPlayerComponent:", playerId, "stopping playback")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AudioPlayerComponent:", playerId, "stopping playback")
         stop()
     }
 
     function seekTo(position) {
         if (seekable) {
-            console.log("AudioPlayerComponent:", playerId, "seeking to:", position)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("AudioPlayerComponent:", playerId, "seeking to:", position)
             seek(position)
         }
     }

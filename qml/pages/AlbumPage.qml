@@ -301,7 +301,8 @@ Page {
                 isFav = favManager.isFavorite(albumId)
                 return
             }
-            console.log("Album nicht im Cache gefunden:", albumId)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Album nicht im Cache gefunden:", albumId)
             initialized = false
         }
     }
@@ -328,7 +329,8 @@ Page {
                     initialized = true
                     isFav = favManager.isFavorite(albumId)
                 } else {
-                    console.log("Album nicht im Cache gefunden:", albumId)
+                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                        console.log("Album nicht im Cache gefunden:", albumId)
                 }
             }
         }

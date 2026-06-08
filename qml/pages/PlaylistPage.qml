@@ -21,7 +21,8 @@ Page {
 
         function getBottomOffset()
         {
-            console.log('in getBottomOffset in playlistpage')
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log('in getBottomOffset in playlistpage')
             if (pLtrackList.minPlayerPanel.open) return ( 1.2 * pLtrackList.minPlayerPanel.height )
             return pLtrackList.minPlayerPanel.height * 0.4
         }
@@ -29,7 +30,8 @@ Page {
     }
 
     Component.onCompleted: {
-        console.log("PlaylistPage loaded")
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("PlaylistPage loaded")
         if (playlistManager.size > 0) {
             playlistManager.generateList()
         }

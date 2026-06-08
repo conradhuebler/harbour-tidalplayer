@@ -257,7 +257,8 @@ Dialog {
     
     onAccepted: {
         if (selectedMinutes > 0) {
-            console.log("Starting sleep timer:", selectedMinutes, "minutes, action:", selectedAction)
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                console.log("Starting sleep timer:", selectedMinutes, "minutes, action:", selectedAction)
             applicationWindow.startSleepTimer(selectedMinutes, selectedAction)
         }
     }
