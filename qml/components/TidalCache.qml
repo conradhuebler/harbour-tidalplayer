@@ -100,6 +100,16 @@ id: root
         }
     }
     
+    // Deferred startup prune: deletes expired rows via the timestamp index
+    // without loading them into memory. - Claude Generated
+    Timer {
+        id: dbPruneTimer
+        interval: 5000
+        running: false
+        repeat: false
+        onTriggered: pruneExpiredDb()
+    }
+
     // PERFORMANCE: Incremental cleanup timer
     Timer {
         id: incrementalCleanupTimer
@@ -274,11 +284,13 @@ id: root
 
     Component.onCompleted: {
         initDatabase()
-        loadCache()
-        
+        // Entries are loaded lazily per id (see loadFromDb); expired rows are
+        // pruned in SQL after startup instead of scanning every row into memory.
+        dbPruneTimer.start()
+
         // Log initial cache stats
         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-            console.log("TidalCache initialized with LRU + DB batching, max size per type:", maxCacheSize)
+            console.log("TidalCache initialized with lazy DB loading + LRU, max size per type:", maxCacheSize)
     }
 
     // Verbindungen zu den Python-Signalen
@@ -645,41 +657,40 @@ id: root
         })
     }
 
-    // Cache aus DB laden
-    function loadCache() {
-        db.transaction(function(tx) {
-            // Tracks laden
-            var rs = tx.executeSql('SELECT * FROM tracks')
-            for(var i = 0; i < rs.rows.length; i++) {
+    // Einzelnen Eintrag lazy aus der DB in den LRU-Cache laden - Claude Generated
+    function loadFromDb(table, cache, accessOrder, id) {
+        if (!db || id === undefined || id === null)
+            return null
+        var item = null
+        db.readTransaction(function(tx) {
+            var rs = tx.executeSql('SELECT data FROM ' + table + ' WHERE id = ?', [String(id)])
+            if (rs.rows.length > 0) {
                 try {
-                    trackCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
+                    item = JSON.parse(rs.rows.item(0).data)
                 } catch(e) {
-                    console.error("Error parsing track data:", e)
-                }
-            }
-
-            // Albums laden
-            rs = tx.executeSql('SELECT * FROM albums')
-            for(i = 0; i < rs.rows.length; i++) {
-                try {
-                    albumCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
-                } catch(e) {
-                    console.error("Error parsing album data:", e)
-                }
-            }
-
-            // Artists laden
-            rs = tx.executeSql('SELECT * FROM artists')
-            for(i = 0; i < rs.rows.length; i++) {
-                try {
-                    artistCache[rs.rows.item(i).id] = JSON.parse(rs.rows.item(i).data)
-                    //console.log(artistCache[rs.rows.item(i).id].artistid, artistCache[rs.rows.item(i).id].name)
-                } catch(e) {
-                    console.error("Error parsing artist data:", e)
+                    console.error("Error parsing", table, "data:", e)
                 }
             }
         })
-        cleanOldCache()
+        if (item)
+            addToLRU(cache, accessOrder, id, item)
+        return item
+    }
+
+    // Abgelaufene Einträge direkt in SQL löschen (nutzt timestamp-Index) - Claude Generated
+    function pruneExpiredDb() {
+        if (!db)
+            return
+        var cutoff = Date.now() - maxCacheAge
+        db.transaction(function(tx) {
+            tx.executeSql('DELETE FROM tracks WHERE timestamp < ?', [cutoff])
+            tx.executeSql('DELETE FROM albums WHERE timestamp < ?', [cutoff])
+            tx.executeSql('DELETE FROM artists WHERE timestamp < ?', [cutoff])
+            tx.executeSql('DELETE FROM playlists WHERE timestamp < ?', [cutoff])
+            tx.executeSql('DELETE FROM mixes WHERE timestamp < ?', [cutoff])
+        })
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 2)
+            console.log("CACHE: Pruned expired DB entries older than", new Date(cutoff))
     }
 
     // Cache-Speicherfunktionen - Now with Database Batching
@@ -723,54 +734,51 @@ id: root
         queueWrite('mixes', mixData)
     }
 
-    // Getter-Funktionen with LRU touch
+    // Getter-Funktionen: erst LRU-Speicher, dann lazy aus der DB
     function getTrack(id) {
         var track = trackCache[id] || null
         if (track) {
             // PERFORMANCE: Update LRU access order
             touchLRU(trackAccessOrder, id)
+            return track
         }
-        return track
+        return loadFromDb('tracks', trackCache, trackAccessOrder, id)
     }
 
     function getAlbum(id) {
         var album = albumCache[id] || null
         if (album) {
             touchLRU(albumAccessOrder, id)
+            return album
         }
-        return album
+        return loadFromDb('albums', albumCache, albumAccessOrder, id)
     }
 
     function getArtist(id) {
         var artist = artistCache[id] || null
         if (artist) {
             touchLRU(artistAccessOrder, id)
+            return artist
         }
-        return artist
+        return loadFromDb('artists', artistCache, artistAccessOrder, id)
     }
 
     function getPlaylist(id) {
         var playlist = playlistCache[id] || null
         if (playlist) {
             touchLRU(playlistAccessOrder, id)
+            return playlist
         }
-        return playlist
+        return loadFromDb('playlists', playlistCache, playlistAccessOrder, id)
     }
 
     function getMix(id) {
         var mix = mixCache[id] || null
         if (mix) {
             touchLRU(mixAccessOrder, id)
+            return mix
         }
-        return mix
-    }
-
-    // PERFORMANCE: Non-blocking cache cleanup - triggers incremental cleanup
-    function cleanOldCache() {
-        if (settings.debugLevel >= 2) {
-            console.log("CACHE: Triggering incremental cleanup (non-blocking)")
-        }
-        startIncrementalCleanup()
+        return loadFromDb('mixes', mixCache, mixAccessOrder, id)
     }
 
     // Cache-Statistiken
@@ -839,5 +847,10 @@ id: root
         artistCache = ({})
         playlistCache = ({})
         mixCache = ({})
+        trackAccessOrder = []
+        albumAccessOrder = []
+        artistAccessOrder = []
+        playlistAccessOrder = []
+        mixAccessOrder = []
     }
 }
