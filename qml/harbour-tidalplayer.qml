@@ -164,8 +164,10 @@ ApplicationWindow
                 return
             }
             
-            // Set track info immediately for UI
-            var trackInfo = cacheManager.getTrackInfo(lastTrackId.value)
+            // Set track info immediately for UI. Pure cache/DB lookup only:
+            // cacheManager.getTrackInfo would fall back to a synchronous
+            // Python call and block the UI thread. - Claude Generated
+            var trackInfo = cacheManager.getTrack(lastTrackId.value)
             if (trackInfo) {
                 if (settings.debugLevel >= 1) {
                     console.log("RESUME: Track info found in cache:", trackInfo.title, "by", trackInfo.artist)
@@ -198,9 +200,20 @@ ApplicationWindow
                     console.log("RESUME: No track info found in cache for track ID:", lastTrackId.value)
                     console.log("RESUME: Will fetch track info from API...")
                 }
-                // Fallback: Request track info from API
+                // Fallback: Request track info asynchronously from API
+                // (tidalApi.getTrack existed nowhere - this was a TypeError)
                 mediaController.track_id = lastTrackId.value
-                tidalApi.getTrack(lastTrackId.value)
+                tidalApi.requestTrackInfo(lastTrackId.value, function(track) {
+                    if (!track)
+                        return
+                    mediaController.track_name = track.title || ""
+                    mediaController.album_name = track.album || ""
+                    mediaController.artist_name = track.artist || ""
+                    mediaController.artwork_url = track.image || ""
+                    mediaController.track_duration = track.duration || 0
+                    mediaController.currentTrackChanged(track)
+                    tidalApi.currentPlayback(track)
+                })
             }
             
             // Load track directly with cached URL - no API call needed!
@@ -1206,7 +1219,7 @@ ApplicationWindow
         // PERFORMANCE: Critical initialization first
         authManager.checkAndLogin()
         // MPRIS is now initialized in MediaHandler
-        
+
         // PERFORMANCE: Defer non-critical settings loading
         deferredInitTimer.start()
     }

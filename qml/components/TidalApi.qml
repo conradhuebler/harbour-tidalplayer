@@ -1221,6 +1221,12 @@ Item {
     property string pendingPreloadId: ""
     property string pendingCrossfadeId: ""
 
+    // Async track info fetch via the request queue: never blocks the UI
+    // thread; the result also arrives as cacheTrack signal. - Claude Generated
+    function requestTrackInfo(id, callback) {
+        return queueRequest("tidal.Tidaler.getTrackInfo", [id], callback || null)
+    }
+
     function getTrackInfo(id) {
         if (typeof id === 'string') {
             id = id.split('/').pop()
