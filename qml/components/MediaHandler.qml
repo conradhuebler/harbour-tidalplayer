@@ -89,7 +89,8 @@ Item {
         }
         
         onTrackFinished: {
-            if (blockAutoNext) {
+            if (Date.now() < suppressAutoNextUntil) {
+                suppressAutoNextUntil = 0
                 return
             }
             // Try seamless transition first
@@ -165,29 +166,14 @@ Item {
     property bool player_available: playlist.itemCount > 0
     property double player_volume: 1.0
     property double track_volume: 1.0
-    property bool blockAutoNext: false
+    // One-shot suppression of a spurious trackFinished right after a manual
+    // track change. Deadline-based instead of the old blockAutoNext boolean,
+    // which could get stuck and needed a self-healing reset timer.
+    // - Claude Generated
+    property double suppressAutoNextUntil: 0
 
-    // Self-healing reset for blockAutoNext: several legacy code paths set
-    // the flag without a guaranteed reset (e.g. PlaylistManager.playTrack,
-    // playPosition, manual MPRIS next). If the flag ever stays stuck the
-    // user sees "auto-advance silently broken" until app restart. The timer
-    // below clears it after 200ms - long enough for the intended single
-    // operation to consume the guard, short enough that no track-end
-    // arrives while the flag is still live.
-    onBlockAutoNextChanged: {
-        if (blockAutoNext) blockAutoNextResetTimer.restart()
-        else blockAutoNextResetTimer.stop()
-    }
-    Timer {
-        id: blockAutoNextResetTimer
-        interval: 200
-        repeat: false
-        onTriggered: {
-            if (settings.debugLevel >= 2) {
-                console.log("MediaHandler: blockAutoNext auto-reset")
-            }
-            blockAutoNext = false
-        }
+    function suppressAutoNext() {
+        suppressAutoNextUntil = Date.now() + 200
     }
 
     // When a track ends while a collection is still being fetched we
@@ -280,7 +266,7 @@ Item {
         onNextRequested: {
             if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
                 console.log('MPRIS: Next requested')
-            blockAutoNext = true
+            suppressAutoNext()
             
             // Enhanced: Try immediate switch if preloading enabled
             if (preloadingEnabled && playlistManager.canNext) {
@@ -298,7 +284,6 @@ Item {
                                 if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
                                     console.log('MPRIS: Next - seamless switch successful')
                                 playlistManager.nextTrack()
-                                blockAutoNext = false
                                 return
                             }
                         }
@@ -428,10 +413,9 @@ Item {
                 }
             }
         }
-        blockAutoNext = true
+        suppressAutoNext()
         setSource(url)
         play()
-        blockAutoNext = false
         
         // Reset preload state when new track starts
         if (applicationWindow.settings.debugLevel >= 2) {

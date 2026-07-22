@@ -657,10 +657,6 @@ Item {
                 tidalApi.current_track_artist = info.track.artist
                 tidalApi.current_track_album = info.track.album
                 tidalApi.current_track_image = info.track.image
-                
-                // Reset deduplication flag when track successfully starts
-                tidalApi.trackPlayInProgress = false
-                trackPlayTimeoutTimer.stop()
             })
 
             // Unified batch loader - sent atomically by Python after all
@@ -1079,15 +1075,6 @@ Item {
         return true
     }
 
-    // WORKAROUND: Track play deduplication 
-    // TODO: Find root cause of duplicate playTrackId() calls
-    // Symptoms: Same track ID called twice in rapid succession, causing:
-    // - Double API requests to Python backend
-    // - Double URL loading and MediaHandler calls  
-    // - Slower track loading performance
-    property string lastPlayedTrackId: ""
-    property bool trackPlayInProgress: false
-    
     // Check if user is authenticated for API operations
     function isAuthenticated() {
         return applicationWindow.settings.access_token && 
@@ -1095,18 +1082,6 @@ Item {
                applicationWindow.settings.access_token !== "" &&
                applicationWindow.settings.refresh_token !== "" &&
                loginTrue
-    }
-    
-    // Fallback timer to reset deduplication flag
-    Timer {
-        id: trackPlayTimeoutTimer
-        interval: 5000  // 5 seconds
-        repeat: false
-        onTriggered: {
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("TidalApi: Resetting trackPlayInProgress flag (timeout)")
-            trackPlayInProgress = false
-        }
     }
     
     // Post-login settling window: while running, transient API errors are
@@ -1138,25 +1113,9 @@ Item {
             return false
         }
         
-        // WORKAROUND: Prevent duplicate plays for same track
-        // TODO: This shouldn't be necessary - find why playTrackId is called twice
-        if (id === lastPlayedTrackId && trackPlayInProgress) {
-            if (applicationWindow.settings.debugLevel >= 1) {
-                console.log("TidalApi: WORKAROUND - Ignoring duplicate playTrackId call for", id, "(already in progress)")
-            }
-            return false
-        }
-
-        // Request fresh URL from API
-        if (applicationWindow.settings.debugLevel >= 1) {
-            console.log("TidalApi: Requesting fresh URL from API")
-        }
-        lastPlayedTrackId = id
-        trackPlayInProgress = true
-        
-        // Fallback: Reset flag after 5 seconds if no playback_info received
-        trackPlayTimeoutTimer.restart()
-        
+        // Duplicate calls no longer occur: _notifyCurrentTrack emits a single
+        // playback-triggering signal, so the former dedup workaround
+        // (lastPlayedTrackId/trackPlayInProgress) is gone. - Claude Generated
         if (applicationWindow.settings.debugLevel >= 1) {
             console.log("TidalApi: Calling Python backend for track URL:", id)
         }

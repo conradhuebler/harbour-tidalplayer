@@ -32,7 +32,6 @@ Item {
     // Signals (kompatibel mit aktueller Implementation)
     signal currentTrackChanged(var track)
     signal trackInformation(int id, int index, string title, string album, string artist, string image, int duration)
-    signal currentId(int id)
     signal currentPosition(int position)
     signal containsTrack(int id)
     signal clearList()
@@ -85,11 +84,14 @@ Item {
         listChanged()
     }
 
+    // Emits exactly one playback-triggering signal (currentTrackChanged).
+    // The former additional currentId signal was also wired to
+    // tidalApi.playTrackId and caused every track change to start playback
+    // twice. - Claude Generated
     function _notifyCurrentTrack() {
         if (currentIndex >= 0 && currentIndex < playlist.length) {
             var trackId = playlist[currentIndex]
             currentTrackChanged(trackId)
-            currentId(trackId)
             currentTrack(currentIndex)
         }
     }
@@ -247,7 +249,7 @@ Item {
         }
         
         if (trackId) {
-            mediaController.blockAutoNext = true
+            mediaController.suppressAutoNext()
             var insertPos = Math.max(0, currentIndex + 1)
             playlist.splice(insertPos, 0, trackId)
             currentIndex = insertPos
@@ -288,7 +290,7 @@ Item {
         try {
             position = parseInt(position)
             if (position >= 0 && position < playlist.length) {
-                mediaController.blockAutoNext = true
+                mediaController.suppressAutoNext()
                 currentIndex = position
                 _notifyCurrentTrack()
                 
@@ -368,9 +370,8 @@ Item {
     function nextTrackClicked() {
         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
             console.log('Next track clicked')
-        mediaController.blockAutoNext = true
+        mediaController.suppressAutoNext()
         nextTrack()
-        mediaController.blockAutoNext = false
     }
 
     function previousTrackClicked() {
@@ -383,7 +384,7 @@ Item {
         }
 
         // Second press within grace period goes to previous
-        mediaController.blockAutoNext = true
+        mediaController.suppressAutoNext()
         previousTrack()
     }
 
@@ -600,12 +601,18 @@ Item {
             }
         }
         
-        if (settings.debugLevel >= 1) {
-            console.log("PLAYLIST: Track not found in current playlist, loading auto-saved playlist")
+        // Track not in current playlist. Only fall back to loading the
+        // auto-saved playlist if no queue is loaded yet - otherwise resuming
+        // a track that is not part of the saved queue would clear and reload
+        // the queue that auto-load just established. - Claude Generated
+        if (playlist.length === 0) {
+            if (settings.debugLevel >= 1) {
+                console.log("PLAYLIST: Track not found and queue empty, loading auto-saved playlist")
+            }
+            playlistStorage.loadCurrentPlaylistState()
+        } else if (settings.debugLevel >= 1) {
+            console.log("PLAYLIST: Resumed track not in loaded queue, keeping queue as-is")
         }
-        
-        // Track not in current playlist - try loading auto-saved playlist
-        playlistStorage.loadCurrentPlaylistState()
         return false
     }
     

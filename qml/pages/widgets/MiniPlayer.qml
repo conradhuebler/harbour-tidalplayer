@@ -204,7 +204,6 @@ DockedPanel {
                     onClicked: {
                         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
                             console.log("next button pressed")
-                        mediaController.blockAutoNext = true
                         playlistManager.nextTrackClicked()
                     }
                 }

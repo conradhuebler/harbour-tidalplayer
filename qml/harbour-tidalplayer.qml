@@ -1066,26 +1066,6 @@ ApplicationWindow
 
     Connections
     {
-        target: playlistManager
-        onCurrentId:
-        {
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("PlaylistManager: CurrentId signal for", id, "- preloading enabled:", mediaController.preloadingEnabled)
-            
-            // Skip if preloading enabled - handled by onCurrentTrackChanged to avoid duplicates
-            if (mediaController.preloadingEnabled) {
-                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                    console.log("PlaylistManager: Skipping currentId processing - handled by onCurrentTrackChanged")
-                return
-            } else {
-                // Preloading disabled, use normal API
-                tidalApi.playTrackId(id)
-            }
-        }
-    }
-
-    Connections
-    {
     target: authManager
         onUpdateSettings:
         {

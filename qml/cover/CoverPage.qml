@@ -139,7 +139,7 @@ CoverBackground {
             id: prevButton
             iconSource: "image://theme/icon-cover-previous"
             onTriggered: {
-                mediaController.blockAutoNext = true
+                mediaController.suppressAutoNext()
                 playlistManager.previousTrack()
             }
         }
@@ -160,7 +160,6 @@ CoverBackground {
             id: nextButton
             iconSource: "image://theme/icon-cover-next"
             onTriggered: {
-                mediaController.blockAutoNext = true
                 playlistManager.nextTrackClicked()
             }
         }
