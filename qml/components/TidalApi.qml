@@ -166,9 +166,6 @@ Item {
     }
   //  property bool loading: false
 
-    property string playlist_track: ""
-    property string playlist_artist: ""
-    property string playlist_album: ""
     property string playlist_image: ""
 
     property string current_track_title : ""
@@ -786,20 +783,6 @@ Item {
         }
 
 
-        function getTrackInfo(id)
-        {
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("getTrackInfo ", id)
-            var track = (call_sync("tidal.Tidaler.getTrackInfo", [id], function(track) {
-                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                    console.log(track)
-            }));
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log(track)
-            return track
-        }
-
-
     }
 
     onOAuthSuccess: {
@@ -1221,36 +1204,28 @@ Item {
     property string pendingPreloadId: ""
     property string pendingCrossfadeId: ""
 
-    // Async track info fetch via the request queue: never blocks the UI
-    // thread; the result also arrives as cacheTrack signal. - Claude Generated
+    // Async info fetches via the request queue: never block the UI thread and
+    // deduplicate concurrent requests; results also arrive as the matching
+    // cacheTrack/cacheAlbum/cacheArtist/cachePlaylist/cacheMix signal, which
+    // TidalCache persists. - Claude Generated
     function requestTrackInfo(id, callback) {
         return queueRequest("tidal.Tidaler.getTrackInfo", [id], callback || null)
     }
 
-    function getTrackInfo(id) {
-        if (typeof id === 'string') {
-            id = id.split('/').pop()
-            id = id.replace(/[^0-9]/g, '')
-        }
-        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-            console.log("JavaScript id after:", id, typeof id)
+    function requestAlbumInfo(id, callback) {
+        return queueRequest("tidal.Tidaler.getAlbumInfo", [id], callback || null)
+    }
 
-        var returnValue = null
+    function requestArtistInfo(id, callback) {
+        return queueRequest("tidal.Tidaler.getArtistInfo", [id], callback || null)
+    }
 
-        pythonTidal.call_sync("tidal.Tidaler.getTrackInfo", [id], function(result) {
-            if (result) {
-                // Properties aktualisieren
-                playlist_track = result.title
-                playlist_artist = result.artist
-                playlist_album = result.album
-                // playlist_image = result.image
-                // Return-Wert setzen
-                returnValue = result
-            }
-        })
-        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-            console.log(returnValue)
-        return returnValue
+    function requestPlaylistInfo(id, callback) {
+        return queueRequest("tidal.Tidaler.getPlaylistInfo", [id], callback || null)
+    }
+
+    function requestMixInfo(id, callback) {
+        return queueRequest("tidal.Tidaler.getMixInfo", [id], callback || null)
     }
 
     // Album Funktionen - Back to simple approach
@@ -1258,10 +1233,6 @@ Item {
         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
             console.log("Get album tracks", id)
         pythonTidal.call("tidal.Tidaler.getAlbumTracks", [id])
-    }
-
-    function getAlbumInfo(id) {
-        pythonTidal.call("tidal.Tidaler.getAlbumInfo", [id])
     }
 
     // Unified collection loaders - mode ∈ {"replace","append","play_now","play_next","queue"}.
@@ -1287,10 +1258,6 @@ Item {
     }
 
     // Artist Funktionen
-    function getArtistInfo(id) {
-        pythonTidal.call("tidal.Tidaler.getArtistInfo", [id])
-    }
-
     // Playlist Funktionen
     function getPersonalPlaylists() {
         pythonTidal.call('tidal.Tidaler.getPersonalPlaylists', [])

@@ -662,6 +662,13 @@ Item {
     // Handle preload and crossfade responses - Claude Generated
     Connections {
         target: tidalApi
+        onCacheTrack: {
+            // Cache lookups are async-first: if the current track's metadata
+            // was missing when updateTrackInfoFromPlaylist ran, fill it in
+            // once the info arrives. - Claude Generated
+            if (track_info && String(track_info.trackid) === String(track_id) && !track_name)
+                updateTrackInfoFromPlaylist()
+        }
         onPreloadUrlReady: {
             if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
                 console.log("MediaHandler: Preload URL ready - expecting:", expectingPreloadResponse, "trackId:", trackId, "nextTrackId:", nextTrackId)

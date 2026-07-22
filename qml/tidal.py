@@ -637,6 +637,18 @@ class Tidal:
             self.send_object("error", {"message": str(e)})
             return None
 
+    def getPlaylistInfo(self, id):
+        try:
+            playlist = self.session.playlist(id)
+            playlist_info = self.handle_playlist(playlist)
+            if playlist_info:
+                self.send_object("cachePlaylist", playlist_info)
+                return playlist_info
+            return None
+        except Exception as e:
+            self.send_object("error", {"message": str(e)})
+            return None
+
     def getTrackUrl(self, id):
         try:
             track = self.session.track(int(id))

@@ -848,8 +848,23 @@ Item {
     }
 
     
+    // Rebuild the current-playlist view once metadata for missing tracks
+    // arrives asynchronously (cache lookups no longer block on the API);
+    // debounced so a batch of cacheTrack signals causes one refresh.
+    // - Claude Generated
+    Timer {
+        id: cacheRefreshTimer
+        interval: 300
+        repeat: false
+        onTriggered: refreshList()
+    }
+
     Connections {
         target: tidalApi
+        onCacheTrack: {
+            if (type === "current" && listModel.count < playlistManager.size)
+                cacheRefreshTimer.restart()
+        }
         onPlaylistTrackAdded: {
             if (type === "playlist") {
                 listModel.append({

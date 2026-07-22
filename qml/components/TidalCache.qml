@@ -455,177 +455,44 @@ id: root
         });
     }
 
-    // Track-Info abrufen (entweder aus Cache oder von Python)
+    // Info-Getter: reine Cache/DB-Lookups, blockieren nie den UI-Thread.
+    // Bei Miss wird asynchron nachgeladen (Ergebnis kommt als cache*-Signal
+    // zurueck und wird ueber die Connections unten gespeichert); ein
+    // abgelaufener Eintrag wird sofort geliefert und im Hintergrund
+    // aufgefrischt. - Claude Generated
     function getTrackInfo(id) {
-        // Erst im Cache nachsehen
-        var cachedTrack = getTrack(id)
-        if (cachedTrack) {
-            if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
-                return cachedTrack
-            } else {
-                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                    console.log("Cache entry too old, refreshing...")
-            }
-        }
-
-        // Wenn nicht im Cache oder zu alt, von Python holen
-
-        var result = tidalApi.getTrackInfo(id)
-        if (result) {
-            var trackData = {
-                trackid: id,
-                albumid: result.albumid,
-                artistid: result.artistid,
-                title: result.title,
-                artist: result.artist,
-                album: result.album,
-                duration: result.duration,
-                timestamp: Date.now()
-            }
-
-            saveTrackToCache(trackData)
-            return trackData
-        }
-
-        return null
+        var cached = getTrack(id)
+        if (!cached || Date.now() - cached.timestamp >= maxCacheAge)
+            tidalApi.requestTrackInfo(id)
+        return cached
     }
 
     function getAlbumInfo(id) {
-        // Erst im Cache nachsehen
-        var cachedTrack = getAlbum(id)
-        if (cachedTrack) {
-            if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
-                return cachedTrack
-            } else {
-                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                    console.log("Cache entry too old, refreshing...")
-            }
-        }
-
-        // Wenn nicht im Cache oder zu alt, von Python holen
-
-        var result = tidalApi.getAlbumInfo(id)
-        if (result) {
-            var albumData = {
-                albumid: result.albumid,
-                title: result.title,
-                artist: result.artist,
-                artistid: result.artistid,
-                image: result.image,
-                duration: result.duration,
-                num_tracks : result.num_tracks,
-                year : result.year,
-                timestamp: Date.now()
-            }
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("album not in cache, adding to cache ... (i think this causes the nulls, as it should be synchr.) ", result)
-            saveAlbumToCache(albumData)
-            return albumData
-        }
-
-        return null
+        var cached = getAlbum(id)
+        if (!cached || Date.now() - cached.timestamp >= maxCacheAge)
+            tidalApi.requestAlbumInfo(id)
+        return cached
     }
 
     function getArtistInfo(id) {
-        // Erst im Cache nachsehen
-        var cachedTrack = getArtist(id)
-        if (cachedTrack) {
-            if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
-                return cachedTrack
-            } else {
-                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                    console.log("Cache entry too old, refreshing...")
-            }
-        }
-
-        // Wenn nicht im Cache oder zu alt, von Python holen
-
-        var result = tidalApi.getArtistInfo(id)
-        if (result) {
-            var artistData = {
-                artistid: result.artistid,
-                name: result.name,
-                image: result.image,
-                bio: result.bio,
-                timestamp: Date.now(),
-            }
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("Adding to cache ...")
-
-            saveArtistToCache(artistData)
-            return artistData
-        }
-
-        return null
+        var cached = getArtist(id)
+        if (!cached || Date.now() - cached.timestamp >= maxCacheAge)
+            tidalApi.requestArtistInfo(id)
+        return cached
     }
 
     function getPlaylistInfo(id) {
-        // Erst im Cache nachsehen
-        var cachedTrack = getPlaylist(id)
-        if (cachedTrack) {
-            if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
-                return cachedTrack
-            } else {
-                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                    console.log("Cache entry too old, refreshing...")
-            }
-        }
-
-        // Wenn nicht im Cache oder zu alt, von Python holen
-
-        var result = tidalApi.getPlaylistInfo(id)
-        if (result) {
-            var playlistData = {
-                playlistid: result.playlistid,
-                title: result.title,
-                image: result.image,
-                duration: result.duration,
-                timestamp: Date.now()
-            }
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("Adding to cache ...")
-
-            savePlaylistToCache(playlistData)
-            return playlistData
-        }
-
-        return null
+        var cached = getPlaylist(id)
+        if (!cached || Date.now() - cached.timestamp >= maxCacheAge)
+            tidalApi.requestPlaylistInfo(id)
+        return cached
     }
 
     function getMixInfo(id) {
-        // Erst im Cache nachsehen
-        var cachedTrack = getMix(id)
-        if (cachedTrack) {
-            if (Date.now() - cachedTrack.timestamp < maxCacheAge) {
-                return cachedTrack
-            } else {
-                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                    console.log("Cache entry too old, refreshing...")
-            }
-        }
-
-        // Wenn nicht im Cache oder zu alt, von Python holen
-
-        var result = tidalApi.getMixInfo(id)
-        if (result) {
-            var mixData = {
-                mixid: result.mixid,
-                title: result.title,
-                artist: result.artist,
-                artistid: result.artistid,
-                album: result.album,
-                albumid: result.albumid,
-                duration: result.duration,
-                timestamp: Date.now()
-            }
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("Adding to cache ...")
-
-            saveMixToCache(mixData)
-            return mixData
-        }
-
-        return null
+        var cached = getMix(id)
+        if (!cached || Date.now() - cached.timestamp >= maxCacheAge)
+            tidalApi.requestMixInfo(id)
+        return cached
     }
 
     // Datenbank initialisieren

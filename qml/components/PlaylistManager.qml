@@ -396,9 +396,15 @@ Item {
             console.log('trackId:', trackId)
         
         playlistStorage.updatePosition(playlistStorage.playlistTitle, index)
+        // Cache lookup is async-first: on a miss the info arrives later via
+        // cacheTrack; the previous track[1..5] indexing passed undefined
+        // values anyway. - Claude Generated
         var track = cacheManager.getTrackInfo(trackId)
-        trackInformation(trackId, index, track[1], track[2], track[3], track[4], track[5])
-        selectedTrackChanged(track)
+        if (track) {
+            trackInformation(trackId, index, track.title || "", track.album || "",
+                             track.artist || "", track.image || "", track.duration || 0)
+            selectedTrackChanged(track)
+        }
     }
 
     // ----- Unified collection API ------------------------------------------
