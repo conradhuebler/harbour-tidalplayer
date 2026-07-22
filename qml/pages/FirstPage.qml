@@ -147,13 +147,16 @@ Page {
                       width: swipeView.itemWidth
                       height: swipeView.height
                       asynchronous: true
-                      
-                      // PERFORMANCE: For 3-page carousel, keep all pages loaded to prevent content loss
-                      // Could optimize further with more sophisticated caching later
-                      active: true
-                      source: active ? swipeView.carouselPages[index] : ""
+
+                      // PERFORMANCE: Only instantiate the visible page at startup
+                      // so the home page is ready sooner; once a page has been
+                      // loaded it stays alive to prevent content loss. - Claude Generated
+                      property bool everLoaded: false
+                      active: everLoaded || PathView.isCurrentItem
+                      source: swipeView.carouselPages[index]
 
                     onLoaded: {
+                    everLoaded = true
                     if (index === 2) { // TrackList
                         item.title = ""
                         item.type = "current"
