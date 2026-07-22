@@ -609,17 +609,6 @@ Item {
         playlistItem.clear()
     }
 
-    function addToPlaylist(url) {
-        playlistItem.addItem(url)
-    }
-
-    function replacePlaylist(urls) {
-        playlistItem.clear()
-        for (var i = 0; i < urls.length; i++) {
-            playlistItem.addItem(urls[i])
-        }
-    }
-
     function startPreload(trackId, url) {
         if (!preloadingEnabled || preloadInProgress) {
             return false

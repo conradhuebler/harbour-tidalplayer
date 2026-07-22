@@ -448,14 +448,6 @@ Item {
         dualAudioManager.clearPlaylist()
     }
 
-    function addToPlaylist(url) {
-        dualAudioManager.addToPlaylist(url)
-    }
-
-    function replacePlaylist(urls) {
-        dualAudioManager.replacePlaylist(urls)
-    }
-
     // Preload Functions - Claude Generated
     /**
      * Attempts to preload the next track in background

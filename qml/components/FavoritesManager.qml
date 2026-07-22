@@ -1,105 +1,47 @@
 import QtQuick 2.0
-import io.thp.pyotherside 1.5
 
-
+// Session cache of favorite states. All Python communication goes through
+// the single TidalApi bridge (updateFavorite handler + setXFavorite calls);
+// the former dedicated Python instance here is gone. - Claude Generated
 Item {
     id: root
 
-    Timer {
-        id: updateTimer
-        interval: 1000  // 100ms Verzögerung
-        repeat: false
-        onTriggered: {
-
-                //playlistStorage.loadCurrentPlaylistState()
-        }
-    }
     property var favoritesCache: ({})  // Object to store id -> boolean mappings
 
-    signal updateFavorite(var id, var status)  // signal that an fav status was updated
-
-    Python {
-        id: favoritesPython
-
-
-        property bool initialised : false
-
-        Component.onCompleted: {
-
-            addImportPath(Qt.resolvedUrl('.'))
-        
-            // Response Loading finished
-            setHandler('updateFavorite', function(id,status) {
-                addFavoriteInfo(id, status)
-                root.updateFavorite(id, status)
-            })
-
-            initialised = true;
-        }
-
-        // Python-Funktionen
- 
-        function setArtistFavoriteInfo(id, status) {
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("setArtistFavoriteInfo", id, status)
-            if(initialised)  call('tidal.Tidaler.setArtistFavInfo', [id, status], {})
-        }
-
-        function setAlbumFavoriteInfo(id, status) {
-           if(initialised)  call('tidal.Tidaler.setAlbumFavInfo', [id, status], {})
-        }
-
-        function setTrackFavoriteInfo(id, status) {
-           if(initialised)  call('tidal.Tidaler.setTrackFavInfo', [id, status], {})
-        }
-
-        function setPlaylistFavoriteInfo(id, status) {
-           if(initialised)  call('tidal.Tidaler.setPlaylistFavInfo', [id, status], {})
-        }
-
-    }
-
+    signal updateFavorite(var id, var status)  // signal that a fav status was updated
 
     // public function to check if item is favorite
     function isFavorite(id) {
-        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-            console.log("isFavorite check for:", id)
         if (id in favoritesCache) {
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("Cache hit for:", id, "Status:", favoritesCache[id])
+            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 2)
+                console.log("FavoritesManager: cache hit for", id, "status:", favoritesCache[id])
             return favoritesCache[id]
         }
-        // Not in cache, need to load from Tidal
-        // I doubt i need this, as all changes in the session
-        // can be managed by favoritesManager
-        // favoritesPython.isFavorite(id)
-        return false  // Return false while loading
+        return false
     }
 
     function setArtistFavoriteInfo(id, status) {
         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
             console.log("setArtistFavoriteInfo", id, status)
-        favoritesPython.setArtistFavoriteInfo(id, status)
+        tidalApi.setArtistFavorite(id, status)
     }
 
     function setAlbumFavoriteInfo(id, status) {
         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
             console.log("setAlbumFavoriteInfo", id, status)
-        favoritesPython.setAlbumFavoriteInfo(id, status)
+        tidalApi.setAlbumFavorite(id, status)
     }
 
     function setTrackFavoriteInfo(id, status) {
         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
             console.log("setTrackFavoriteInfo", id, status)
-        favoritesPython.setTrackFavoriteInfo(id, status)
+        tidalApi.setTrackFavorite(id, status)
     }
 
     function setPlaylistFavoriteInfo(id, status) {
         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
             console.log("setPlaylistFavoriteInfo", id, status)
-        // this should happen only on success !!
-        // favoritesCache[id] = status
-        favoritesPython.setPlaylistFavoriteInfo(id, status)
+        tidalApi.setPlaylistFavorite(id, status)
     }
 
     // internal function to add favorite
@@ -107,7 +49,8 @@ Item {
         favoritesCache[id] = true
     }
 
-    // internal function to add favorite
+    // internal function to store a favorite status (signal emission is done
+    // by the updateFavorite handler in TidalApi)
     function addFavoriteInfo(id, status) {
         favoritesCache[id] = status
     }
@@ -125,16 +68,15 @@ Item {
             if (album_info == undefined) {
                  console.error("album_info is undefined. skip append to model")
                  return;
-            }            
+            }
             addFavorite(album_info.albumid)
         }
         onFavTracks: {
             if (track_info == undefined) {
                  console.error("track_info is undefined. skip append to model")
                  return;
-            }            
+            }
             addFavorite(track_info.trackid)
         }
     }
-
 }

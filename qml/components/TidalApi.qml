@@ -753,7 +753,14 @@ Item {
                 root.topArtist(artist_info)
             })
 
-            // Import Python module with detailed error handling  
+            // Favorites status updates - handled here since FavoritesManager
+            // no longer runs its own Python instance - Claude Generated
+            setHandler('updateFavorite', function(id, status) {
+                favManager.addFavoriteInfo(id, status)
+                favManager.updateFavorite(id, status)
+            })
+
+            // Import Python module with detailed error handling
             if (applicationWindow.settings.debugLevel >= 1) {
                 console.log("TIDAL: Importing tidal.py module...")
                 console.log("TIDAL: Debug level synchronization:", applicationWindow.settings.debugLevel)
@@ -1185,6 +1192,24 @@ Item {
 
     function requestMixInfo(id, callback) {
         return queueRequest("tidal.Tidaler.getMixInfo", [id], callback || null)
+    }
+
+    // Favorites toggles (single Python bridge; FavoritesManager delegates
+    // here) - Claude Generated
+    function setTrackFavorite(id, status) {
+        pythonTidal.call('tidal.Tidaler.setTrackFavInfo', [id, status])
+    }
+
+    function setAlbumFavorite(id, status) {
+        pythonTidal.call('tidal.Tidaler.setAlbumFavInfo', [id, status])
+    }
+
+    function setArtistFavorite(id, status) {
+        pythonTidal.call('tidal.Tidaler.setArtistFavInfo', [id, status])
+    }
+
+    function setPlaylistFavorite(id, status) {
+        pythonTidal.call('tidal.Tidaler.setPlaylistFavInfo', [id, status])
     }
 
     // Album Funktionen - Back to simple approach
