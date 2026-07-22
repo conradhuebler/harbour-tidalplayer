@@ -22,11 +22,10 @@ from enum import Enum
 from typing import TYPE_CHECKING, List, Mapping, Optional, Union, cast
 from warnings import warn
 
-import dateutil.parser
-from typing_extensions import NoReturn
+from typing import NoReturn
 
 from tidalapi.exceptions import MetadataNotAvailable, ObjectNotFound, TooManyRequests
-from tidalapi.types import JsonObj
+from tidalapi.types import JsonObj, parse_iso_date
 
 from . import mix
 
@@ -101,7 +100,7 @@ class Artist:
 
         user_date_added = json_obj.get("dateAdded")
         self.user_date_added = (
-            dateutil.parser.isoparse(user_date_added) if user_date_added else None
+            parse_iso_date(user_date_added) if user_date_added else None
         )
 
         self.listen_url = f"{self.session.config.listen_base_url}/artist/{self.id}"

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Copyright (C) 2023- The Tidalapi Developers
 # Copyright (C) 2022 morguldir
 #
@@ -25,10 +23,9 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, List, Optional, Union
 
-import dateutil.parser
 
 from tidalapi.exceptions import ObjectNotFound, TooManyRequests
-from tidalapi.types import JsonObj
+from tidalapi.types import JsonObj, parse_iso_date
 
 if TYPE_CHECKING:
     from tidalapi.media import Track, Video
@@ -249,7 +246,7 @@ class MixV2:
         if json_obj.get("mixType"):
             date_added = json_obj.get("dateAdded")
             self.date_added = (
-                dateutil.parser.isoparse(date_added) if date_added else None
+                parse_iso_date(date_added) if date_added else None
             )
             self.title = json_obj["title"]
             self.sub_title = json_obj["subTitle"]
@@ -277,7 +274,7 @@ class MixV2:
                 color=sub_title_text_info["color"],
             )
             updated = json_obj.get("updated")
-            self.updated = dateutil.parser.isoparse(updated) if updated else None
+            self.updated = parse_iso_date(updated) if updated else None
         elif json_obj.get("type"):
             # Certain mix types (e.g. when returned from Page) must be parsed differently. Why, TIDAL?
             self.country_code = json_obj.get("countryCode", None)

@@ -27,16 +27,12 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Optional, Union, cast
 
-import dateutil.parser
 
 if TYPE_CHECKING:
     import tidalapi
 
 import base64
 import json
-
-from isodate import parse_duration
-from mpegdash.parser import MPEGDASHParser
 
 from tidalapi.album import Album
 from tidalapi.exceptions import (
@@ -49,7 +45,7 @@ from tidalapi.exceptions import (
     UnknownManifestFormat,
     URLNotAvailable,
 )
-from tidalapi.types import JsonObj
+from tidalapi.types import JsonObj, parse_iso_date
 
 from . import mix
 
@@ -265,13 +261,13 @@ class Media:
         # Removed media does not have a release date
         stream_start_date = json_obj.get("streamStartDate")
         self.stream_start_date = (
-            dateutil.parser.isoparse(stream_start_date) if stream_start_date else None
+            parse_iso_date(stream_start_date) if stream_start_date else None
         )
         self.tidal_release_date = self.stream_start_date
 
         # When getting items from playlists they have a date added attribute, same with favorites.
         date_added = json_obj.get("dateAdded")
-        self.date_added = dateutil.parser.isoparse(date_added) if date_added else None
+        self.date_added = parse_iso_date(date_added) if date_added else None
         self.user_date_added = self.date_added
 
         self.track_num = json_obj["trackNumber"]
@@ -772,6 +768,11 @@ class DashInfo:
             raise ManifestDecodeError
 
     def __init__(self, mpd_xml):
+        # Lazy imports: mpegdash pulls xml.dom.minidom and isodate is only
+        # needed for DASH manifests - keep both off the startup import path.
+        from isodate import parse_duration
+        from mpegdash.parser import MPEGDASHParser
+
         mpd = MPEGDASHParser.parse(
             mpd_xml.split("<?xml version='1.0' encoding='UTF-8'?>")[1]
         )
@@ -916,7 +917,7 @@ class Video(Media):
         Media.parse(self, json_obj, album)
         release_date = json_obj.get("releaseDate")
         self.release_date = (
-            dateutil.parser.isoparse(release_date) if release_date else None
+            parse_iso_date(release_date) if release_date else None
         )
         # Note: Videos found in the /pages endpoints don't have quality
         self.video_quality = json_obj.get("quality")

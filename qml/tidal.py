@@ -63,59 +63,17 @@ if os.path.exists(python_path):
 else:
     debug_log(f"WARNING: Python path does not exist: {python_path}", level=1, force=True)
 
-# Import modules with detailed error handling
-modules_to_import = [
-    ('socket', 'socket'),
-    ('requests', 'requests'),
-    ('json', 'json', ),
-    ('typing_extensions', 'typing_extensions'),
-    ('dateutil', 'dateutil'),
-    ('isodate', 'isodate'),
-    ('tidalapi', 'tidalapi (main)'),
-    ('pyotherside', 'pyotherside', )
-]
-
-debug_log("Importing standard modules...", level=2)
-for module_name, display_name in modules_to_import:
-    try:
-        module = __import__(module_name)
-        if hasattr(module, '__version__'):
-            debug_log(f"✓ Imported {display_name} v{module.__version__}", level=2)
-        else:
-            debug_log(f"✓ Imported {display_name}", level=2)
-        globals()[module_name] = module
-    except ImportError as e:
-        debug_log(f"✗ Failed to import {display_name}: {str(e)}", level=1, force=True)
-        raise
-    except Exception as e:
-        debug_log(f"✗ Error importing {display_name}: {str(e)}", level=1, force=True)
-        raise
-
-# Import TidalAPI submodules with error handling
+# Import TidalAPI submodules; heavy optional deps (typing_extensions, dateutil,
+# isodate, mpegdash) are no longer forced here - they load lazily on first use.
 debug_log("Importing TidalAPI submodules...", level=2)
-tidalapi_submodules = [
-    ('tidalapi.page', ['PageItem', 'PageLink']),
-    ('tidalapi.mix', ['Mix']),
-    ('tidalapi.media', ['Quality']),
-    ('requests.exceptions', ['HTTPError', 'RequestException'])
-]
-
-for module_path, classes in tidalapi_submodules:
-    try:
-        module = __import__(module_path, fromlist=classes)
-        for class_name in classes:
-            if hasattr(module, class_name):
-                globals()[class_name] = getattr(module, class_name)
-                debug_log(f"✓ Imported {module_path}.{class_name}", level=3)
-            else:
-                debug_log(f"✗ Class {class_name} not found in {module_path}", level=1, force=True)
-        debug_log(f"✓ Imported {module_path}", level=2)
-    except ImportError as e:
-        debug_log(f"✗ Failed to import {module_path}: {str(e)}", level=1, force=True)
-        raise
-    except Exception as e:
-        debug_log(f"✗ Error importing {module_path}: {str(e)}", level=1, force=True)
-        raise
+try:
+    from tidalapi.page import PageItem, PageLink
+    from tidalapi.mix import Mix
+    from tidalapi.media import Quality
+    from requests.exceptions import HTTPError, RequestException
+except ImportError as e:
+    debug_log(f"✗ Failed to import {str(e)}", level=1, force=True)
+    raise
 
 debug_log("All modules imported successfully", level=1)
 

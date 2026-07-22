@@ -6,6 +6,13 @@ from typing import Any, Dict
 JsonObj = Dict[str, Any]
 
 
+def parse_iso_date(value):
+    # Lazy import: keeps python-dateutil off the app-startup import path.
+    import dateutil.parser
+
+    return dateutil.parser.isoparse(value)
+
+
 class AlbumOrder(Enum):
     Artist = "ARTIST"
     DateAdded = "DATE"

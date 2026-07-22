@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023- The Tidalapi Developers
 # Copyright (C) 2019-2022 morguldir
 # Copyright (C) 2014 Thomas Amland
@@ -22,10 +20,9 @@ import functools
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Union, cast
 
-import dateutil.parser
 
 from tidalapi.exceptions import MetadataNotAvailable, ObjectNotFound, TooManyRequests
-from tidalapi.types import JsonObj
+from tidalapi.types import JsonObj, parse_iso_date
 
 if TYPE_CHECKING:
     from tidalapi.artist import Artist
@@ -91,6 +88,7 @@ class Album:
                 request = self.request.request("GET", "albums/%s" % self.id)
             except ObjectNotFound as e:
                 e.args = ("Album with id %s not found" % self.id,)
+                raise e
             except TooManyRequests as e:
                 e.args = ("Album unavailable",)
                 raise e
@@ -145,17 +143,17 @@ class Album:
 
         release_date = json_obj.get("releaseDate")
         self.release_date = (
-            dateutil.parser.isoparse(release_date) if release_date else None
+            parse_iso_date(release_date) if release_date else None
         )
 
         tidal_release_date = json_obj.get("streamStartDate")
         self.tidal_release_date = (
-            dateutil.parser.isoparse(tidal_release_date) if tidal_release_date else None
+            parse_iso_date(tidal_release_date) if tidal_release_date else None
         )
 
         user_date_added = json_obj.get("dateAdded")
         self.user_date_added = (
-            dateutil.parser.isoparse(user_date_added) if user_date_added else None
+            parse_iso_date(user_date_added) if user_date_added else None
         )
         self.listen_url = f"{self.session.config.listen_base_url}/album/{self.id}"
         self.share_url = f"{self.session.config.share_base_url}/album/{self.id}"

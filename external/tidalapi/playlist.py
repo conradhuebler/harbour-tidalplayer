@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Sequence, Union, cast
 
 from tidalapi.exceptions import ObjectNotFound, TooManyRequests
-from tidalapi.types import ItemOrder, JsonObj, OrderDirection
+from tidalapi.types import ItemOrder, JsonObj, OrderDirection, parse_iso_date
 from tidalapi.user import LoggedInUser
 from tidalapi.workers import get_items
 
@@ -33,7 +33,6 @@ if TYPE_CHECKING:
     from tidalapi.session import Session
     from tidalapi.user import User
 
-import dateutil.parser
 
 
 def list_validate(lst):
@@ -110,10 +109,10 @@ class Playlist:
         # These can be missing on from the /pages endpoints
         last_updated = json_obj.get("lastUpdated")
         self.last_updated = (
-            dateutil.parser.isoparse(last_updated) if last_updated else None
+            parse_iso_date(last_updated) if last_updated else None
         )
         created = json_obj.get("created")
-        self.created = dateutil.parser.isoparse(created) if created else None
+        self.created = parse_iso_date(created) if created else None
         public = json_obj.get("publicPlaylist")
         self.public = None if public is None else bool(public)
         popularity = json_obj.get("popularity")
@@ -130,12 +129,12 @@ class Playlist:
 
         last_item_added_at = json_obj.get("lastItemAddedAt")
         self.last_item_added_at = (
-            dateutil.parser.isoparse(last_item_added_at) if last_item_added_at else None
+            parse_iso_date(last_item_added_at) if last_item_added_at else None
         )
 
         user_date_added = json_obj.get("dateAdded")
         self.user_date_added = (
-            dateutil.parser.isoparse(user_date_added) if user_date_added else None
+            parse_iso_date(user_date_added) if user_date_added else None
         )
 
         creator = json_obj.get("creator")
@@ -409,9 +408,9 @@ class Folder:
         added = json_obj.get("addedAt")
         created = json_obj["data"].get("createdAt")
         last_modified = json_obj["data"].get("lastModifiedAt")
-        self.added = dateutil.parser.isoparse(added) if added else None
-        self.created = dateutil.parser.isoparse(created) if added else None
-        self.last_modified = dateutil.parser.isoparse(last_modified) if added else None
+        self.added = parse_iso_date(added) if added else None
+        self.created = parse_iso_date(created) if added else None
+        self.last_modified = parse_iso_date(last_modified) if added else None
         self.total_number_of_items = json_obj["data"].get("totalNumberOfItems")
 
         self.listen_url = f"{self.session.config.listen_base_url}/folder/{self.id}"
