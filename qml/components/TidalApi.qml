@@ -317,7 +317,7 @@ Item {
                 console.log("TIDAL: Starting Python backend initialization...")
                 console.log("TIDAL: Adding import path:", Qt.resolvedUrl('../'))
             }
-            
+
             addImportPath(Qt.resolvedUrl('../'))
             
             // DEBUG: Module loading with error handling
@@ -771,7 +771,7 @@ Item {
                 importModule('tidal', function() {
                     // Backend successfully initialized
                     backendInitialized = true
-                    
+
                     if (applicationWindow.settings.debugLevel >= 1) {
                         console.log("TIDAL: ✓ Python module 'tidal' imported successfully")
                         console.log("TIDAL: Python backend is ready for API calls")
@@ -820,11 +820,10 @@ Item {
             applicationWindow.settings.addEmailToHistory(applicationWindow.settings.mail)
         }
         
-        // CRITICAL: Ensure Python session is ready after successful login
+        // Start post-login settling window (suppresses transient API errors)
         if (applicationWindow.settings.debugLevel >= 1) {
-            console.log("LOGIN: Forcing Python session reinitialization after successful login")
+            console.log("LOGIN: Login successful, starting settling window")
         }
-        // Force full reinitialization to ensure session works properly
         sessionReinitTimer.start()
         
         // Show login success notification and switch to main page
@@ -1127,35 +1126,17 @@ Item {
         }
     }
     
-    // Timer for delayed session reinitialization after login
+    // Post-login settling window: while running, transient API errors are
+    // suppressed (see onError). The former Python re-initialize call here was
+    // redundant - initialize() already ran before login. - Claude Generated
     Timer {
         id: sessionReinitTimer
-        interval: 2000  // Wait 2 seconds for login to fully settle (was 100ms)
+        interval: 2000
         repeat: false
         onTriggered: {
-            // Check if there are active requests before reinitializing
-            if (Object.keys(pendingRequests).length > 0) {
-                if (applicationWindow.settings.debugLevel >= 1) {
-                    console.log("LOGIN: Delaying session reinitialization - active requests in progress")
-                }
-                // Retry after another 1 second
-                interval = 1000
-                restart()
-                return
+            if (applicationWindow.settings.debugLevel >= 2) {
+                console.log("LOGIN: Post-login settling window ended")
             }
-
-            if (applicationWindow.settings.debugLevel >= 1) {
-                console.log("LOGIN: Executing delayed Python session reinitialization")
-            }
-
-            // Force full reinitialization to ensure session works properly
-            pythonTidal.call('tidal.Tidaler.initialize', [applicationWindow.settings.audio_quality], function() {
-                if (applicationWindow.settings.debugLevel >= 1) {
-                    console.log("LOGIN: Session reinitialization completed")
-                }
-                // Reset interval back to default for next time
-                interval = 2000
-            })
         }
     }
     
