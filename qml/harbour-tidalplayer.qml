@@ -1007,13 +1007,51 @@ ApplicationWindow
         application: applicationWindow
         //home : firstpage
     }
-    allowedOrientations: defaultAllowedOrientations
+    // Landscape/tablet mode: the pages all declare Orientation.All, so the
+    // window must not narrow that down to the device default. - Claude Generated
+    allowedOrientations: Orientation.All
 
 
-    MiniPlayer {
-        parent: pageStack
-        id: miniPlayerPanel
-        z:10
+    // The player has to survive page changes, so it lives here rather than in
+    // a page - but only a Page rotates itself in Silica. Everything above it
+    // (content, pageStack) keeps the screen's physical, unrotated geometry, so
+    // a panel parented there stays put while the UI turns: in landscape it
+    // ended up as a band across the side, covering the page.
+    //
+    // This layer does what Silica's own _rotatingItem does, but as a child of
+    // `content` - which is the ApplicationWindow's default parent and comes
+    // after the page stack, so the player still draws on top of the pages.
+    // Inside it, "bottom" and "right" mean what the user sees. - Claude Generated
+    Item {
+        id: playerLayer
+        z: 10
+
+        readonly property int uiOrientation: pageStack.currentPage
+                                             ? pageStack.currentPage.orientation
+                                             : Orientation.Portrait
+        readonly property bool vertical: uiOrientation !== Orientation.Landscape
+                                         && uiOrientation !== Orientation.LandscapeInverted
+
+        anchors.centerIn: parent
+        width: vertical ? parent.width : parent.height
+        height: vertical ? parent.height : parent.width
+
+        rotation: uiOrientation === Orientation.Landscape
+                  ? 90
+                  : uiOrientation === Orientation.PortraitInverted
+                    ? 180
+                    : uiOrientation === Orientation.LandscapeInverted
+                      ? 270
+                      : 0
+
+        // No animation on the rotation: the page runs its own orientation
+        // transition, and a fade that gets interrupted here would leave the
+        // player invisible. It snaps, and that is the safe failure mode.
+        // - Claude Generated
+
+        MiniPlayer {
+            id: miniPlayerPanel
+        }
     }
 
 

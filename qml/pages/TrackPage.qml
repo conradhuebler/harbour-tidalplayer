@@ -24,7 +24,8 @@ Page {
             left: parent.left
             leftMargin: Theme.horizontalPageMargin
             right: parent.right
-            rightMargin: Theme.horizontalPageMargin
+            // Keep the player's column clear in landscape. - Claude Generated
+            rightMargin: Theme.horizontalPageMargin + minPlayerPanel.reservedRight
             verticalCenter: parent.verticalCenter
         }
 

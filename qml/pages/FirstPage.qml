@@ -21,7 +21,7 @@ Page {
         id: flickable
         anchors {
             fill: parent
-            bottomMargin: miniPlayerPanel.margin
+            rightMargin: miniPlayerPanel.reservedRight
         }
 
 
@@ -130,6 +130,9 @@ Page {
 
                   function getBottomOffset()
                   {
+                      // Landscape: the player sits on the right edge, so it
+                      // costs no height here. - Claude Generated
+                      if (miniPlayerPanel.landscape) return 0
                       if (miniPlayerPanel.open) return ( 1.2 * miniPlayerPanel.height )
                       return miniPlayerPanel.height * 0.4
                   }

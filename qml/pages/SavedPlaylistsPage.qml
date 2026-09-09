@@ -7,6 +7,8 @@ Page {
     SilicaListView {
         id: listView
         anchors.fill: parent
+        // Keep the player's column clear in landscape. - Claude Generated
+        anchors.rightMargin: minPlayerPanel.reservedRight
 
         header: PageHeader {
             title: qsTr("Saved Playlists")

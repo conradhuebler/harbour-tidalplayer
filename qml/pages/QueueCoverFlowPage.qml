@@ -86,7 +86,8 @@ Page {
     SilicaFlickable {
         anchors {
             fill: parent
-            bottomMargin: miniPlayerPanel.margin
+            bottomMargin: miniPlayerPanel.reservedBottom
+            rightMargin: miniPlayerPanel.reservedRight
         }
         contentHeight: height
 

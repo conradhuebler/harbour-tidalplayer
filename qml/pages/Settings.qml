@@ -62,6 +62,8 @@ Page {
 
     SilicaFlickable {
         anchors.fill: parent
+        // Keep the player's column clear in landscape. - Claude Generated
+        anchors.rightMargin: minPlayerPanel.reservedRight
         contentHeight: column.height
 
         Column {

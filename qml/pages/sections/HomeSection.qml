@@ -69,11 +69,19 @@ Column {
     readonly property bool coverFlow: applicationWindow.settings
                                       ? applicationWindow.settings.homeCoverFlow : false
 
+    // A shelf may take a good chunk of the page, but never so much that a
+    // landscape screen shows nothing else. pageStack follows the orientation.
+    // - Claude Generated
+    // The lower bound also guards startup, when pageStack may not be sized yet.
+    readonly property real shelfHeight:
+        Math.max(Theme.itemSizeLarge * 1.5,
+                 Math.min(Theme.itemSizeLarge * 3, Math.round(pageStack.height * 0.42)))
+
     HorizontalList {
         id: theList
         width: parent.width
         visible: !section.coverFlow
-        height: section.coverFlow ? 0 : Theme.itemSizeLarge * 3
+        height: section.coverFlow ? 0 : section.shelfHeight
     }
 
     // Loader, not just a hidden item: a PathView keeps its delegates alive
@@ -81,7 +89,7 @@ Column {
     Loader {
         id: theFlow
         width: parent.width
-        height: section.coverFlow ? Theme.itemSizeLarge * 3 : 0
+        height: section.coverFlow ? section.shelfHeight : 0
         active: section.coverFlow
         visible: section.coverFlow
         sourceComponent: coverFlowComponent

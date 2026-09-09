@@ -6,12 +6,28 @@ import Amber.Mpris 1.0
 
 DockedPanel {
     id: miniPlayerPanel
-    width: parent.width
-    height: getPlayerHeight()
     open: tidalApi.loginTrue
-    dock: Dock.Bottom
     property bool isFav: false
-    
+
+    // Landscape/tablet: the player leaves the bottom edge and becomes a
+    // full-height column on the right, where a wide screen has room to spare.
+    // The panel's parent is the pageStack, which fills the window's rotating
+    // item - so its width/height already follow the orientation and comparing
+    // them is enough. - Claude Generated
+    readonly property bool landscape: parent ? parent.width > parent.height : false
+    readonly property real landscapeWidth:
+        parent ? Math.min(parent.width * 0.35, Theme.itemSizeExtraLarge * 2.5) : 0
+
+    dock: landscape ? Dock.Right : Dock.Bottom
+    width: landscape ? landscapeWidth : parent.width
+    height: landscape ? parent.height : getPlayerHeight()
+
+    // What a page has to keep free. DockedPanel only offers `visibleSize`,
+    // which says nothing about the edge the panel sits on; it is 0 while the
+    // panel is closed and follows the open/close animation. - Claude Generated
+    readonly property real reservedBottom: landscape ? 0 : visibleSize
+    readonly property real reservedRight: landscape ? visibleSize : 0
+
     // Three-state MiniPlayer system - Claude Generated
     property int playerState: 2  // 0=Hidden, 1=Mini, 2=Normal
     property real hiddenHeight: 0
@@ -61,11 +77,21 @@ DockedPanel {
             }
         }        
         
+        // contains() takes coordinates in the item's own space, so the point
+        // has to be mapped there first - the controls sit inside a margined
+        // Column, not at the panel's origin. - Claude Generated
+        function touchInside(item, x, y) {
+            if (!item || !item.visible)
+                return false
+            var p = swipeArea.mapToItem(item, x, y)
+            return p.x >= 0 && p.y >= 0 && p.x <= item.width && p.y <= item.height
+        }
+
         onPressed: {
             startY = mouse.y
             // Check if touch is on interactive controls - exclude them from swipe handling
-            var touchOnControls = controlsContainer.contains(Qt.point(mouse.x, mouse.y))
-            var touchOnProgressArea = progressContainer.visible && progressContainer.contains(Qt.point(mouse.x, mouse.y))
+            var touchOnControls = touchInside(controlsContainer, mouse.x, mouse.y)
+            var touchOnProgressArea = touchInside(progressContainer, mouse.x, mouse.y)
             
             mouse.accepted = !touchOnControls && !touchOnProgressArea
             
@@ -104,7 +130,9 @@ DockedPanel {
             } 
             // Tap gesture: Toggle between Mini and Normal mode
             else if (Math.abs(delta) < Theme.paddingMedium) {
-                if (shortClick) {
+                // In landscape the panel is full height, so there is nothing
+                // to collapse. - Claude Generated
+                if (shortClick && !miniPlayerPanel.landscape) {
                     if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
                         console.log("TAP detected - toggle Mini/Normal mode")                
                     if (playerState === 1) {
@@ -145,12 +173,35 @@ DockedPanel {
             spacing: Theme.paddingSmall
             z: 1 // Über dem Hintergrundbild
 
+            // 0. Cover art - only in landscape, where the tall panel has the
+            //    room for it. - Claude Generated
+            Item {
+                width: parent.width
+                height: miniPlayerPanel.landscape ? coverArt.height + Theme.paddingMedium : 0
+                visible: miniPlayerPanel.landscape
+
+                CoverArt {
+                    id: coverArt
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: Math.min(parent.width - 2 * Theme.paddingMedium,
+                                    miniPlayerPanel.height * 0.4)
+                    height: width
+                    source: bgImage.source
+                    elevation: Theme.paddingSmall
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: pageStack.push(Qt.resolvedUrl("../QueueCoverFlowPage.qml"))
+                    }
+                }
+            }
+
             // 1. Button Row - Neue Anordnung: Prev links, Play/Pause + Star center, Next rechts
             Item {
                 id: controlsContainer
                 width: parent.width
                 height: Theme.itemSizeMedium
-                visible: playerState >= 1  // Sichtbar in Mini und Normal
+                visible: miniPlayerPanel.landscape || playerState >= 1
 
                 IconButton {
                     id: prevButton
@@ -216,7 +267,7 @@ DockedPanel {
                 id: titleContainer
                 width: parent.width
                 height: mediaTitle.implicitHeight + Theme.paddingSmall
-                visible: playerState >= 1
+                visible: miniPlayerPanel.landscape || playerState >= 1
                 clip: true
 
                 Label {
@@ -291,14 +342,18 @@ DockedPanel {
             Item {
                 id: progressContainer
                 width: parent.width
-                height: Math.max(Theme.fontSizeExtraSmall, Theme.paddingMedium) + Theme.paddingSmall
-                visible: playerState === 2
+                // Landscape stacks the times under the slider, so the slider
+                // itself gets the panel's full width. - Claude Generated
+                height: miniPlayerPanel.landscape
+                        ? sliderRow.height + timeRow.height
+                        : Math.max(Theme.fontSizeExtraSmall, Theme.paddingMedium) + Theme.paddingSmall
+                visible: miniPlayerPanel.landscape || playerState === 2
 
                 // Target time (visible when dragging) - Moved above the row
                 Label {
                     id: targetTime
                     anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: sliderRow.bottom
+                    anchors.bottom: miniPlayerPanel.landscape ? sliderRow.top : sliderRow.bottom
                     anchors.bottomMargin: Theme.paddingSmall
                     font.pixelSize: Theme.fontSizeExtraSmall
                     color: Theme.highlightColor
@@ -317,13 +372,19 @@ DockedPanel {
                 // Row with aligned slider and time labels
                 Row {
                     id: sliderRow
-                    anchors.centerIn: parent
+                    // Portrait keeps the times beside the slider and the row
+                    // centred; landscape puts the row at the top and the times
+                    // below it. - Claude Generated
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: miniPlayerPanel.landscape ? undefined : parent.verticalCenter
+                    anchors.top: miniPlayerPanel.landscape ? parent.top : undefined
                     width: parent.width
                     spacing: Theme.paddingMedium
 
                     // Current time links
                     Label {
                         id: currentTime
+                        visible: !miniPlayerPanel.landscape
                         anchors.verticalCenter: parent.verticalCenter
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Theme.secondaryColor
@@ -337,7 +398,15 @@ DockedPanel {
 
                     Slider {
                         id: progressSlider
-                        width: parent.width - currentTime.width - totalTime.width - parent.spacing * 2
+                        width: miniPlayerPanel.landscape
+                               ? sliderRow.width
+                               : sliderRow.width - currentTime.width - totalTime.width - sliderRow.spacing * 2
+                        // Silica's default dead margins are Screen.width/8 on
+                        // each side - meant for a full-width settings slider.
+                        // In this panel they eat most of the groove.
+                        // - Claude Generated
+                        leftMargin: Theme.paddingLarge
+                        rightMargin: Theme.paddingLarge
                         anchors.verticalCenter: parent.verticalCenter
                         minimumValue: 0
                         maximumValue: 100
@@ -356,6 +425,7 @@ DockedPanel {
                     // Total time rechts
                     Label {
                         id: totalTime
+                        visible: !miniPlayerPanel.landscape
                         anchors.verticalCenter: parent.verticalCenter
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Theme.secondaryColor
@@ -365,6 +435,34 @@ DockedPanel {
                                 Format.formatDuration(dur, Formatter.DurationLong) :
                                 Format.formatDuration(dur, Formatter.DurationShort)
                         }
+                    }
+                }
+
+                // Landscape: the times take the line under the slider. They
+                // reuse the labels above, which keep their bindings while
+                // hidden. - Claude Generated
+                Item {
+                    id: timeRow
+                    anchors.top: sliderRow.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: miniPlayerPanel.landscape
+                            ? Math.round(Theme.fontSizeExtraSmall * 1.6) : 0
+                    visible: miniPlayerPanel.landscape
+
+                    Label {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
+                        text: currentTime.text
+                    }
+                    Label {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
+                        text: totalTime.text
                     }
                 }
             }
@@ -377,7 +475,7 @@ DockedPanel {
                 anchors.topMargin: Theme.paddingLarge
                 color: Theme.secondaryColor
                 horizontalAlignment: Text.AlignHCenter
-                visible: playerState === 2
+                visible: miniPlayerPanel.landscape || playerState === 2
                 wrapMode: Text.WordWrap
 
                 text: {

@@ -32,7 +32,7 @@ Page {
         id: flickable
         anchors {
             fill: parent
-            bottomMargin: miniPlayerPanel.margin
+            rightMargin: miniPlayerPanel.reservedRight
         }
 
         contentHeight: column.height + Theme.paddingLarge
@@ -100,7 +100,13 @@ Page {
             Item {
                 id: albumInfoContainer
                 width: parent.width
-                height: isHeaderCollapsed ? Theme.itemSizeLarge : parent.width * 0.4
+                // In landscape the width is the long edge - cap against the
+                // page height so the header does not eat the screen.
+                // - Claude Generated
+                height: isHeaderCollapsed
+                        ? Theme.itemSizeLarge
+                        : Math.max(Theme.itemSizeLarge,
+                                   Math.min(parent.width * 0.4, pageStack.height * 0.45))
                 clip: true
 
                 Behavior on height {
@@ -288,7 +294,9 @@ Page {
         TrackList {
                 id: trackList
                 width: parent.width
-                height: albumPage.height -  y - (minPlayerPanel.open ? minPlayerPanel.height*0.6 : 0)
+                height: albumPage.height - y
+                        - (!minPlayerPanel.landscape && minPlayerPanel.open
+                           ? minPlayerPanel.height * 0.6 : 0)
                 type: "album"
                 albumId: albumPage.albumId
             }

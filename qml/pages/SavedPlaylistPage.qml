@@ -18,7 +18,7 @@ Page {
         id: flickable
         anchors {
             fill: parent
-            bottomMargin: minPlayerPanel.margin
+            rightMargin: minPlayerPanel.reservedRight
         }
         contentHeight: flickable.height //trackList.height + Theme.paddingLarge + getBottomOffset()
         height: parent.height + miniPlayerPanel.height + getBottomOffset()            
@@ -39,6 +39,8 @@ Page {
 
         function getBottomOffset()
         {
+            // Landscape: the player sits on the right edge, not below. - Claude Generated
+            if (minPlayerPanel.landscape) return 0
             if (minPlayerPanel.open) return ( 0.6 * minPlayerPanel.height )
             return minPlayerPanel.height * 0.2
         }
@@ -60,6 +62,7 @@ Page {
 
             function getBottomOffset()
             {
+                if (minPlayerPanel.landscape) return 0
                 if (minPlayerPanel.open) return ( 0.6 * minPlayerPanel.height )
                 return 0
             }

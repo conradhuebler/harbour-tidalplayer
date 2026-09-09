@@ -48,6 +48,27 @@ Submodules: `git submodule update --init --recursive` (only `mpegdash`, `ratelim
   `qml/pages/QueueCoverFlowPage.qml` (play queue) and inline by `HomeSection.qml`
 - Appearance settings: `artworkEffects`, `blurBackdrops`, `homeCoverFlow`
   (Settings → Appearance; keys `/artworkEffects`, `/blurBackdrops`, `/homeCoverFlow`)
+
+## Orientation
+
+- **Only a `Page` rotates itself in Silica.** `content` (the ApplicationWindow's default
+  parent, aliased as `contentItem`) and the `pageStack` inside it keep the screen's
+  physical, unrotated geometry. A window-global panel parented there does not turn with
+  the UI. `qml/harbour-tidalplayer.qml` therefore wraps the player in `playerLayer`,
+  which mirrors the rotation and dimension swap a `Page` applies; because it is a child
+  of `content` and declared after the page stack, the player still draws above the pages.
+  (Silica's own answer, reparenting a `DockedPanel` to `_rotatingItem`, turns correctly
+  but lands *below* the page stack.)
+- `MiniPlayer` docks to the bottom in portrait and to the right edge (full height,
+  with cover art) in landscape. `miniPlayerPanel.landscape` is the switch; it compares
+  the width and height of its parent, `playerLayer`.
+- A page reserves the player's space with `reservedBottom` / `reservedRight` instead of
+  hand-tuned multiples of its height — both are 0 on the edge the player is not on and
+  follow the open/close animation. `DockedPanel` has no `margin` property; the older
+  `<panel>.margin` bindings in this repo silently evaluated to 0.
+- Anything whose height derives from the page *width* (detail headers, home shelves)
+  is capped against `pageStack.height`, otherwise it eats a landscape screen. Keep a
+  lower bound as well: `pageStack` may not be sized yet at startup.
 - `qml/harbour-tidalplayer.qml` — application window, global state, Nemo.Notifications, settings glue
 
 Communication: Python emits PyOtherSide signals → QML handlers re-emit Qt signals.
@@ -66,6 +87,9 @@ Communication: Python emits PyOtherSide signals → QML handlers re-emit Qt sign
   the plain `import QtQuick 2.0` used elsewhere in this repo does not expose it.
 - Do not give a component a `default property alias`: the file's own children land in
   the alias target as well.
+- Silica's `Slider` keeps `Screen.width/8` of dead margin on each side
+  (`leftMargin`/`rightMargin`, sized for a full-width settings slider). In a narrow
+  container that is most of the groove — set both explicitly there.
 - Maintain backward compatibility with older Sailfish releases where reasonable.
 - Replace deprecated QML properties/methods when encountered.
 
