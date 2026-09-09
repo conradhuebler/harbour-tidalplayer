@@ -107,24 +107,28 @@ Page {
                     NumberAnimation { duration: 200 }
                 }
 
+                // Blurred artwork behind the header - Claude Generated
+                BlurBackdrop {
+                    anchors.fill: parent
+                    source: albumData ? albumData.image : ""
+                    dim: 0.45
+                }
+
                 Row {
                     width: parent.width
                     height: parent.height
                     spacing: Theme.paddingMedium
                     anchors.margins: Theme.paddingMedium
 
-                    Image {
+                    CoverArt {
                         id: coverImage
-                        width: parent.height
+                        // Leave room below the artwork for its reflection.
+                        // - Claude Generated
+                        width: isHeaderCollapsed ? parent.height : parent.height * 0.72
                         height: width
-                        fillMode: Image.PreserveAspectFit
                         source: albumData ? albumData.image : ""
-
-                        Rectangle {
-                            color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-                            anchors.fill: parent
-                            visible: coverImage.status !== Image.Ready
-                        }
+                        elevation: isHeaderCollapsed ? 0 : Theme.paddingSmall
+                        reflection: isHeaderCollapsed ? 0 : 0.35
 
                         IconButton {
                             id: favButton
@@ -291,6 +295,13 @@ Page {
         }
 
         VerticalScrollDecorator {}
+    }
+
+    // Spinner while the album is still being fetched - Claude Generated
+    BusyIndicator {
+        anchors.centerIn: parent
+        size: BusyIndicatorSize.Large
+        running: albumData === null
     }
 
     Component.onCompleted: {

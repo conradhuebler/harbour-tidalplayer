@@ -38,6 +38,16 @@ Submodules: `git submodule update --init --recursive` (only `mpegdash`, `ratelim
 - `qml/pages/Personal.qml` — home page shell; central LocalStorage cache, exposes `cacheItem` / `loadSectionItems`
 - `qml/pages/sections/` — one Column component per homescreen section; order driven by `homescreenSectionOrder` setting
 - `qml/pages/HomescreenLayout.qml` — drag-to-reorder layout config (uses `Opal.DragDrop`, same pattern as `TrackList.qml`)
+- `qml/pages/widgets/CoverArt.qml` — artwork tile: rounded corners, hairline edge,
+  optional drop shadow (`elevation`) and mirrored reflection (`reflection`)
+- `qml/pages/widgets/BlurBackdrop.qml` — the artwork blurred and dimmed behind headers
+  and the player bar (`FastBlur` on a 128px decode)
+- `qml/pages/widgets/DetailHeader.qml` — hero header (blurred backdrop + cover on its
+  reflection); `TrackList.qml` shows it instead of the `PageHeader` when `headerImage` is set
+- `qml/pages/widgets/CoverFlow.qml` — `PathView` cover flow; used full-screen by
+  `qml/pages/QueueCoverFlowPage.qml` (play queue) and inline by `HomeSection.qml`
+- Appearance settings: `artworkEffects`, `blurBackdrops`, `homeCoverFlow`
+  (Settings → Appearance; keys `/artworkEffects`, `/blurBackdrops`, `/homeCoverFlow`)
 - `qml/harbour-tidalplayer.qml` — application window, global state, Nemo.Notifications, settings glue
 
 Communication: Python emits PyOtherSide signals → QML handlers re-emit Qt signals.
@@ -49,6 +59,13 @@ Communication: Python emits PyOtherSide signals → QML handlers re-emit Qt sign
   `if (settings.debugLevel >= 1) console.log("Component: …")`
   Levels 0 / 1 / 2 / 3 = None / Normal / Informative / Verbose.
 - Sailfish 4.6 ships Qt 5.6 — do not use `Qt.callLater`, `Qt.labs.settings`, or `String.prototype.contains`. Use `Timer`, `QtQuick.LocalStorage`, and `indexOf` / `includes` instead.
+- Effects come from `QtGraphicalEffects 1.0` (Qt 5.6), not `QtQuick.Effects`. An item
+  handed to an effect as `source`/`maskSource` needs `layer.enabled: true`, and it
+  contributes its pixels but never its own `transform` — put the transform on a wrapper.
+- `Matrix4x4` (the perspective term in the cover flow) needs at least `import QtQuick 2.3`;
+  the plain `import QtQuick 2.0` used elsewhere in this repo does not expose it.
+- Do not give a component a `default property alias`: the file's own children land in
+  the alias target as well.
 - Maintain backward compatibility with older Sailfish releases where reasonable.
 - Replace deprecated QML properties/methods when encountered.
 

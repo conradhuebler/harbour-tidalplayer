@@ -61,6 +61,11 @@ ApplicationWindow
         property int crossfadeMode: 1 // crossfade mode: 0=No Fade, 1=Timer, 2=Buffer Crossfade, 3=Buffer Fade-Out
         property int crossfadeTimeMs: 1000 // crossfade time in milliseconds
         property int debugLevel: 0 // debug logging level: 0=None, 1=Normal, 2=Informative, 3=Verbose/Spawn
+
+        // Appearance - artwork treatment ported from the desktop player
+        property bool artworkEffects: true   // rounded corners, shadows, reflections
+        property bool blurBackdrops: true    // blurred artwork behind headers/player
+        property bool homeCoverFlow: false   // homescreen shelves as a cover flow
         property var emailHistory: [] // List of previously used email addresses
         
         // Email history management functions
@@ -426,6 +431,24 @@ ApplicationWindow
         id: defaultPlayAction
         key : "/defaultPlayAction"
         defaultValue: "replace"
+    }
+
+    ConfigurationValue {
+        id: artworkEffectsConfig
+        key : "/artworkEffects"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: blurBackdropsConfig
+        key : "/blurBackdrops"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: homeCoverFlowConfig
+        key : "/homeCoverFlow"
+        defaultValue: false
     }
 
     ConfigurationValue {
@@ -1081,6 +1104,9 @@ ApplicationWindow
             stayLoggedInConfig.value = applicationWindow.settings.stay_logged_in
             defaultPlayAction.value = applicationWindow.settings.defaultPlayAction
             autoPlayOnAppendWhenIdleConfig.value = applicationWindow.settings.autoPlayOnAppendWhenIdle
+            artworkEffectsConfig.value = applicationWindow.settings.artworkEffects
+            blurBackdropsConfig.value = applicationWindow.settings.blurBackdrops
+            homeCoverFlowConfig.value = applicationWindow.settings.homeCoverFlow
             try {
                 homescreenSectionOrderConfig.value = JSON.stringify(applicationWindow.settings.homescreenSectionOrder || [])
             } catch (e) {
@@ -1154,6 +1180,9 @@ ApplicationWindow
         applicationWindow.settings.stay_logged_in = stayLoggedInConfig.value
         applicationWindow.settings.defaultPlayAction = defaultPlayAction.value
         applicationWindow.settings.autoPlayOnAppendWhenIdle = autoPlayOnAppendWhenIdleConfig.value
+        applicationWindow.settings.artworkEffects = artworkEffectsConfig.value
+        applicationWindow.settings.blurBackdrops = blurBackdropsConfig.value
+        applicationWindow.settings.homeCoverFlow = homeCoverFlowConfig.value
 
         try {
             var order = JSON.parse(homescreenSectionOrderConfig.value)

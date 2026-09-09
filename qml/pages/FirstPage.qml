@@ -29,6 +29,12 @@ Page {
         PullDownMenu {
 
             MenuItem {
+                text: qsTr("Queue as Cover Flow")
+                visible: tidalApi.loginTrue
+                onClicked: pageStack.push(Qt.resolvedUrl("QueueCoverFlowPage.qml"))
+            }
+
+            MenuItem {
                 text: qsTr("Saved Playlists")
                 onClicked: {
                     if (tidalApi.loginTrue) {

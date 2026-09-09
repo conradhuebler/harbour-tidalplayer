@@ -218,7 +218,8 @@ ListItem {
                 pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"),
                 {
                     "playlistId" :item.playlistid,
-                    "playlistTitle" : item.name
+                    "playlistTitle" : item.name,
+                    "playlistImage" : item.image ? item.image : ""
                 })
                 break
         }

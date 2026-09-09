@@ -3,12 +3,20 @@ import Sailfish.Silica 1.0
 // import Opal.Delegates 1.0 as D
 import "../modules/Opal/Delegates" 1.0  as Del
 import "../modules/Opal/DragDrop" 1.0 as Drag
+import "widgets"
 
 Item {
     id: root
 
     // Properties für verschiedene Verwendungszwecke
     property string title: ""
+    // Hero header (Claude Generated): with artwork the list gets the blurred
+    // header ported from the desktop player, without it the plain PageHeader.
+    property url headerImage: ""
+    property string headerSubtitle: ""
+    property string headerMeta: ""
+    property bool headerPlayVisible: false
+    signal headerPlayClicked()
     property string playlistId: ""
     property int albumId: -1
     property string type: "current"  // "playlist" oder "current" oder "album" oder "mix" ("tracklist")
@@ -313,11 +321,32 @@ Item {
         
         header: root.title === "" ? null : headerComponent
 
+        // With artwork the list gets the hero header, without it the plain
+        // PageHeader. Both are built; only one is shown, and the wrapper takes
+        // the height of whichever that is. - Claude Generated
         Component {
             id: headerComponent
-            PageHeader {
-                id: pageHeader
-                title: root.title
+
+            Item {
+                width: tracks.width
+                height: root.headerImage != "" ? heroHeader.height : pageHeader.height
+
+                PageHeader {
+                    id: pageHeader
+                    title: root.title
+                    visible: root.headerImage == ""
+                }
+
+                DetailHeader {
+                    id: heroHeader
+                    heading: root.title
+                    subtitle: root.headerSubtitle
+                    meta: root.headerMeta
+                    image: root.headerImage
+                    showPlay: root.headerPlayVisible
+                    visible: root.headerImage != ""
+                    onPlayClicked: root.headerPlayClicked()
+                }
             }
         }
 

@@ -1,6 +1,8 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 
+import "../widgets"
+
 SilicaListView {
     // Konstanten
     readonly property int typeTrack: 1
@@ -192,6 +194,51 @@ SilicaListView {
     }
 
 
+    // Open the detail page for the item at `index`. Shared by the list
+    // delegate and the cover flow presentation. - Claude Generated
+    function openDetail(index) {
+        if (index < 0 || index >= model.count)
+            return
+        var item = model.get(index)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 2) {
+            console.log("LIST: Opening info page for", item.title)
+        }
+        switch (item.type) {
+            case typeAlbum:
+                pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
+                    "albumId": item.albumid
+                })
+                break
+            case typeArtist:
+                pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"), {
+                    "artistId": item.artistid
+                })
+                break
+            case typePlaylist:
+                pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"), {
+                    "playlistId": item.playlistid,
+                    "playlistTitle": item.title,
+                    "playlistImage": item.image ? item.image : ""
+                })
+                break
+            case typeMix:
+                pageStack.push(Qt.resolvedUrl("../MixPage.qml"), {
+                    "playlistId": item.mixid,
+                    "playlistTitle": item.title,
+                    "playlistImage": item.image ? item.image : ""
+                })
+                break
+            case typeTrack:
+                // For tracks, we could show album page
+                if (item.albumid) {
+                    pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
+                        "albumId": item.albumid
+                    })
+                }
+                break
+        }
+    }
+
     id: root
     width: parent.width
     height: Theme.itemSizeLarge * 3
@@ -230,20 +277,14 @@ SilicaListView {
                     }
                     spacing: Theme.paddingMedium
 
-                    Image {
+                    CoverArt {
                         id: coverImage
                         width: parent.width
                         height: width
-                        fillMode: Image.PreserveAspectCrop
                         source: model.image
-                        smooth: true
-                        asynchronous: true
-
-                        Rectangle {
-                            color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-                            anchors.fill: parent
-                            visible: coverImage.status !== Image.Ready
-                        }
+                        fallbackIcon: model.type === typeArtist
+                                      ? "image://theme/icon-m-media-artists"
+                                      : "image://theme/icon-m-media-albums"
                     }
 
                     Column {
@@ -324,34 +365,9 @@ SilicaListView {
                             }
                         }
                         
+                        // Same navigation as tapping the item. - Claude Generated
                         function openDetailPage() {
-                            var contentInfo = getContentInfo()
-                            var contentType = getContentType()
-                            
-                            switch(contentType) {
-                                case "album":
-                                    pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
-                                        "albumId": contentInfo.id
-                                    })
-                                    break
-                                case "artist":
-                                    pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"), {
-                                        "artistId": contentInfo.id
-                                    })
-                                    break
-                                case "playlist":
-                                    pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"), {
-                                        "playlistId": contentInfo.id,
-                                        "playlistTitle": contentInfo.title
-                                    })
-                                    break
-                                case "mix":
-                                    pageStack.push(Qt.resolvedUrl("../MixPage.qml"), {
-                                        "playlistId": contentInfo.id,
-                                        "playlistTitle": contentInfo.title
-                                    })
-                                    break
-                            }
+                            root.openDetail(index)
                         }
                         
                         function getContentInfo() {
@@ -399,45 +415,7 @@ SilicaListView {
                     }
                 }
 
-                onClicked: {
-                    // Single click opens info page (for homescreen)
-                    if (settings.debugLevel >= 2) {
-                        console.log("LIST: Opening info page for", model.title)
-                    }
-                    
-                    switch(model.type) {
-                        case typeAlbum:
-                            pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
-                                "albumId": model.albumid
-                            })
-                            break
-                        case typeArtist:
-                            pageStack.push(Qt.resolvedUrl("../ArtistPage.qml"), {
-                                "artistId": model.artistid
-                            })
-                            break
-                        case typePlaylist:
-                            pageStack.push(Qt.resolvedUrl("../SavedPlaylistPage.qml"), {
-                                "playlistId": model.playlistid,
-                                "playlistTitle": model.title
-                            })
-                            break
-                        case typeMix:
-                            pageStack.push(Qt.resolvedUrl("../MixPage.qml"), {
-                                "playlistId": model.mixid,
-                                "playlistTitle": model.title
-                            })
-                            break
-                        case typeTrack:
-                            // For tracks, we could show album page
-                            if (model.albumid) {
-                                pageStack.push(Qt.resolvedUrl("../AlbumPage.qml"), {
-                                    "albumId": model.albumid
-                                })
-                            }
-                            break
-                    }
-                }
+                onClicked: root.openDetail(index)
             }
 
                 // Horizontaler Scroll-Indikator für Playlists

@@ -106,23 +106,28 @@ Page {
                     NumberAnimation { duration: 200 }
                 }
 
+                // Blurred artwork behind the header - Claude Generated
+                BlurBackdrop {
+                    anchors.fill: parent
+                    source: coverImage.source
+                    dim: 0.45
+                }
+
                 Row {
                     width: parent.width
                     height: parent.height
                     spacing: Theme.paddingMedium
                     x: Theme.paddingMedium
 
-                    Image {
+                    CoverArt {
                         id: coverImage
-                        width: parent.height
+                        // Leave room below the artwork for its reflection.
+                        // - Claude Generated
+                        width: parent.height * 0.72
                         height: width
-                        fillMode: Image.PreserveAspectFit
-
-                        Rectangle {
-                            color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-                            anchors.fill: parent
-                            visible: coverImage.status !== Image.Ready
-                        }
+                        fallbackIcon: "image://theme/icon-m-media-artists"
+                        elevation: Theme.paddingSmall
+                        reflection: 0.35
 
                         IconButton {
                             id: favButton
@@ -224,11 +229,10 @@ Page {
                         x: Theme.paddingSmall
                         y: Theme.paddingSmall
 
-                        Image {
+                        CoverArt {
                             width: parent.width - 2 * Theme.paddingSmall
                             height: width
                             source: model.cover
-                            fillMode: Image.PreserveAspectCrop
                         }
 
                         Label {
@@ -357,11 +361,10 @@ Page {
                         x: Theme.paddingSmall
                         y: Theme.paddingSmall
 
-                        Image {
+                        CoverArt {
                             width: parent.width - 2 * Theme.paddingSmall
                             height: width
                             source: model.cover
-                            fillMode: Image.PreserveAspectCrop
                         }
 
                         Label {
@@ -422,6 +425,13 @@ Page {
             if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
                 console.log("Artist nicht im Cache gefunden:", artistId)
         }
+    }
+
+    // Spinner while the artist is still being fetched - Claude Generated
+    BusyIndicator {
+        anchors.centerIn: parent
+        size: BusyIndicatorSize.Large
+        running: !initialized
     }
 
     Connections {

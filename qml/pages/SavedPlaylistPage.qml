@@ -9,6 +9,9 @@ Page {
 
     property string playlistId
     property string playlistTitle
+    // Artwork for the hero header; empty falls back to a plain PageHeader.
+    // - Claude Generated
+    property url playlistImage: ""
     property string type // or alias ?
 
     SilicaFlickable {
@@ -50,6 +53,10 @@ Page {
             title: playlistTitle
             type: "playlist"
             playlistId: page.playlistId  // Wenn die TrackList einen playlistId Parameter hat
+            headerImage: page.playlistImage
+            headerSubtitle: qsTr("Playlist")
+            headerPlayVisible: true
+            onHeaderPlayClicked: playlistManager.replaceWithPlaylist(page.playlistId)
 
             function getBottomOffset()
             {

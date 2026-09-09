@@ -10,6 +10,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import "../personalLists"
+import "../widgets"
 
 Column {
     id: section
@@ -63,9 +64,38 @@ Column {
         }
     }
 
+    // Presentation follows the setting: a row of covers, or the same model
+    // turned into a cover flow. - Claude Generated
+    readonly property bool coverFlow: applicationWindow.settings
+                                      ? applicationWindow.settings.homeCoverFlow : false
+
     HorizontalList {
         id: theList
         width: parent.width
+        visible: !section.coverFlow
+        height: section.coverFlow ? 0 : Theme.itemSizeLarge * 3
+    }
+
+    // Loader, not just a hidden item: a PathView keeps its delegates alive
+    // even when invisible, and every cover carries a layer.
+    Loader {
+        id: theFlow
+        width: parent.width
+        height: section.coverFlow ? Theme.itemSizeLarge * 3 : 0
+        active: section.coverFlow
+        visible: section.coverFlow
+        sourceComponent: coverFlowComponent
+    }
+
+    Component {
+        id: coverFlowComponent
+
+        CoverFlow {
+            model: theList.model
+            titleRole: "title"
+            imageRole: "image"
+            onActivated: theList.openDetail(index)
+        }
     }
 
     // Holds the Connections {} (and any other non-visual items) declared by

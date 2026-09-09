@@ -121,20 +121,22 @@ DockedPanel {
         }        
     }    
 
-    // Hintergrundbild
-    Image {
+    // Hintergrundbild: das Artwork des laufenden Tracks, weichgezeichnet.
+    // - Claude Generated
+    BlurBackdrop {
         id: bgImage
         anchors.fill: parent
-        fillMode: Image.PreserveAspectCrop
-        opacity: 0.85 // Transparenter Hintergrund
+        dim: 0.35
+        fadeOut: false
         z: 0 // Hinter allen anderen Elementen
     }
 
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.overlayBackgroundColor //Theme.darkPrimaryColor
-        opacity: 0.65
+        // Der Scrim liegt in der Farbe, nicht in der Opazitaet des Items -
+        // sonst wuerden die Bedienelemente mit ausgeblendet. - Claude Generated
+        color: Theme.rgba(Theme.overlayBackgroundColor, 0.55)
 
         // Neu strukturierter Hauptcontainer - Claude Generated
         Column {

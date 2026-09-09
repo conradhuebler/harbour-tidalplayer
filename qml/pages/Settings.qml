@@ -27,6 +27,24 @@ Page {
         defaultValue: 0
     }
 
+    ConfigurationValue {
+        id: artworkEffectsConfig
+        key: "/artworkEffects"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: blurBackdropsConfig
+        key: "/blurBackdrops"
+        defaultValue: true
+    }
+
+    ConfigurationValue {
+        id: homeCoverFlowConfig
+        key: "/homeCoverFlow"
+        defaultValue: false
+    }
+
     // Auto-refresh timer for status display - Claude Generated
     Timer {
         id: statusUpdateTimer
@@ -339,6 +357,52 @@ Page {
                 visible: tidalApi.loginTrue
                 onClicked: {
                     pageStack.push(Qt.resolvedUrl("../dialogs/SleepTimerDialog.qml"))
+                }
+            }
+
+            SectionHeader {
+                text: qsTr("Appearance")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("Artwork presentation. Turn the effects off on older devices if scrolling stutters.")
+                wrapMode: Text.WordWrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryColor
+            }
+
+            TextSwitch {
+                id: artworkEffects
+                text: qsTr("Artwork effects")
+                description: qsTr("Rounded covers with a soft shadow and a reflection under the artwork")
+                checked: applicationWindow.settings.artworkEffects
+                onClicked: {
+                    applicationWindow.settings.artworkEffects = artworkEffects.checked
+                    artworkEffectsConfig.value = artworkEffects.checked
+                }
+            }
+
+            TextSwitch {
+                id: blurBackdrops
+                text: qsTr("Blurred backdrops")
+                description: qsTr("Blur the cover art behind detail page headers and the player")
+                checked: applicationWindow.settings.blurBackdrops
+                onClicked: {
+                    applicationWindow.settings.blurBackdrops = blurBackdrops.checked
+                    blurBackdropsConfig.value = blurBackdrops.checked
+                }
+            }
+
+            TextSwitch {
+                id: homeCoverFlow
+                text: qsTr("Home shelves as cover flow")
+                description: qsTr("Show the homescreen sections as a turning cover flow instead of a row of covers")
+                checked: applicationWindow.settings.homeCoverFlow
+                onClicked: {
+                    applicationWindow.settings.homeCoverFlow = homeCoverFlow.checked
+                    homeCoverFlowConfig.value = homeCoverFlow.checked
                 }
             }
 
