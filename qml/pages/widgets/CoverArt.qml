@@ -1,11 +1,15 @@
 // Claude Generated — artwork tile: rounded corners, hairline edge, optional
 // drop shadow and an optional mirrored reflection below the artwork.
-// Ported from the desktop player (qml-tidalplayer/qml/pages/CoverImage.qml),
-// rebuilt on QtGraphicalEffects 1.0 for Qt 5.6 / Silica.
+// Ported from the desktop player (qml-tidalplayer/qml/pages/CoverImage.qml).
 //
-// The heavier effects are opt-in per use site: `elevation` and `reflection`
-// default to 0, so a list of covers costs little more than a plain Image.
-// `settings.artworkEffects` switches the whole treatment off.
+// Rounding and reflection are done in a single ShaderEffect pass each, sampling
+// the Image directly (an Image is a texture provider in its own right). The
+// obvious QtGraphicalEffects route - layer.enabled + OpacityMask + a masking
+// Rectangle that is itself layered - costs two framebuffers per tile, and a
+// homescreen shows dozens of tiles at once.
+//
+// The heavier extras stay opt-in per use site: `elevation` and `reflection`
+// default to 0. `settings.artworkEffects` switches the whole treatment off.
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtGraphicalEffects 1.0
@@ -29,17 +33,24 @@ Item {
     readonly property bool _shadowed: effects && elevation > 0
     readonly property bool _reflected: effects && reflection > 0 && art.status === Image.Ready
 
+    // PreserveAspectCrop happens in the shaders, which see the raw texture and
+    // not the Image's fillMode: how much of the source to sample per axis.
+    readonly property real _imgAspect: art.implicitHeight > 0 ? art.implicitWidth / art.implicitHeight : 1
+    readonly property real _itemAspect: height > 0 ? width / height : 1
+    readonly property real _cropX: _imgAspect > _itemAspect ? _itemAspect / _imgAspect : 1
+    readonly property real _cropY: _imgAspect > _itemAspect ? 1 : _imgAspect / _itemAspect
+
     implicitWidth: Theme.itemSizeExtraLarge
     implicitHeight: Theme.itemSizeExtraLarge
 
     // ---- shadow ---------------------------------------------------------
-    // RectangularGlow, not DropShadow: it draws the glow alone, while
-    // DropShadow would redraw the artwork underneath its own copy.
+    // RectangularGlow draws the glow alone; DropShadow would redraw the
+    // artwork underneath its own copy.
     RectangularGlow {
-        x: frame.x
-        y: frame.y + Math.round(cover.elevation / 2)
-        width: frame.width
-        height: frame.height
+        x: 0
+        y: Math.round(cover.elevation / 2)
+        width: cover.width
+        height: cover.height
         visible: cover._shadowed
         glowRadius: cover.elevation * 1.5
         spread: 0.1
@@ -47,63 +58,103 @@ Item {
         cornerRadius: cover.radius + glowRadius
     }
 
-    // ---- artwork --------------------------------------------------------
-    Item {
-        id: frame
+    // ---- placeholder ----------------------------------------------------
+    // A plain rounded Rectangle - rounding a Rectangle is native, no effect
+    // needed. It stays up until the artwork has faded in.
+    Rectangle {
         anchors.fill: parent
-        layer.enabled: cover.effects
-        layer.effect: OpacityMask { maskSource: cornerMask }
-
-        // Placeholder while the artwork loads or when the item has none.
-        Rectangle {
-            anchors.fill: parent
-            color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
-            visible: art.status !== Image.Ready
-
-            Image {
-                // Both dimensions come from the cover, never from each other
-                // or from this item's own size - an Image writes its decoded
-                // size back into sourceSize, which would close the loop.
-                readonly property int iconSize:
-                    Math.round(Math.min(cover.width, cover.height) * 0.45)
-                anchors.centerIn: parent
-                width: iconSize
-                height: iconSize
-                source: cover.fallbackIcon
-                opacity: 0.4
-                asynchronous: true
-                sourceSize.width: iconSize
-                sourceSize.height: iconSize
-            }
-        }
+        radius: cover.radius
+        color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
+        visible: artwork.opacity < 1.0
 
         Image {
-            id: art
-            anchors.fill: parent
-            source: cover.source
-            fillMode: Image.PreserveAspectCrop
-            smooth: true
+            // Only shown when there is nothing to wait for. An icon that
+            // appears in the middle of every tile and is replaced by the
+            // artwork a moment later reads as flicker across a shelf.
+            visible: cover.source == "" || art.status === Image.Error
+
+            // Both dimensions come from the cover, never from each other or
+            // from this item's own size - an Image writes its decoded size
+            // back into sourceSize, which would close the loop.
+            readonly property int iconSize:
+                Math.round(Math.min(cover.width, cover.height) * 0.45)
+            anchors.centerIn: parent
+            width: iconSize
+            height: iconSize
+            source: cover.fallbackIcon
+            opacity: 0.4
             asynchronous: true
-            cache: true
-            sourceSize.width: cover.sourceSize
-            sourceSize.height: cover.sourceSize
-            visible: status === Image.Ready
+            sourceSize.width: iconSize
+            sourceSize.height: iconSize
         }
     }
 
-    Rectangle {
-        id: cornerMask
-        anchors.fill: frame
-        radius: cover.radius
-        color: "black"
-        visible: false
-        layer.enabled: true
+    // ---- artwork --------------------------------------------------------
+    // Drawn directly only when the effects are off; otherwise it just supplies
+    // the texture for the shaders below and is not rendered itself.
+    Image {
+        id: art
+        anchors.fill: parent
+        source: cover.source
+        fillMode: Image.PreserveAspectCrop
+        smooth: true
+        asynchronous: true
+        cache: true
+        sourceSize.width: cover.sourceSize
+        sourceSize.height: cover.sourceSize
+
+        visible: !cover.effects && opacity > 0
+        // Fade in rather than pop: a shelf whose covers arrive one by one
+        // otherwise flickers as each one snaps in.
+        opacity: status === Image.Ready ? 1.0 : 0.0
+        Behavior on opacity { FadeAnimation {} }
+    }
+
+    ShaderEffect {
+        id: artwork
+        anchors.fill: parent
+        visible: cover.effects && art.status === Image.Ready && opacity > 0
+        opacity: art.status === Image.Ready ? 1.0 : 0.0
+        Behavior on opacity { FadeAnimation {} }
+
+        property variant source: art
+        property real radiusPx: cover.radius
+        property real w: width
+        property real h: height
+        property real cropX: cover._cropX
+        property real cropY: cover._cropY
+
+        fragmentShader: "
+            uniform sampler2D source;
+            uniform lowp float qt_Opacity;
+            uniform highp float w;
+            uniform highp float h;
+            uniform highp float radiusPx;
+            uniform highp float cropX;
+            uniform highp float cropY;
+            varying highp vec2 qt_TexCoord0;
+
+            void main() {
+                highp vec2 uv = vec2(0.5) + (qt_TexCoord0 - vec2(0.5)) * vec2(cropX, cropY);
+
+                // Distance to the nearest horizontal and vertical edge, in
+                // pixels; inside a corner box, round it off with a one pixel
+                // wide ramp so the edge is not stepped.
+                highp vec2 p = qt_TexCoord0 * vec2(w, h);
+                highp vec2 d = min(p, vec2(w, h) - p);
+                lowp float a = 1.0;
+                if (d.x < radiusPx && d.y < radiusPx) {
+                    a = clamp(radiusPx - distance(vec2(radiusPx), d) + 0.5, 0.0, 1.0);
+                }
+                gl_FragColor = texture2D(source, uv) * a * qt_Opacity;
+            }
+        "
     }
 
     // A hairline keeps the artwork's edge readable on dark backgrounds,
     // where a drop shadow alone disappears.
     Rectangle {
-        anchors.fill: frame
+        anchors.fill: parent
         radius: cover.radius
         color: "transparent"
         border.width: 1
@@ -112,59 +163,38 @@ Item {
     }
 
     // ---- reflection -----------------------------------------------------
-    Item {
-        id: mirror
+    // Mirrored artwork under the tile, fading out downwards - again one pass,
+    // sampling the same texture. The mirroring is a coordinate flip in the
+    // shader, which is also why no wrapper item is needed: a transform on an
+    // item feeding an effect would be lost anyway.
+    ShaderEffect {
         anchors.top: parent.bottom
         anchors.topMargin: Math.round(cover.elevation / 2)
-        width: parent.width
+        width: cover.width
         height: cover._reflected ? cover.height * cover.reflection : 0
         visible: cover._reflected
-        clip: true
+        opacity: 0.3
 
-        // The flip lives on this wrapper, not on the Image: an Image handed to
-        // an effect as a texture provider contributes its pixels, never its
-        // transform. Flipping the item that draws the masked result keeps it.
-        Item {
-            id: flipped
-            width: mirror.width
-            height: cover.height
-            transform: Scale { origin.y: cover.height / 2; yScale: -1 }
+        property variant source: art
+        property real reflection: cover.reflection
+        property real cropX: cover._cropX
+        property real cropY: cover._cropY
 
-            Image {
-                id: mirrorSource
-                anchors.fill: parent
-                source: cover.source
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                cache: true
-                // An Image is a texture provider in its own right, so no
-                // layer is needed here (and none is wanted: the layer would
-                // depend on the item being drawn).
-                visible: false
+        fragmentShader: "
+            uniform sampler2D source;
+            uniform lowp float qt_Opacity;
+            uniform highp float reflection;
+            uniform highp float cropX;
+            uniform highp float cropY;
+            varying highp vec2 qt_TexCoord0;
+
+            void main() {
+                // 0 at the top of the strip, where it meets the artwork.
+                highp float v = qt_TexCoord0.y;
+                highp vec2 mirrored = vec2(qt_TexCoord0.x, 1.0 - v * reflection);
+                highp vec2 uv = vec2(0.5) + (mirrored - vec2(0.5)) * vec2(cropX, cropY);
+                gl_FragColor = texture2D(source, uv) * (1.0 - v) * qt_Opacity;
             }
-
-            // Alpha ramp in the artwork's own coordinates: opaque at its
-            // bottom edge, gone `reflection` of the height above it. After the
-            // flip that is bright where the reflection meets the artwork.
-            LinearGradient {
-                id: fadeMask
-                anchors.fill: parent
-                visible: false
-                layer.enabled: true
-                start: Qt.point(0, cover.height)
-                end: Qt.point(0, cover.height * (1.0 - cover.reflection))
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#ffffffff" }
-                    GradientStop { position: 1.0; color: "#00ffffff" }
-                }
-            }
-
-            OpacityMask {
-                anchors.fill: parent
-                source: mirrorSource
-                maskSource: fadeMask
-                opacity: 0.3
-            }
-        }
+        "
     }
 }

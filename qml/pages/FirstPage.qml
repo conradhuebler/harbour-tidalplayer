@@ -51,7 +51,11 @@ Page {
             MenuItem {
                 text: qsTr("Settings")
                 onClicked: {
-                    miniPlayerPanel.open = false
+                    // Fold the player down to its strip rather than closing it:
+                    // writing `open` drops the binding that ties the panel to
+                    // the login state, and it never came back on its own.
+                    // - Claude Generated
+                    miniPlayerPanel.playerState = 0
                     pageStack.push(Qt.resolvedUrl("Settings.qml"))
                 }
             }
@@ -85,21 +89,6 @@ Page {
                 text: qsTr("Cancel Sleep Timer " + applicationWindow.remainingMinutes)
                 onClicked: applicationWindow.cancelSleepTimer()
             }
-              MenuItem {
-                text: miniPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
-                onClicked: {
-                    if (tidalApi.loginTrue) {
-                        miniPlayerPanel.open = !miniPlayerPanel.open
-                    } else {
-                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                            console.log("Login required for media player")
-                        // Redirect to settings instead
-                        pageStack.push(Qt.resolvedUrl("Settings.qml"))
-                    }
-                }
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-
         }
     //    PushUpMenu {
 

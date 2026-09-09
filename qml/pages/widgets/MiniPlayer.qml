@@ -9,6 +9,24 @@ DockedPanel {
     open: tidalApi.loginTrue
     property bool isFav: false
 
+    // DockedPanel writes `open` itself when the panel is dragged past its
+    // threshold - and that write drops the binding above for good, which is how
+    // the player used to leave the screen with no way back. Fold down to the
+    // peek strip instead, and drive `open` from the login state explicitly from
+    // here on, because the binding is gone the first time this fires.
+    // - Claude Generated
+    onOpenChanged: {
+        if (!open && tidalApi.loginTrue) {
+            playerState = 0
+            open = true
+        }
+    }
+
+    Connections {
+        target: tidalApi
+        onLoginTrueChanged: miniPlayerPanel.open = tidalApi.loginTrue
+    }
+
     // Landscape/tablet: the player leaves the bottom edge and becomes a
     // full-height column on the right, where a wide screen has room to spare.
     // The panel's parent is the pageStack, which fills the window's rotating
@@ -29,10 +47,21 @@ DockedPanel {
     readonly property real reservedRight: landscape ? visibleSize : 0
 
     // Three-state MiniPlayer system - Claude Generated
-    property int playerState: 2  // 0=Hidden, 1=Mini, 2=Normal
-    property real hiddenHeight: 0
-    property real miniHeight: Theme.itemSizeLarge * 1.5 + Theme.paddingLarge
-    property real normalHeight: Theme.itemSizeExtraLarge * 2.25
+    // 0=Peek (only the chevron strip), 1=Mini, 2=Normal. Peek replaces the old
+    // "hidden" state: closing the panel outright left the pulley menu as the
+    // only way back, and every imperative write to `open` also killed its
+    // binding to the login state. - Claude Generated
+    property int playerState: 2
+    property real hiddenHeight: toggleStrip.height + Theme.paddingSmall * 2
+    // Mini shows the toggle strip, the transport row and the title - plus the
+    // hairline progress at the panel's bottom edge, which costs no layout
+    // height. Derived instead of a magic multiple so the state cannot end up
+    // taller than the panel it has to fit in. - Claude Generated
+    property real miniHeight: Theme.paddingSmall * 4
+                              + toggleStrip.height
+                              + Theme.itemSizeMedium
+                              + titleContainer.height
+    property real normalHeight: Theme.itemSizeExtraLarge * 2.25 + toggleStrip.height
     
     function getPlayerHeight() {
         switch(playerState) {
@@ -121,27 +150,22 @@ DockedPanel {
             
             var delta = startY - mouse.y
             
-            // Upward swipe: Show playlist
+            // Upward swipe: expand a folded player, otherwise show the playlist
             if (delta > swipeThreshold) {
-                while (pageStack.depth > 1) {
-                    pageStack.pop(null, PageStackAction.Immediate)
-                }
-                applicationWindow.mainPage.showPlaylist()
-            } 
-            // Tap gesture: Toggle between Mini and Normal mode
-            else if (Math.abs(delta) < Theme.paddingMedium) {
-                // In landscape the panel is full height, so there is nothing
-                // to collapse. - Claude Generated
-                if (shortClick && !miniPlayerPanel.landscape) {
-                    if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                        console.log("TAP detected - toggle Mini/Normal mode")                
-                    if (playerState === 1) {
-                        playerState = 2  // Mini -> Normal
-                    } else if (playerState === 2) {
-                        playerState = 1  // Normal -> Mini
+                if (miniPlayerPanel.playerState === 0) {
+                    miniPlayerPanel.playerState = 2   // - Claude Generated
+                } else {
+                    while (pageStack.depth > 1) {
+                        pageStack.pop(null, PageStackAction.Immediate)
                     }
+                    applicationWindow.mainPage.showPlaylist()
                 }
-            }
+            } 
+            // A tap on the panel does nothing on purpose: collapsing used to be
+            // bound to it, which is invisible, easy to trigger by missing a
+            // button, and near impossible to undo once collapsed - the free
+            // area it needs is exactly what collapsing takes away. The chevron
+            // at the top of the panel does it instead. - Claude Generated
         }
 
         onCanceled: {
@@ -166,6 +190,31 @@ DockedPanel {
         // sonst wuerden die Bedienelemente mit ausgeblendet. - Claude Generated
         color: Theme.rgba(Theme.overlayBackgroundColor, 0.55)
 
+        // Collapsed state: the progress as a hairline on the panel's bottom
+        // edge. It carries the information the full slider would, without
+        // taking the height that collapsing is supposed to give back.
+        // - Claude Generated
+        Rectangle {
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
+            height: Math.max(2, Math.round(Theme.paddingSmall / 3))
+            color: Theme.rgba(Theme.primaryColor, 0.2)
+            visible: !miniPlayerPanel.landscape
+                     && miniPlayerPanel.playerState <= 1
+                     && mediaController.duration > 0
+            z: 2
+
+            Rectangle {
+                anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                width: parent.width * (mediaController.duration > 0
+                                       ? mediaController.position / mediaController.duration : 0)
+                color: Theme.highlightColor
+            }
+        }
+
         // Neu strukturierter Hauptcontainer - Claude Generated
         Column {
             anchors.fill: parent
@@ -173,7 +222,77 @@ DockedPanel {
             spacing: Theme.paddingSmall
             z: 1 // Über dem Hintergrundbild
 
-            // 0. Cover art - only in landscape, where the tall panel has the
+            // 0. Collapse / expand. An explicit target instead of the old
+            //    tap-anywhere gesture: it says which way it goes, it is
+            //    reachable in both states, and it does not compete with the
+            //    transport buttons. Drawn rather than themed so it cannot
+            //    depend on an icon name. - Claude Generated
+            Item {
+                id: toggleStrip
+                width: parent.width
+                // Thin while the panel has other content, but a proper touch
+                // target when it is all that is left. - Claude Generated
+                height: !visible ? 0
+                        : (miniPlayerPanel.playerState === 0
+                           ? Theme.itemSizeExtraSmall
+                           : Math.round(Theme.iconSizeSmall * 0.6))
+                // Landscape fills the height anyway - nothing to collapse.
+                visible: !miniPlayerPanel.landscape
+
+                Item {
+                    id: chevron
+                    anchors.centerIn: parent
+                    width: Theme.iconSizeSmall
+                    height: parent.height
+
+                    // Down while there is still something to fold away, up when
+                    // the panel is at its smallest. - Claude Generated
+                    readonly property bool pointsUp: miniPlayerPanel.playerState === 0
+                    readonly property real thickness: Math.max(2, Math.round(Theme.paddingSmall / 3))
+                    readonly property real arm: width / 2
+                    readonly property color armColor:
+                        toggleArea.pressed ? Theme.highlightColor
+                                           : Theme.rgba(Theme.primaryColor, 0.5)
+
+                    Rectangle {
+                        x: 0
+                        y: (chevron.height - height) / 2
+                        width: chevron.arm
+                        height: chevron.thickness
+                        radius: height / 2
+                        color: chevron.armColor
+                        transformOrigin: Item.Right
+                        rotation: chevron.pointsUp ? -20 : 20
+                        Behavior on rotation { NumberAnimation { duration: 150 } }
+                    }
+                    Rectangle {
+                        x: chevron.arm
+                        y: (chevron.height - height) / 2
+                        width: chevron.arm
+                        height: chevron.thickness
+                        radius: height / 2
+                        color: chevron.armColor
+                        transformOrigin: Item.Left
+                        rotation: chevron.pointsUp ? 20 : -20
+                        Behavior on rotation { NumberAnimation { duration: 150 } }
+                    }
+                }
+
+                MouseArea {
+                    id: toggleArea
+                    anchors.fill: parent
+                    onClicked: {
+                        // Normal -> Mini -> Peek -> Normal
+                        miniPlayerPanel.playerState =
+                            miniPlayerPanel.playerState === 0
+                            ? 2 : miniPlayerPanel.playerState - 1
+                        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+                            console.log("PLAYER: state ->", miniPlayerPanel.playerState)
+                    }
+                }
+            }
+
+            // 1. Cover art - only in landscape, where the tall panel has the
             //    room for it. - Claude Generated
             Item {
                 width: parent.width
@@ -533,7 +652,6 @@ DockedPanel {
             bgImage.source = mediaController.current_track_image
             //prevButton.enabled = playlistManager.canPrev
             //nextButton.enabled = playlistManager.canNext
-            progressSlider.visible = true
         }*/
         onPositionChanged: {
             if (!progressSlider.pressed && mediaController.duration > 0) {
@@ -562,7 +680,6 @@ DockedPanel {
             mediaTitle.text = trackInfo.track_num + " - " + trackInfo.title + " - " + trackInfo.album + " - " + trackInfo.artist
             bgImage.source = trackInfo.image
             nextButton.enabled = playlistManager.canNext
-            progressSlider.visible = true
             miniPlayerPanel.isFav = favManager.isFavorite(trackInfo.trackid)
         }
     }
@@ -574,9 +691,14 @@ DockedPanel {
                 console.log("Playlist finished, hide player: " + applicationWindow.settings.hide_player)
             if (applicationWindow.settings.hide_player) {
                 mediaTitle.text = ""
-                bgImage.source = ""    
-                minPlayerPanel.hide(100)
-                progressSlider.visible = false
+                bgImage.source = ""
+                // Fold down to the strip instead of closing the panel: hide()
+                // writes `open`, which drops its binding to the login state,
+                // and a closed panel has nothing left to grab. The slider's
+                // own `visible` binding already follows the duration - writing
+                // it here used to replace that binding for good.
+                // - Claude Generated
+                miniPlayerPanel.playerState = 0
             }
         }
         onListChanged:

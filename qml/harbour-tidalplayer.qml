@@ -1223,8 +1223,15 @@ ApplicationWindow
         applicationWindow.settings.homeCoverFlow = homeCoverFlowConfig.value
 
         try {
+            // Only assign when the stored order really differs. Handing the
+            // property a fresh array always emits its change signal, even with
+            // identical contents - and that rebuilds every delegate of the
+            // homescreen Repeater, so the sections that are already on screen
+            // are torn down and built again. - Claude Generated
             var order = JSON.parse(homescreenSectionOrderConfig.value)
-            if (Array.isArray(order) && order.length > 0) {
+            if (Array.isArray(order) && order.length > 0
+                    && JSON.stringify(order)
+                       !== JSON.stringify(applicationWindow.settings.homescreenSectionOrder)) {
                 applicationWindow.settings.homescreenSectionOrder = order
             }
         } catch (e) {

@@ -49,6 +49,17 @@ Submodules: `git submodule update --init --recursive` (only `mpegdash`, `ratelim
 - Appearance settings: `artworkEffects`, `blurBackdrops`, `homeCoverFlow`
   (Settings → Appearance; keys `/artworkEffects`, `/blurBackdrops`, `/homeCoverFlow`)
 
+## Player states
+
+`MiniPlayer.playerState`: 2 = Normal, 1 = Mini (transport + title, progress as a hairline
+on the panel's bottom edge), 0 = Peek (only the chevron strip). The chevron at the top of
+the panel cycles Normal → Mini → Peek → Normal; there is deliberately no tap-anywhere
+gesture. Nothing writes `DockedPanel.open` any more — "hide the player" means
+`playerState = 0`, which always leaves the chevron reachable. `DockedPanel` writes `open`
+itself when dragged past its threshold — `onOpenChanged` folds the panel to Peek and
+re-opens it, and a `Connections` on `tidalApi.loginTrue` keeps driving `open` after that
+write has dropped the binding.
+
 ## Orientation
 
 - **Only a `Page` rotates itself in Silica.** `content` (the ApplicationWindow's default
@@ -87,6 +98,17 @@ Communication: Python emits PyOtherSide signals → QML handlers re-emit Qt sign
   the plain `import QtQuick 2.0` used elsewhere in this repo does not expose it.
 - Do not give a component a `default property alias`: the file's own children land in
   the alias target as well.
+- An imperative write drops the property's binding for good. `miniPlayerPanel.open = false`
+  used to kill `open: tidalApi.loginTrue`, and `progressSlider.visible = false` killed
+  `visible: mediaController.duration > 0` — both left the UI in a state nothing could
+  restore. Change what the binding reads (here: `playerState`) instead of the bound
+  property itself.
+- Effects on many items: `layer.enabled` + a `QtGraphicalEffects` mask costs a
+  framebuffer per item (two, if the mask item is layered as well), and
+  `Label { truncationMode: TruncationMode.Fade }` costs one more per overflowing
+  label. On a screen full of covers that is dozens of render targets — do the
+  effect in a single `ShaderEffect` pass sampling the `Image` directly instead
+  (see `CoverArt.qml`), and prefer `TruncationMode.Elide` in list delegates.
 - Silica's `Slider` keeps `Screen.width/8` of dead margin on each side
   (`leftMargin`/`rightMargin`, sized for a full-width settings slider). In a narrow
   container that is most of the groove — set both explicitly there.

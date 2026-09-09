@@ -11,6 +11,10 @@ Page {
     property bool isHeaderCollapsed: false
     property bool isFav: false
     property bool initialized: false
+    // The UI's height for this orientation, valid from the first frame -
+    // pageStack is not sized yet while the page is being built.
+    // - Claude Generated
+    readonly property real uiHeight: minPlayerPanel.landscape ? Screen.width : Screen.height
 
     function processWimpLinks(text) {
         if (!text) return ""
@@ -83,10 +87,6 @@ Page {
             }
         }
         
-            MenuItem {
-                text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
-                onClicked: minPlayerPanel.open = !minPlayerPanel.open
-            }
         }
 
         Column {
@@ -105,8 +105,7 @@ Page {
                 // In landscape the width is the long edge - cap against the
                 // page height so the header does not eat the screen.
                 // - Claude Generated
-                height: Math.max(Theme.itemSizeLarge,
-                                 Math.min(width * 0.4, pageStack.height * 0.45))
+                height: Math.min(width * 0.4, artistPage.uiHeight * 0.45)
                 clip: true
 
                 Behavior on height {
@@ -218,9 +217,8 @@ Page {
             SilicaListView {
                 id: albumsView
                 width: parent.width
-                height: Math.max(Theme.itemSizeLarge * 1.5,
-                                 Math.min(Theme.itemSizeLarge * 3,
-                                          Math.round(pageStack.height * 0.42)))
+                height: Math.min(Theme.itemSizeLarge * 3,
+                                 Math.round(artistPage.uiHeight * 0.42))
                 orientation: ListView.Horizontal
                 clip: true
                 spacing: Theme.paddingMedium
@@ -352,9 +350,8 @@ Page {
             SilicaListView {
                 id: simartistView
                 width: parent.width
-                height: Math.max(Theme.itemSizeLarge * 1.5,
-                                 Math.min(Theme.itemSizeLarge * 2.5,
-                                          Math.round(pageStack.height * 0.36)))
+                height: Math.min(Theme.itemSizeLarge * 2.5,
+                                 Math.round(artistPage.uiHeight * 0.36))
                 orientation: ListView.Horizontal
                 clip: true
                 spacing: Theme.paddingMedium

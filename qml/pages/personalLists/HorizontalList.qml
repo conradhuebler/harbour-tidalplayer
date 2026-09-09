@@ -12,8 +12,11 @@ SilicaListView {
     readonly property int typeVideo: 5
     readonly property int typeMix: 6
 
-    property string placeholderHint : "Placeholder Hint"
-    property string placeholderText : "Placeholder Text"
+    // Empty by default: no section sets these, and a shelf that is merely
+    // still loading used to flash a centred "Placeholder Hint" until its
+    // first item arrived. - Claude Generated
+    property string placeholderHint : ""
+    property string placeholderText : ""
 
     property string filterText: ""
     property var _allItems: [] // to store all items (unfiltered) for later filtering
@@ -245,6 +248,10 @@ SilicaListView {
     orientation: ListView.Horizontal
     clip: true
     spacing: Theme.paddingMedium
+    // Silica's default is Theme.itemSizeMedium * 8, i.e. several extra tiles
+    // kept alive on each side of a shelf - times nine shelves. One viewport is
+    // enough to flick smoothly. - Claude Generated
+    cacheBuffer: Math.round(width)
 
     model: ListModel {
         id: recentModel
@@ -281,6 +288,9 @@ SilicaListView {
                         id: coverImage
                         width: parent.width
                         height: width
+                        // Decode at the size actually drawn - the tile is a
+                        // fixed size, so this never re-decodes. - Claude Generated
+                        sourceSize: Math.round(width)
                         source: model.image
                         fallbackIcon: model.type === typeArtist
                                       ? "image://theme/icon-m-media-artists"
@@ -296,7 +306,11 @@ SilicaListView {
                             text: model.title
                             color: parent.parent.pressed ? Theme.highlightColor : Theme.primaryColor
                             font.pixelSize: Theme.fontSizeSmall
-                            truncationMode: TruncationMode.Fade
+                            // Elide, not Fade: Silica implements the fade with a
+                            // layer plus a shader effect on every label whose text
+                            // overflows - one framebuffer per cover title.
+                            // - Claude Generated
+                            truncationMode: TruncationMode.Elide
                             horizontalAlignment: Text.AlignHCenter
                             visible: !delegateItem.menuOpen
                         }
@@ -441,6 +455,7 @@ SilicaListView {
 
                 ViewPlaceholder {
                     enabled: model.count === 0
+                             && (placeholderHint !== "" || placeholderText !== "")
                     text: placeholderHint
                     hintText: placeholderText
                 }

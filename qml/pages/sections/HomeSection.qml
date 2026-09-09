@@ -70,12 +70,16 @@ Column {
                                       ? applicationWindow.settings.homeCoverFlow : false
 
     // A shelf may take a good chunk of the page, but never so much that a
-    // landscape screen shows nothing else. pageStack follows the orientation.
-    // - Claude Generated
-    // The lower bound also guards startup, when pageStack may not be sized yet.
-    readonly property real shelfHeight:
-        Math.max(Theme.itemSizeLarge * 1.5,
-                 Math.min(Theme.itemSizeLarge * 3, Math.round(pageStack.height * 0.42)))
+    // landscape screen shows nothing else.
+    //
+    // Derived from Screen, not from pageStack.height: pageStack is 0 until the
+    // window is laid out, so the shelf would be built at one height and resized
+    // a frame later - every cover in it visibly jumps. Screen carries the
+    // display's portrait dimensions and is correct from the first frame, which
+    // is how Silica computes its own _screenWidth/_screenHeight. - Claude Generated
+    readonly property real availableHeight: minPlayerPanel.landscape ? Screen.width : Screen.height
+    readonly property real shelfHeight: Math.min(Theme.itemSizeLarge * 3,
+                                                 Math.round(availableHeight * 0.42))
 
     HorizontalList {
         id: theList

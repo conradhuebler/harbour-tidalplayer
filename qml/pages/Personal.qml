@@ -9,6 +9,14 @@ Item {
     id: personalPage
     anchors.fill: parent
 
+    // Geometry of one section, known before it is built: SectionHeader
+    // (Theme.itemSizeSmall) + the Column's spacing + the shelf. Keep the
+    // shelf formula in sync with HomeSection.shelfHeight. - Claude Generated
+    readonly property real availableHeight: minPlayerPanel.landscape ? Screen.width : Screen.height
+    readonly property real shelfHeight: Math.min(Theme.itemSizeLarge * 3,
+                                                 Math.round(availableHeight * 0.42))
+    readonly property real sectionHeight: Theme.itemSizeSmall + Theme.paddingMedium + shelfHeight
+
     // Persistent section cache (LocalStorage) for instant display on startup
     property var db
 
@@ -160,24 +168,39 @@ Item {
             // their cache read, Connections and HorizontalList render at startup.
             Repeater {
                 model: applicationWindow.settings.homescreenSectionOrder
-                delegate: Loader {
+
+                // The Loader sits in a slot that already has the section's
+                // height. Without it, every section that finishes loading
+                // pushes the ones below it down - covers that were on screen
+                // get shoved out of view again. - Claude Generated
+                delegate: Item {
                     width: mainColumn.width
-                    asynchronous: true
-                    active: {
-                        switch (modelData) {
-                            case "recent":           return applicationWindow.settings.recentList
-                            case "foryou":           return applicationWindow.settings.yourList
-                            case "topartist":        return applicationWindow.settings.topartistList
-                            case "topalbum":         return applicationWindow.settings.topalbumsList
-                            case "toptrack":         return applicationWindow.settings.toptrackList
-                            case "personalPlaylist": return applicationWindow.settings.personalPlaylistList
-                            case "dailyMixes":       return applicationWindow.settings.dailyMixesList
-                            case "radioMixes":       return applicationWindow.settings.radioMixesList
-                            case "favArtists":       return applicationWindow.settings.topArtistsList
-                            default: return false
+                    visible: sectionLoader.active
+                    height: !sectionLoader.active
+                            ? 0
+                            : (sectionLoader.item ? sectionLoader.item.height
+                                                  : personalPage.sectionHeight)
+
+                    Loader {
+                        id: sectionLoader
+                        width: parent.width
+                        asynchronous: true
+                        active: {
+                            switch (modelData) {
+                                case "recent":           return applicationWindow.settings.recentList
+                                case "foryou":           return applicationWindow.settings.yourList
+                                case "topartist":        return applicationWindow.settings.topartistList
+                                case "topalbum":         return applicationWindow.settings.topalbumsList
+                                case "toptrack":         return applicationWindow.settings.toptrackList
+                                case "personalPlaylist": return applicationWindow.settings.personalPlaylistList
+                                case "dailyMixes":       return applicationWindow.settings.dailyMixesList
+                                case "radioMixes":       return applicationWindow.settings.radioMixesList
+                                case "favArtists":       return applicationWindow.settings.topArtistsList
+                                default: return false
+                            }
                         }
+                        source: active ? personalPage.sectionSourceFor(modelData) : ""
                     }
-                    source: active ? personalPage.sectionSourceFor(modelData) : ""
                 }
             }
         }

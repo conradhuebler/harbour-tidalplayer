@@ -12,6 +12,10 @@ Page {
     property bool isHeaderCollapsed: false
     property bool isFav: false
     property bool initialized: false
+    // The UI's height for this orientation, valid from the first frame -
+    // pageStack is not sized yet while the page is being built.
+    // - Claude Generated
+    readonly property real uiHeight: minPlayerPanel.landscape ? Screen.width : Screen.height
 
     allowedOrientations: Orientation.All
 
@@ -81,10 +85,6 @@ Page {
                 }
             }
 
-            MenuItem {
-                text: minPlayerPanel.open ? qsTr("Hide player") : qsTr("Show player")
-                onClicked: minPlayerPanel.open = !minPlayerPanel.open
-            }
         }
 
         Column {
@@ -105,8 +105,7 @@ Page {
                 // - Claude Generated
                 height: isHeaderCollapsed
                         ? Theme.itemSizeLarge
-                        : Math.max(Theme.itemSizeLarge,
-                                   Math.min(parent.width * 0.4, pageStack.height * 0.45))
+                        : Math.min(parent.width * 0.4, albumPage.uiHeight * 0.45)
                 clip: true
 
                 Behavior on height {
