@@ -30,7 +30,7 @@ six
 tidalapi
   file copy
   https://github.com/EbbLabs/python-tidal 
-  unpacked 0.8.9 version
+  unpacked 0.8.11 version (plus local Sailfish patches: lazy imports, no dateutil at import)
 
 typing_extensions
   file copy

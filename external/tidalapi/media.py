@@ -363,7 +363,7 @@ class Track(Media):
 
             self.date_added = self.user_date_added
             self.description = json_obj.get("description")
-            self.version = json_obj.get("version")
+            self.version = json_obj.get("version") if json_obj.get("version") else None
             self.copyright = json_obj.get("copyright")
 
             self.bpm = json_obj.get("bpm")
@@ -605,8 +605,8 @@ class Stream:
         try:
             # Stream Manifest is base64 encoded.
             return base64.b64decode(self.manifest).decode("utf-8")
-        except:
-            raise ManifestDecodeError
+        except Exception as e:
+            raise ManifestDecodeError from e
 
     @property
     def is_mpd(self) -> bool:
@@ -757,15 +757,15 @@ class DashInfo:
         try:
             if stream.is_mpd and not stream.is_encrypted:
                 return DashInfo(stream.get_manifest_data())
-        except:
-            raise ManifestDecodeError
+        except Exception as e:
+            raise ManifestDecodeError from e
 
     @staticmethod
     def from_mpd(mpd_manifest) -> "DashInfo":
         try:
             return DashInfo(mpd_manifest)
-        except:
-            raise ManifestDecodeError
+        except Exception as e:
+            raise ManifestDecodeError from e
 
     def __init__(self, mpd_xml):
         # Lazy imports: mpegdash pulls xml.dom.minidom and isodate is only
