@@ -932,9 +932,13 @@ class Tidal:
 
     def getForYouPage(self):
         pyotherside.send('loadingStarted')
-        home = self.session.home()
-        for item in home.categories[0].items:
-            self.getForYou(item)
+        # The first home category is the user's "Shortcuts" (mixed artists, albums,
+        # playlists), not popular playlists - use the dedicated page instead.
+        try:
+            for item in self.getPagePopularPlaylists():
+                self.getForYou(item)
+        except Exception as e:
+            debug_log(f"getForYouPage failed: {e}", level=1, force=True)
         pyotherside.send('loadingFinished')
 
     def getRecentPage(self):
