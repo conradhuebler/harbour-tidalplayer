@@ -835,6 +835,11 @@ Item {
         pythonTidal.call('tidal.Tidaler.request_oauth', [])
     }
 
+    // Renews the access token if it expires within `margin` seconds. - Claude Generated
+    function checkSession(margin) {
+        pythonTidal.call('tidal.Tidaler.checkSession', [margin])
+    }
+
     function loginIn(tokenType, accessToken, refreshToken, expiryTime) {
         if (settings.debugLevel >= 3) {
             console.log("AUTH: loginIn token (VERBOSE):", accessToken)

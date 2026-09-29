@@ -9,6 +9,22 @@ Item {
     property date currentDate: new Date()
     signal updateSettings()
 
+    // Expiry values arrive as Unix-epoch seconds from the backend; older
+    // stored values and ISO strings are accepted as well. - Claude Generated
+    function toEpochSeconds(expiry) {
+        if (expiry === undefined || expiry === null || expiry === "")
+            return 0
+        if (typeof expiry === "number")
+            return Math.floor(expiry)
+        var text = String(expiry)
+        if (/^[0-9]+$/.test(text))
+            return parseInt(text, 10)
+        var parsed = new Date(text)
+        if (isNaN(parsed.getTime()))
+            return 0
+        return Math.floor(parsed.getTime() / 1000)
+    }
+
     // Funktionen zum Token-Management
     function updateTokens(type, token, rtoken, expiry) {
         if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
@@ -18,17 +34,10 @@ Item {
         applicationWindow.settings.access_token = token
         applicationWindow.settings.refresh_token = rtoken
         
-        // Convert expiry to Unix timestamp if it's a string
-        var expiryTime = expiry
-        if (typeof expiry === "string") {
-            var expiryDate = new Date(expiry)
-            expiryTime = Math.floor(expiryDate.getTime() / 1000)
-            if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                console.log("Converted expiry date to timestamp:", expiry, "->", expiryTime)
-        } else if (typeof expiry === "number") {
-            expiryTime = expiry
-        }
-        
+        var expiryTime = toEpochSeconds(expiry)
+        if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
+            console.log("AUTH: token expiry:", expiry, "->", expiryTime)
+
         applicationWindow.settings.expiry_time = expiryTime
         updateSettings()
     }
@@ -40,23 +49,12 @@ Item {
             console.log("AUTH: Token refreshed (length:", token.length, "chars) expiry:", expiry)
         }
         
-        // Show token refresh notification
-        applicationWindow.showInfoNotification(qsTr("Session Renewed"), qsTr("Authentication token refreshed automatically"))
-        
         applicationWindow.settings.access_token = token
         if (rtoken) applicationWindow.settings.refresh_token = rtoken
         
-        if (expiry) {
-            // Convert expiry to Unix timestamp if it's a string
-            var expiryTime = expiry
-            if (typeof expiry === "string") {
-                var expiryDate = new Date(expiry)
-                expiryTime = Math.floor(expiryDate.getTime() / 1000)
-                if (applicationWindow.settings && applicationWindow.settings.debugLevel >= 1)
-                    console.log("Converted refresh expiry date to timestamp:", expiry, "->", expiryTime)
-            }
+        var expiryTime = toEpochSeconds(expiry)
+        if (expiryTime > 0)
             applicationWindow.settings.expiry_time = expiryTime
-        }
         updateSettings()
     }
 
@@ -109,6 +107,24 @@ Item {
         return isValid
     }
 
+    // Renews the access token before it expires; without this it dies after
+    // a few hours and every API call fails until restart. - Claude Generated
+    function ensureSession() {
+        if (!tidalApi.loginTrue)
+            return
+        if (applicationWindow.settings.debugLevel >= 2)
+            console.log("AUTH: periodic session check")
+        tidalApi.checkSession(900)
+    }
+
+    Timer {
+        id: sessionRenewTimer
+        interval: 5 * 60 * 1000
+        repeat: true
+        running: tidalApi.loginTrue
+        onTriggered: root.ensureSession()
+    }
+
     function clearTokens() {
         // Check if user wants to stay logged in
         if (applicationWindow.settings.stay_logged_in) {
@@ -145,7 +161,7 @@ Item {
         applicationWindow.settings.token_type = ""
         applicationWindow.settings.access_token = ""
         applicationWindow.settings.refresh_token = ""
-        applicationWindow.settings.expiry_time = ""
+        applicationWindow.settings.expiry_time = 0
         
         // Keep email address for debugging/development convenience
         if (applicationWindow.settings.debugLevel >= 1) {

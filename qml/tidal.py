@@ -12,6 +12,7 @@ import requests
 import json
 import tidalapi
 import pyotherside
+from datetime import datetime, timezone
 
 # Debug function for controlled logging synchronized with QML debug levels
 def debug_log(message, level=1, force=False):
@@ -162,6 +163,73 @@ class Tidal:
         self.track_search = track_search
         self.artist_search = artist_search
 
+    @staticmethod
+    def _expiry_str(value):
+        """Expiry as Unix-epoch seconds (string).
+
+        tidalapi stores expiry_time as a naive UTC datetime; handing that to QML
+        would shift it by the local UTC offset."""
+        if value is None:
+            return ""
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                value = value.replace(tzinfo=timezone.utc)
+            return str(int(value.timestamp()))
+        return str(value)
+
+    @staticmethod
+    def _expiry_datetime(value):
+        """Inverse of _expiry_str: epoch seconds -> naive UTC datetime."""
+        try:
+            seconds = int(float(value))
+        except (TypeError, ValueError):
+            return None
+        if seconds <= 0:
+            return None
+        return datetime.fromtimestamp(seconds, timezone.utc).replace(tzinfo=None)
+
+    def publish_token(self):
+        """Persist a token that tidalapi renewed on its own inside a request."""
+        session = self.session
+        if session is None or not getattr(session, 'access_token', None):
+            return
+        if session.access_token == getattr(self, '_known_access_token', None):
+            return
+        self._known_access_token = session.access_token
+        pyotherside.send("oauth_refresh", session.access_token,
+                         session.refresh_token or "",
+                         self._expiry_str(session.expiry_time))
+
+    def checkSession(self, margin_seconds=900):
+        """Renew the access token when it expires within margin_seconds."""
+        session = self.session
+        if session is None or not getattr(session, 'access_token', None):
+            return
+        refresh_token = session.refresh_token
+        if not refresh_token:
+            debug_log("Session check: no refresh token, cannot renew", level=2)
+            return
+        expiry = session.expiry_time
+        if expiry is not None:
+            now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+            remaining = (expiry - now_utc).total_seconds()
+            if remaining > margin_seconds:
+                debug_log(f"Session check: token valid for {int(remaining)}s", level=3)
+                return
+        debug_log("Session check: renewing access token", level=1)
+        try:
+            if session.token_refresh(refresh_token):
+                self.publish_token()
+            else:
+                pyotherside.send("printConsole", "Session renewal failed - refresh token rejected")
+                pyotherside.send("oauth_login_failed")
+        except RequestException as req_err:
+            # Offline or server hiccup: keep the session, retry on the next tick.
+            pyotherside.send("printConsole", f"Session renewal postponed - network error: {req_err}")
+        except Exception as e:
+            pyotherside.send("printConsole", f"Session renewal failed: {e}")
+            pyotherside.send("oauth_login_failed")
+
     def login(self, token_type, access_token, refresh_token, expiry_time):
         try:
             if access_token == token_type:
@@ -172,13 +240,20 @@ class Tidal:
 
                     try:
                         self.session.token_refresh(refresh_token)
-                        self.session.load_oauth_session(token_type, self.session.access_token)
+                        # token_refresh() only replaces the access token; the refresh
+                        # token must go to the session too so tidalapi can renew later.
+                        self.session.load_oauth_session(
+                            self.session.token_type or token_type,
+                            self.session.access_token,
+                            refresh_token,
+                            self.session.expiry_time)
 
                         if self.session.check_login() is True:
                             debug_log(f"New token obtained (length: {len(self.session.access_token)} chars)", level=1)
-                            # Send all token info including new expiry time
-                            pyotherside.send("oauth_refresh", self.session.access_token, 
-                                            self.session.refresh_token, self.session.expiry_time)
+                            self._known_access_token = self.session.access_token
+                            pyotherside.send("oauth_refresh", self.session.access_token,
+                                            self.session.refresh_token or refresh_token,
+                                            self._expiry_str(self.session.expiry_time))
                             pyotherside.send("oauth_login_success")
                             debug_log("Login verification successful", level=1)
                         else:
@@ -205,9 +280,12 @@ class Tidal:
                     pyotherside.send("printConsole", "Login with old token")
 
                     try:
-                        self.session.load_oauth_session(token_type, access_token)
+                        self.session.load_oauth_session(
+                            token_type, access_token, refresh_token,
+                            self._expiry_datetime(expiry_time))
 
                         if self.session.check_login() == True:
+                            self._known_access_token = access_token
                             pyotherside.send("oauth_login_success")
                             debug_log("Login verification successful", level=1)
                         else:
@@ -289,11 +367,12 @@ class Tidal:
                 debug_log(f"Token type: {getattr(self.session, 'token_type', 'unknown')}", level=2)
                 debug_log(f"Token expires: {getattr(self.session, 'expiry_time', 'unknown')}", level=2)
                 
+                self._known_access_token = self.session.access_token
                 pyotherside.send("get_token", 
                                 self.session.token_type, 
                                 self.session.access_token, 
                                 self.session.refresh_token, 
-                                self.session.expiry_time)
+                                self._expiry_str(self.session.expiry_time))
             else:
                 debug_log("CRITICAL: OAuth login verification failed", level=1, force=True)
                 pyotherside.send("oauth_failed")
@@ -1075,7 +1154,8 @@ class Tidal:
         
         try:
             if self.session:
-                # Clear session tokens and user data
+                self._known_access_token = None
+            # Clear session tokens and user data
                 session_cleared = False
                 
                 if hasattr(self.session, 'access_token'):
