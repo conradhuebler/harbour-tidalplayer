@@ -81,6 +81,8 @@ debug_log("All modules imported successfully", level=1)
 
 class Tidal:
     def __init__(self):
+        self.manifest_server = None
+        self.dash_supported = None
         debug_log("Creating Tidal class instance", level=1)
         self.session = None
         self.config = None
@@ -98,6 +100,8 @@ class Tidal:
                 "LOW": (Quality.low_96k, "96k"),
                 "HIGH": (Quality.low_320k, "320k"), 
                 "LOSSLESS": (Quality.high_lossless, "lossless"),
+                "HI_RES": (Quality.hi_res_lossless, "hi-res lossless"),
+                "HI_RES_LOSSLESS": (Quality.hi_res_lossless, "hi-res lossless"),
                 "TEST": (Quality.low_96k, "96k test")
             }
             
@@ -728,10 +732,62 @@ class Tidal:
             self.send_object("error", {"message": str(e)})
             return None
 
+    @staticmethod
+    def _dash_supported():
+        """True if GStreamer has a DASH demuxer (dashdemux2 lives in
+        libgstadaptivedemux2, older releases ship libgstdashdemux)."""
+        import glob
+        dirs = [d for d in os.environ.get("GST_PLUGIN_PATH", "").split(":") if d]
+        dirs += ["/usr/lib64/gstreamer-1.0", "/usr/lib/gstreamer-1.0"]
+        for d in dirs:
+            for name in ("libgstadaptivedemux2.so", "libgstdashdemux.so"):
+                if glob.glob(os.path.join(d, name)):
+                    return True
+        return False
+
+    def _playable_url(self, track):
+        """Stream URL for track.
+
+        Hi-Res is served as an MPEG-DASH manifest (FLAC in fragmented MP4): the
+        manifest is published on a local server and GStreamer streams it. The
+        plain URL endpoint refuses Hi-Res. If that fails, fall back to the
+        Lossless URL."""
+        quality = self.session.config.quality
+        if quality != Quality.hi_res_lossless:
+            return track.get_url()
+        if self.dash_supported is None:
+            self.dash_supported = self._dash_supported()
+            debug_log(f"getTrackUrl: DASH demuxer available: {self.dash_supported}", level=1)
+        if not self.dash_supported:
+            return self._lossless_url(track, quality)
+        try:
+            stream = track.get_stream()
+            if stream.is_mpd:
+                if self.manifest_server is None:
+                    import mpdserver
+                    self.manifest_server = mpdserver.ManifestServer()
+                url = self.manifest_server.publish(str(track.id), stream.get_manifest_data())
+                debug_log(f"getTrackUrl: hi-res track {track.id} via {url.split('/')[2]}", level=1)
+                return url
+            # not a hi-res track: the manifest is a plain BTS with a direct URL
+            return stream.get_stream_manifest().urls[0]
+        except Exception as e:
+            debug_log(f"getTrackUrl: hi-res failed ({type(e).__name__}: {e}), "
+                      "falling back to lossless", level=1, force=True)
+        return self._lossless_url(track, quality)
+
+    def _lossless_url(self, track, quality):
+        """Plain URL at Lossless quality; `quality` is restored afterwards."""
+        self.session.config.quality = Quality.high_lossless
+        try:
+            return track.get_url()
+        finally:
+            self.session.config.quality = quality
+
     def getTrackUrl(self, id):
         try:
             track = self.session.track(int(id))
-            url = track.get_url()
+            url = self._playable_url(track)
             track_info = self.handle_track(track)
 
             if track_info and url:

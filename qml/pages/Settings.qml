@@ -229,7 +229,7 @@ Page {
                     MenuItem { text: qsTr("Low (96 kbps)") }
                     MenuItem { text: qsTr("High (320 kbps)") }
                     MenuItem { text: qsTr("Lossless (FLAC)") }
-                    MenuItem { text: qsTr("Master (MQA)") }
+                    MenuItem { text: qsTr("Hi-Res (FLAC, up to 24 bit)") }
                 }
                 onCurrentIndexChanged: {
                     if (currentIndex >= 0 && currentIndex < qualities.length) {
